@@ -268,11 +268,18 @@
 
 ```txt
 /docs
-├── game-design/    # Game Design Document
-├── architecture/   # Technical decisions
-├── api/            # API documentation
-├── database/       # Schema & migrations
-└── deployment/     # Setup & deployment guides
+├── 01-game-design/    # Game Design Document
+│   ├── core-loop.md
+│   ├── features.md
+│   └── constraints.md
+├── 02-architecture/   # Technical decisions
+│   ├── stack-choice.md
+│   ├── api-design.md  # API documentation
+│   └── database.md    # Schema & migrations
+└── 03-implementation/
+    ├── tasks.md
+    ├── timeline.md
+    └── assignments.md
 ```
 
 ---
