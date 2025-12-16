@@ -1,11 +1,11 @@
 # Constraints & Non-Goals
 
-This document defines the intentional constraints and non-goals for the Transcendence project.  
-These constraints are enforced to control scope, reduce risk, and ensure timely completion.
+This document outlines the **proposed constraints and non-goals** for the Transcendence project.  
+> These constraints are intended to guide early planning and discussion, and will be finalized after feature and architecture decisions are agreed upon by the team.
 
 ---
 
-## 1. Scope Constraints
+## 1. Proposed Scope Constraints
 
 To keep the project manageable and aligned with the MVP:
 
@@ -69,3 +69,4 @@ These constraints ensure that:
 - Required Transcendence modules are clearly demonstrable
 - The project can be delivered within the planned timeline
 - All team members can clearly explain their design and implementation decisions during evaluation
+
