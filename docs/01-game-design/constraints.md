@@ -1,20 +1,24 @@
 # Constraints & Non-Goals
 
-This document outlines the intentional constraints and non-goals for the Transcendence project.  
-These decisions are made to control scope, reduce risk, and ensure the project is completed within the given timeline.
+This document defines the intentional constraints and non-goals for the Transcendence project.  
+These constraints are enforced to control scope, reduce risk, and ensure timely completion.
 
 ---
 
 ## 1. Scope Constraints
 
-To keep the project manageable:
+To keep the project manageable and aligned with the MVP:
 
-- 2D top-down gameplay only
-- One small map (village + grass area)
-- ~10 Pokémon species
-- Simple turn-based battles (HP / ATK / DEF, 2–3 moves)
-- Multiplayer focused on PVP
-- Optional features added only if time allows
+- The game is strictly **2D top-down**
+- Only **one small map** (village + grass area) is implemented
+- Pokémon species count is limited to **approximately 10**
+- Battles use a **simple turn-based system**
+  - Stats limited to **HP / ATK / DEF**
+  - Each Pokémon has **2–3 moves**
+- Party size is capped at **4 Pokémon**
+- Progression uses a **simple XP and coin system**
+- Multiplayer focuses primarily on **PVP battles**
+- Optional features are added **only after MVP completion**
 
 ---
 
@@ -22,44 +26,46 @@ To keep the project manageable:
 
 The following features are intentionally **out of scope**:
 
-- Large open-world maps
+- Large or complex open-world maps
 - Storylines, quests, or narrative systems
 - Trading or breeding mechanics
 - Complex Pokémon type advantage systems
-- MMO-scale gameplay or persistence
+- MMO-scale persistence or world simulation
 - Advanced AI behaviors beyond basic wild encounters
 - Extensive cosmetic customization systems
+- Mobile application support
 
 ---
 
 ## 3. Technical Constraints
 
-To reduce technical risk, the following technical boundaries apply:
+To reduce technical complexity and implementation risk:
 
-- One primary frontend framework (React?)
+- One frontend framework (**React?**)
 - One backend service acting as the authoritative game server
-- One relational database (PostgreSQL?)
-- Real-time communication handled exclusively via WebSockets
+- One relational database (**PostgreSQL?**)
+- Real-time communication handled via **WebSockets**
 - No external game engines (e.g. Unity, Unreal)
 
 ---
 
 ## 4. Change Management
 
-Any request to add features outside this document must:
+Any feature request outside these constraints must:
 
 1. Be discussed by the team
-2. Be evaluated for impact on timeline and module points
+2. Be evaluated for impact on timeline and module validation
 3. Be approved by the Product Owner and Project Manager
 
-If a feature threatens the delivery of the MVP, it will be deferred or rejected.
+If a feature risks delaying MVP delivery, it will be deferred or rejected.
 
 ---
 
 ## 5. Rationale
 
-These constraints ensure:
+These constraints ensure that:
+
 - The core gameplay loop is completed and playable
-- Required Transcendence modules are demonstrable
-- The project can be delivered on time
-- All team members can clearly explain their contributions during evaluation
+- Required Transcendence modules are clearly demonstrable
+- The project can be delivered within the planned timeline
+- All team members can clearly explain their design and implementation decisions during evaluation
