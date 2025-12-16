@@ -1,6 +1,7 @@
 # Features
 
-This document defines feature commitments and development priorities.
+> This feature list represents an **initial proposal**.
+> Features and priorities will be finalized after team discussion and design review.
 
 ---
 
@@ -53,3 +54,4 @@ These features will not be implemented.
 - Player movement is required before encounters.
 - Battle system is required before PVP.
 - WebSockets are required before chat and social features.
+
