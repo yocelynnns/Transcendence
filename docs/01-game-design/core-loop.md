@@ -1,6 +1,7 @@
 # Core Game Loop
 
-This document captures the design questions, decisions, and finalized gameplay flow for the Transcendence Pokémon-style multiplayer game.
+This document proposes an initial gameplay flow to guide team discussion.
+The core loop is **not finalized** and will be refined after team agreement.
 
 ---
 
@@ -33,7 +34,7 @@ These decisions are intentional to control scope and ensure timely completion.
 
 ---
 
-## 3. Finalized Core Gameplay Loop
+## 3. Proposed Core Gameplay Loop (Draft)
 
 The finalized gameplay loop is as follows:
 
@@ -66,3 +67,4 @@ The finalized gameplay loop is as follows:
 
 This document serves as the authoritative reference for core gameplay behavior.  
 Any changes to the core loop must be discussed and approved by the team.
+
