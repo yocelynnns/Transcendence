@@ -268,18 +268,20 @@
 
 ```txt
 /docs
-├── 01-game-design/    # Game Design Document
-│   ├── core-loop.md
-│   ├── features.md
-│   └── constraints.md
-├── 02-architecture/   # Technical decisions
-│   ├── stack-choice.md
-│   ├── api-design.md  # API documentation
-│   └── database.md    # Schema & migrations
-└── 03-implementation/
-    ├── tasks.md
-    ├── timeline.md
-    └── assignments.md
+├── 01-game-design/      # Game Design Document
+│   ├── core-loop.md     # How game works
+│   ├── features.md      # What to build
+│   └── constraints.md   # What NOT to build
+│   
+├── 02-architecture/     # Technical decisions
+│   ├── stack-choice.md  # React vs Vue, etc.
+│   ├── api-design.md    # API documentation & REST/WebSocket plan
+│   └── database.md      # Schema & migrations
+│   
+└── 03-implementation/   # How to build
+    ├── tasks.md         # Work breakdown
+    ├── timeline.md      # Weekly schedule
+    └── assignments.md   # Who does what
 ```
 
 ---
