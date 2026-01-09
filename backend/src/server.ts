@@ -5,6 +5,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";          // <-- import mongoose
 import type { GameState, Player, Pokemon } from "./types.js";
+import { setupPokemon } from "./setup/pokemon_setup.js";
+import pokemonDbRoutes from "./routes/pokemonDbRoutes.js";
+import battlesRoutes from "./routes/battlesRoutes.js";
 
 dotenv.config();
 
@@ -13,7 +16,10 @@ const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/pokemon-gam
 
 mongoose
   .connect(mongoURI)
-  .then(() => console.log("✅ Connected to MongoDB"))
+  .then(async () => {
+    console.log("✅ Connected to MongoDB");
+    await setupPokemon(); // 👈 THIS IS THE PLACE
+  })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // ------------------- App & Socket.IO -------------------
@@ -30,6 +36,8 @@ const io = new SocketIOServer(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/pokemonDb", pokemonDbRoutes);
+app.use("/battles", battlesRoutes);
 
 // Game state
 const gameState: GameState = {
