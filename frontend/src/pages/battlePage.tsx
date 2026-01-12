@@ -1,15 +1,23 @@
 import React from "react";
 import cleffa from "../assets/pokemon/normal/cleffa/cleffa.gif";
 import togepi from "../assets/pokemon/normal/togepi/togepi.gif";
-import nightCaveBg from "../assets/bg/night_cave.png";
+import background from "../assets/bg/background.png";
 
 import oppPlatform from "../assets/bg/pink_platform_opp.png";
 import playerPlatform from "../assets/bg/pink_platform_player.png";
 
-import oppHpBar from "../assets/health_bar/health_bar_opp.png";
-import playerHpBar from "../assets/health_bar/health_bar_player.png";
+import oppHpBlock from "../assets/health_bar/health_block_opp.png";
+import playerHpBlock from "../assets/health_bar/health_block_player.png";
+import pokeballAlive from "../assets/health_bar/pokeball_alive.png";
+import pokeballDead from "../assets/health_bar/pokeball_dead.png";
+
+import greenHp from "../assets/health_bar/green_hp.png"
+import yellowHp from "../assets/health_bar/yellow_hp.png"
+import redHp from "../assets/health_bar/red_hp.png"
 
 import menuBar from "../assets/menu_bar/menu_bar.png"
+import cleffaIcon from "../assets/pokemon/normal/cleffa/cleffa_icon.png"
+import togepiIcon from "../assets/pokemon/normal/togepi/togepi_icon.png"
 
 export default function Battle() {
   return (
@@ -18,7 +26,7 @@ export default function Battle() {
         position: "relative",
         width: "100vw",
         height: "100vh",
-        backgroundImage: `url(${nightCaveBg})`,
+        backgroundImage: `url(${background})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -60,25 +68,93 @@ export default function Battle() {
             imageRendering: "pixelated",
           }}
         />
-        {/* enemy hp bar */}
-        <img
-          src={oppHpBar}
-          alt="Enemy Hp Bar"
-          style={{
+        {/* enemy details */}
+        <div
+        style={{
             position: "absolute",
             left: "-10%",
             top: "-5%",
             width: "55%",
+            // height: "47.95%",
             imageRendering: "pixelated",
-          }}
-        />
+        }}
+            >
+            <img
+            src={oppHpBlock}
+            alt="Enemy Hp Block"
+            style={{
+                width: "100%",
+                // display: "block",
+                imageRendering: "pixelated",
+            }}
+            />
+            <div
+                style={{
+                position: "absolute",
+                top: "57%",
+                left: "39%",
+                width: "46.5%",
+                height: "9.5%",
+                // background: "#666666",
+            }}
+            >
+                <img
+                src={greenHp}
+                alt="Enemy Hp Bar"
+                style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%"
+                }}
+            />
+            </div>
+            <div
+                style={{
+                position: "absolute",
+                top: "18%",
+                left: "8%",
+                fontSize: "1.2rem",
+                fontWeight: "bold",
+                color: "#222",
+                pointerEvents: "none",
+            }}
+            >
+                CLEFFA
+            </div>
+            <div
+                style={{
+                position: "absolute",
+                top: "42%",
+                left: "8%",
+                height: "10%",
+            }}
+            >
+                <img src={pokeballAlive} alt="ball 1" style={styles.pokeball} />
+                <img src={pokeballAlive} alt="ball 2" style={styles.pokeball} />
+                <img src={pokeballDead} alt="ball 3" style={styles.pokeball} />
+            </div>
+            <div
+                style={{
+                position: "absolute",
+                top: "25%",
+                right: "16%",
+                fontSize: "1rem",
+                fontWeight: "bold",
+                color: "#666666",
+                pointerEvents: "none",
+                textAlign: "right",
+                }}
+            >
+                ATK 6
+            </div>
+        </div>
       </div>
 
       {/* player container */}
       <div
         style={{
           position: "absolute",
-          top: "50%",
+          top: "47%",
           width: "75%",
           height: "33%",
           // backgroundColor: "#999",
@@ -90,7 +166,7 @@ export default function Battle() {
           alt="Player platform"
           style={{
             position: "absolute",
-            bottom: 0,
+            bottom: "-5%",
             width: "83.33%",
             imageRendering: "pixelated",
           }}
@@ -107,18 +183,98 @@ export default function Battle() {
             imageRendering: "pixelated",
           }}
         />
-        {/* player hp bar */}
-        <img
-          src={playerHpBar}
-          alt="Player Hp Bar"
+        {/* player details */}
+        {/* <img
+          src={playerHpBlock}
+          alt="Player Hp Block"
           style={{
             position: "absolute",
-            top: "10%",
+            top: "12%",
             left: "65%",
             width: "45.83%",
             imageRendering: "pixelated",
           }}
-        />
+        /> */}
+
+        <div
+        style={{
+            position: "absolute",
+            left: "65%",
+            top: "12%",
+            width: "45.83%",
+            // height: "47.95%",
+            imageRendering: "pixelated",
+        }}
+            >
+            <img
+            src={playerHpBlock}
+            alt="Player Hp Block"
+            style={{
+                width: "100%",
+                // display: "block",
+                imageRendering: "pixelated",
+            }}
+            />
+            <div
+                style={{
+                position: "absolute",
+                top: "57%",
+                left: "47%",
+                width: "46.5%",
+                height: "9.5%",
+                // background: "#666666",
+            }}
+            >
+                <img
+                src={yellowHp}
+                alt="Enemy Hp Bar"
+                style={{
+                    position: "absolute",
+                    width: "60%",
+                    height: "100%"
+                }}
+            />
+            </div>
+            <div
+                style={{
+                position: "absolute",
+                top: "18%",
+                left: "15%",
+                fontSize: "1.2rem",
+                fontWeight: "bold",
+                color: "#222",
+                pointerEvents: "none",
+            }}
+            >
+                TOGEPI
+            </div>
+            <div
+                style={{
+                position: "absolute",
+                top: "42%",
+                left: "15%",
+                height: "10%",
+            }}
+            >
+                <img src={pokeballAlive} alt="ball 1" style={styles.pokeball} />
+                <img src={pokeballAlive} alt="ball 2" style={styles.pokeball} />
+                <img src={pokeballAlive} alt="ball 3" style={styles.pokeball} />
+            </div>
+            <div
+                style={{
+                position: "absolute",
+                top: "25%",
+                right: "8%",
+                fontSize: "1rem",
+                fontWeight: "bold",
+                color: "#666666",
+                pointerEvents: "none",
+                textAlign: "right",
+                }}
+            >
+                ATK 6
+            </div>
+        </div>
       </div>
       
       {/* menu bar container */}
@@ -127,7 +283,8 @@ export default function Battle() {
             position: "absolute",
             bottom: 0,
             width: "100%",
-            height: "16.67%",
+            height: "20%",
+            backgroundColor: "#333333"
         }}
         >
         {/* menu bar image */}
@@ -156,18 +313,18 @@ export default function Battle() {
             {/* LEFT: text box */}
             <div style={styles.textBox}>
             <p style={styles.text}>
-                What will Togepi do?
+                WHAT WILL TOGEPI DO?
             </p>
             </div>
 
             {/* RIGHT: buttons */}
             <div style={styles.buttonGroup}>
             <div style={styles.switchBox}>
-                <img src={cleffa} alt="Cleffa" style={styles.switchImg} />
+                <img src={cleffaIcon} alt="Cleffa" style={styles.switchImg} />
             </div>
 
             <div style={styles.switchBox}>
-                <img src={togepi} alt="Togepi" style={styles.switchImg} />
+                <img src={togepiIcon} alt="Togepi" style={styles.switchImg} />
             </div>
 
             <div style={styles.attackBtn}>ATTACK</div>
@@ -192,22 +349,27 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   text: {
-    fontSize: "2rem",
+    fontSize: "1.5rem",
     fontWeight: "bold",
     margin: 0,
     color: "#222",
+    alignItems: 'center',    // vertical centering
   },
 
   buttonGroup: {
     width: "53.125%",
+    height: "100%",
     display: "flex",
     justifyContent: "flex-end",
     alignItems: "center",
     gap: "3.125%",
+    paddingRight: "3.125%", 
   },
 
   switchBox: {
-    width: "11.76%",
+    // width: "11.76%",
+    aspectRatio: "1 / 1",
+    height: "50%",
     borderRadius: "12px",
     backgroundColor: "#eaeaea",
     border: "2px solid #333",
@@ -224,30 +386,39 @@ const styles: Record<string, React.CSSProperties> = {
 
   attackBtn: {
     width: "23.53%",
+    height: "50%",
     // height: "56px",
-    aspectRatio: "4 / 1",
+    // aspectRatio: "4 / 2",
     borderRadius: "12px",
-    backgroundColor: "#c0392b",
-    border: "2px solid #333",
+    backgroundColor: "#f01e2c",
     color: "white",
     fontWeight: "bold",
-    fontSize: "1.2rem",
+    fontSize: "1rem",
+    display: "flex",
+    alignItems: "center",
+    textAlign: "center",
+    justifyContent: "center",
+  },
+
+  surrenderBtn: {
+    width: "30%",
+    // aspectRatio: "4 / 2",
+    height: "50%",
+    borderRadius: "12px",
+    backgroundColor: "#676767",
+    fontWeight: "bold",
+    // border: "2px solid #333",
+    color: "white",
+    fontSize: "1rem",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
   },
 
-  surrenderBtn: {
-    width: "23.53%",
-    aspectRatio: "4 / 1",
-    // height: "56px",
-    borderRadius: "12px",
-    backgroundColor: "#555",
-    border: "2px solid #333",
-    color: "white",
-    fontSize: "1.1rem",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  pokeball: {
+    width: "4.5%",      // or % if you want responsive
+    paddingRight: "1%",
+    imageRendering: "pixelated",
+    },
+
 };
