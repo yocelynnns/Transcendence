@@ -1,6 +1,6 @@
 import React from "react";
-import cleffa from "../assets/pokemon/normal/cleffa/cleffa.gif";
-import togepi from "../assets/pokemon/normal/togepi/togepi.gif";
+import cleffa from "../assets/pokemon/water/slowpoke/front_slowpoke.gif";
+import togepi from "../assets/pokemon/water/slowpoke/back_slowpoke.gif";
 import background from "../assets/bg/background.png";
 
 import oppPlatform from "../assets/bg/pink_platform_opp.png";
@@ -16,8 +16,8 @@ import yellowHp from "../assets/health_bar/yellow_hp.png"
 import redHp from "../assets/health_bar/red_hp.png"
 
 import menuBar from "../assets/menu_bar/menu_bar.png"
-import cleffaIcon from "../assets/pokemon/normal/cleffa/cleffa_icon.png"
-import togepiIcon from "../assets/pokemon/normal/togepi/togepi_icon.png"
+import cleffaIcon from "../assets/pokemon/water/slowpoke/slowpoke_icon.png"
+import togepiIcon from "../assets/pokemon/water/slowpoke/shiny_slowpoke_icon.png"
 
 export default function Battle() {
   return (
@@ -63,7 +63,7 @@ export default function Battle() {
           style={{
             position: "absolute",
             left: "55%",
-            top: "5%",
+            top: "0%",
             width: "30%",
             imageRendering: "pixelated",
           }}
@@ -119,7 +119,7 @@ export default function Battle() {
                 pointerEvents: "none",
             }}
             >
-                CLEFFA
+                SLOWPOKE
             </div>
             <div
                 style={{
@@ -246,7 +246,7 @@ export default function Battle() {
                 pointerEvents: "none",
             }}
             >
-                TOGEPI
+                SLOWPOKE
             </div>
             <div
                 style={{
@@ -313,7 +313,7 @@ export default function Battle() {
             {/* LEFT: text box */}
             <div style={styles.textBox}>
             <p style={styles.text}>
-                WHAT WILL TOGEPI DO?
+                WHAT WILL SLOWPOKE DO?
             </p>
             </div>
 
