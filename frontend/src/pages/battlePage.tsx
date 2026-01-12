@@ -122,27 +122,132 @@ export default function Battle() {
       </div>
       
       {/* menu bar container */}
-      <div
+        <div
         style={{
-          position: "absolute",
-          top: "83.33%",
-          width: "100%",
-          height: "16.67%",
-          // backgroundImage: `url(${menuBar})`,
-        }}
-      >
-        <img
-          src={menuBar}
-          alt="menu Bar"
-          style={{
             position: "absolute",
-            left: "0%",
+            bottom: 0,
+            width: "100%",
+            height: "16.67%",
+        }}
+        >
+        {/* menu bar image */}
+        <img
+            src={menuBar}
+            alt="menu Bar"
+            style={{
+            position: "absolute",
             width: "100%",
             height: "100%",
             imageRendering: "pixelated",
-          }}
+            }}
         />
-      </div>
+
+        {/* overlay content */}
+        <div
+            style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 3%",
+            gap: "2%",
+            }}
+        >
+            {/* LEFT: text box */}
+            <div style={styles.textBox}>
+            <p style={styles.text}>
+                What will Togepi do?
+            </p>
+            </div>
+
+            {/* RIGHT: buttons */}
+            <div style={styles.buttonGroup}>
+            <div style={styles.switchBox}>
+                <img src={cleffa} alt="Cleffa" style={styles.switchImg} />
+            </div>
+
+            <div style={styles.switchBox}>
+                <img src={togepi} alt="Togepi" style={styles.switchImg} />
+            </div>
+
+            <div style={styles.attackBtn}>ATTACK</div>
+
+            <div style={styles.surrenderBtn}>SURRENDER</div>
+            </div>
+        </div>
+        </div>
     </div>
   );
 }
+const styles: Record<string, React.CSSProperties> = {
+  textBox: {
+    height: "70%",
+    width: "46.875%",
+    // backgroundColor: "#ffffffcc",
+    border: "none",
+    borderRadius: "12px",
+    padding: "16px 20px",
+    display: "flex",
+    alignItems: "center",
+  },
+
+  text: {
+    fontSize: "2rem",
+    fontWeight: "bold",
+    margin: 0,
+    color: "#222",
+  },
+
+  buttonGroup: {
+    width: "53.125%",
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: "3.125%",
+  },
+
+  switchBox: {
+    width: "11.76%",
+    borderRadius: "12px",
+    backgroundColor: "#eaeaea",
+    border: "2px solid #333",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  switchImg: {
+    width: "90%",
+    height: "90%",
+    imageRendering: "pixelated",
+  },
+
+  attackBtn: {
+    width: "23.53%",
+    // height: "56px",
+    aspectRatio: "4 / 1",
+    borderRadius: "12px",
+    backgroundColor: "#c0392b",
+    border: "2px solid #333",
+    color: "white",
+    fontWeight: "bold",
+    fontSize: "1.2rem",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  surrenderBtn: {
+    width: "23.53%",
+    aspectRatio: "4 / 1",
+    // height: "56px",
+    borderRadius: "12px",
+    backgroundColor: "#555",
+    border: "2px solid #333",
+    color: "white",
+    fontSize: "1.1rem",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+};
