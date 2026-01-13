@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-interface IBattlePokemon {
+export interface IBattlePokemon {
   pokemonId: mongoose.Types.ObjectId;
   name: string;
   type: string;
@@ -8,6 +8,7 @@ interface IBattlePokemon {
   maxHp: number;
   currentHp: number;
   isDead: boolean;
+  is_shiny?: boolean;
 }
 
 interface IBattlePlayer {
@@ -28,6 +29,7 @@ const BattlePokemonSchema = new Schema<IBattlePokemon>({
   maxHp: { type: Number, required: true },
   currentHp: { type: Number, required: true },
   isDead: { type: Boolean, default: false },
+  is_shiny: { type: Boolean, default: false },
 }, { _id: false });
 
 const BattlePlayerSchema = new Schema<IBattlePlayer>({

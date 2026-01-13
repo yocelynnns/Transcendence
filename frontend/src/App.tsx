@@ -105,7 +105,6 @@
 
 // export default App;
 import { Routes, Route } from "react-router-dom";
-import { socket } from "./socket";
 import MapPage from "./pages/mapPage";      // PascalCase variable
 import PokemonDb from "./pages/pokemonDb";
 import BattlePage from "./pages/battlePage/battlePage";
