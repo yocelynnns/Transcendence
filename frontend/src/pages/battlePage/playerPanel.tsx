@@ -1,3 +1,5 @@
+// CURRENTLY NOT USED
+
 import "./statusPanel.css";
 import playerHpBlock from "../../assets/health_bar/health_block_player.png";
 import greenHp from "../../assets/health_bar/green_hp.png";

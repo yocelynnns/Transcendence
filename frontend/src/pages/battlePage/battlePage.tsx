@@ -6,9 +6,6 @@ import MenuBar from "./menuBar";
 import { getPokemonGifPath, getPokemonIcon } from "../../utils/pathFetcher";
 import { getPlayerOtherPokemons, getAliveCount } from "../../utils/battleUtils";
 
-// import cleffa from "../../assets/pokemon/normal/cleffa/front_cleffa.gif";
-// import togepi from "../../assets/pokemon/normal/togepi/back_togepi.gif";
-
 export default function Battle() {
   const [battleData, setBattleData] = useState<any>(null);
 

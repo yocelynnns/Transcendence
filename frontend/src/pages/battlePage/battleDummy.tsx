@@ -33,7 +33,6 @@ export default function BattleDummy() {
   const renderTeamTable = (team: IBattlePokemon[], title: string) => (
     <div
       style={{
-        // maxWidth: "80%",
         width: "80%",
         marginBottom: "2rem",
         marginLeft: "auto",
@@ -119,7 +118,6 @@ export default function BattleDummy() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        // padding: "2rem 0",
       }}
     >
       {renderTeamTable(battleData.player.pokemon, "Player")}

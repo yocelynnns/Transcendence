@@ -1,3 +1,5 @@
+// CURRENTLY NOT USED
+
 import React from "react";
 import cleffa from "../../assets/pokemon/fire/ponyta/shiny_front_ponyta.gif";
 import togepi from "../../assets/pokemon/fire/ponyta/shiny_back_ponyta.gif";
