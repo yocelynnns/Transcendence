@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect, useState } from "react";
 // import { Types } from "mongoose";
 import StatusPanel from "./statusPanel";
 // import { IBattlePokemon } from "../models/Battle"; // adjust path

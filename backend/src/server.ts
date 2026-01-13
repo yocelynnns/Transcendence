@@ -8,6 +8,7 @@ import type { GameState, Player, Pokemon } from "./types.js";
 import { setupPokemon } from "./setup/pokemon_setup.js";
 import pokemonDbRoutes from "./routes/pokemonDbRoutes.js";
 import battlesRoutes from "./routes/battlesRoutes.js";
+import battleDummyRoutes from "./routes/battleDummyRoutes.js"
 
 dotenv.config();
 
@@ -38,7 +39,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/pokemonDb", pokemonDbRoutes);
 app.use("/battles", battlesRoutes);
-app.use("/battleDummy, battleDummyRoutes");
+app.use("/battleDummy", battleDummyRoutes);
 
 // Game state
 const gameState: GameState = {
