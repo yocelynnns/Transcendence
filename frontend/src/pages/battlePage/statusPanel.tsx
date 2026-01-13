@@ -10,9 +10,10 @@ import pokeballDead from "../../assets/health_bar/pokeball_dead.png";
 interface StatusPanelProps {
   pokemon: IBattlePokemon;
   isPlayer?: boolean;
+  aliveCount?: number;
 }
 
-export default function StatusPanel({ pokemon, isPlayer = false }: StatusPanelProps) {
+export default function StatusPanel({ pokemon, isPlayer = false, aliveCount = 3}: StatusPanelProps) {
   const { name, attack, maxHp, currentHp, isDead } = pokemon;
 
   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
@@ -25,8 +26,8 @@ export default function StatusPanel({ pokemon, isPlayer = false }: StatusPanelPr
   const hpBlockImg = isPlayer ? playerHpBlock : enemyHpBlock;
 
   // create an array of pokeball statuses, for simplicity 3 balls
-  const pokeballs = [true, true, !isDead];
-
+  const pokeballs = [0, 1, 2].map(i => i < aliveCount);
+  
   return (
     <div className={`sp ${isPlayer ? "player-sp" : "enemy-sp"}`}>
       <img src={hpBlockImg} className="sp-bg" />
@@ -48,7 +49,7 @@ export default function StatusPanel({ pokemon, isPlayer = false }: StatusPanelPr
       </div>
 
       <div className={`sp-atk ${isPlayer ? "player" : ""}`}>
-        ATK {attack}, HP {currentHp}/{maxHp}
+        ATK <span>{attack}</span>, HP <span>{currentHp}</span>/<span>{maxHp}</span>
       </div>
     </div>
   );

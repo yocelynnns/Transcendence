@@ -1,34 +1,57 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import "./battlePage.css";
-import EnemyBlock from "./enemyPanel";
-import PlayerBlock from "./playerPanel";
 import StatusPanel from "./statusPanel";
 import MenuBar from "./menuBar";
 
-import background from "../../assets/bg/background.png";
-import enemyPlatform from "../../assets/bg/pink_platform_enemy.png";
-import playerPlatform from "../../assets/bg/pink_platform_player.png";
-import cleffa from "../../assets/pokemon/normal/cleffa/front_cleffa.gif";
-import togepi from "../../assets/pokemon/normal/togepi/back_togepi.gif";
+import { getPokemonGifPath, getPokemonIcon } from "../../utils/pathFetcher";
+import { getPlayerOtherPokemons, getAliveCount } from "../../utils/battleUtils";
+
+// import cleffa from "../../assets/pokemon/normal/cleffa/front_cleffa.gif";
+// import togepi from "../../assets/pokemon/normal/togepi/back_togepi.gif";
 
 export default function Battle() {
+  const [battleData, setBattleData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:3001/battleDummy")
+      .then(res => res.json())
+      .then(setBattleData)
+      .catch(console.error);
+  }, []);
+
+  if (!battleData)
+    return (
+      <p style={{ textAlign: "center", color: "#fff", marginTop: "2rem" }}>
+        Loading battle...
+      </p>
+    );
+
+    const background = "/assets/bg/background.png";
+    const enemyPlatform = "/assets/bg/pink_platform_enemy.png";
+    const playerPlatform = "/assets/bg/pink_platform_player.png";
+
+    const activePlayerIndex = 0;
+    const activeEnemyIndex = 1;
+    const PlayerOtherPokemons = getPlayerOtherPokemons(battleData!.player.pokemon, activePlayerIndex);
+
+    const activeEnemyPokemon = battleData!.enemy.pokemon[activeEnemyIndex];
+    const activePlayerPokemon = battleData!.player.pokemon[activePlayerIndex]
+
   return (
     <div className="battle" style={{ backgroundImage: `url(${background})` }}>
       <div className="enemy-container">
         <img src={enemyPlatform} className="enemy-platform" />
-        <img src={cleffa} className="enemy-pokemon" />
-        <EnemyBlock />
-        {/* <StatusPanel pokemon={enemy.team[0]} isPlayer={false} /> */}
+        <img src={getPokemonGifPath(activeEnemyPokemon, false)} className="enemy-pokemon" />
+        <StatusPanel pokemon={activeEnemyPokemon} isPlayer={false} aliveCount={getAliveCount(battleData.enemy.pokemon)}/>
       </div>
 
       <div className="player-container">
         <img src={playerPlatform} className="player-platform" />
-        <img src={togepi} className="player-pokemon" />
-        <PlayerBlock />
-        {/* <StatusPanel pokemon={player.team[0]} isPlayer={true} /> */}
+        <img src={getPokemonGifPath(activePlayerPokemon, true)} className="player-pokemon" />
+        <StatusPanel pokemon={activePlayerPokemon} isPlayer={true} aliveCount={getAliveCount(battleData.player.pokemon)} />
       </div>
 
-      <MenuBar />
+      <MenuBar currentPokemon={activePlayerPokemon.name} pokemonIcon1={getPokemonIcon(PlayerOtherPokemons[0])} pokemonIcon2={getPokemonIcon(PlayerOtherPokemons[1])}/>
     </div>
   );
 }

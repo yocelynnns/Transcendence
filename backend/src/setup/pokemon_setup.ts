@@ -1,10 +1,9 @@
 import Pokemon from "../models/Pokemon.js";
+import type { IPokemon } from "../models/Pokemon.js";
 
 export const setupPokemon = async () => {
-  const count = await Pokemon.countDocuments();
-
-  await Pokemon.insertMany([
-    // grass
+  const defaultPokemon = [
+   // grass
     { name: "Bulbasaur", type: "Grass", is_shiny: false, hp: 8, attack: 6 },
     { name: "Oddish", type: "Grass", is_shiny: false, hp: 10, attack: 5 },
     { name: "Bellsprout", type: "Grass", is_shiny: false, hp: 12, attack: 4 },
@@ -29,14 +28,17 @@ export const setupPokemon = async () => {
     { name: "Shiny Slowpoke", type: "Water", is_shiny: true, hp: 14, attack: 5 },
 
     // normal
-    { name: "Cleffa", type: "Fire", is_shiny: false, hp: 8, attack: 6 },
-    { name: "Togepi", type: "Fire", is_shiny: false, hp: 10, attack: 5 },
-    { name: "Pikachu", type: "Fire", is_shiny: false, hp: 12, attack: 4 },
-    { name: "Shiny Cleffa", type: "Fire", is_shiny: true, hp: 10, attack: 7 },
-    { name: "Shiny Togepi", type: "Fire", is_shiny: true, hp: 12, attack: 6 },
-    { name: "Shiny Pikachu", type: "Fire", is_shiny: true, hp: 14, attack: 5 },
-    
-  ]);
+    { name: "Cleffa", type: "Normal", is_shiny: false, hp: 8, attack: 6 },
+    { name: "Togepi", type: "Normal", is_shiny: false, hp: 10, attack: 5 },
+    { name: "Pikachu", type: "Normal", is_shiny: false, hp: 12, attack: 4 },
+    { name: "Shiny Cleffa", type: "Normal", is_shiny: true, hp: 10, attack: 7 },
+    { name: "Shiny Togepi", type: "Normal", is_shiny: true, hp: 12, attack: 6 },
+    { name: "Shiny Pikachu", type: "Normal", is_shiny: true, hp: 14, attack: 5 },
+  ];
 
-  console.log("✅ Pokémon initialized");
+  for (const p of defaultPokemon) {
+    await Pokemon.updateOne({ name: p.name }, { $set: p }, { upsert: true });
+  }
+
+  console.log("✅ Pokémon setup complete (duplicates handled)");
 };
