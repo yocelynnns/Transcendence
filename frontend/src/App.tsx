@@ -107,7 +107,8 @@
 import { Routes, Route } from "react-router-dom";
 import MapPage from "./pages/mapPage";      // PascalCase variable
 import PokemonDb from "./pages/pokemonDb";
-import BattlePage from "./pages/battlePage";
+import BattlePage from "./pages/battlePage/battlePage";
+import BattleDummy from "./pages/battlePage/battleDummy";
 
 export default function App() {
   return (
@@ -115,6 +116,7 @@ export default function App() {
       <Route path="/" element={<MapPage />} />{}
       <Route path="/pokemonDb" element={<PokemonDb />} />{}
       <Route path="/battles" element={<BattlePage />} />{}
+      <Route path="/battleDummy" element={<BattleDummy />} />{}
     </Routes>
   );
 }
