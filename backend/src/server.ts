@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";          // <-- import mongoose
 import type { GameState, Player, Pokemon } from "./types.js";
 import { setupPokemon } from "./setup/pokemon_setup.js";
+import { setupDummyBattleData } from "./setup/battleDummy_setup.js";
 import pokemonDbRoutes from "./routes/pokemonDbRoutes.js";
 import battlesRoutes from "./routes/battlesRoutes.js";
 import battleDummyRoutes from "./routes/battleDummyRoutes.js"
@@ -20,6 +21,9 @@ mongoose
   .then(async () => {
     console.log("✅ Connected to MongoDB");
     await setupPokemon(); // 👈 THIS IS THE PLACE
+    console.log("✅ pokemon setup complete");
+    await setupDummyBattleData();
+    console.log("✅ All setup complete, starting server...");
   })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
