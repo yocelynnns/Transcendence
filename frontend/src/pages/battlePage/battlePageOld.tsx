@@ -1,23 +1,23 @@
 import React from "react";
-import cleffa from "../assets/pokemon/water/slowpoke/front_slowpoke.gif";
-import togepi from "../assets/pokemon/water/slowpoke/back_slowpoke.gif";
-import background from "../assets/bg/background.png";
+import cleffa from "../../assets/pokemon/fire/ponyta/shiny_front_ponyta.gif";
+import togepi from "../../assets/pokemon/fire/ponyta/shiny_back_ponyta.gif";
+import background from "../../assets/bg/background.png";
 
-import oppPlatform from "../assets/bg/pink_platform_opp.png";
-import playerPlatform from "../assets/bg/pink_platform_player.png";
+import oppPlatform from "../../assets/bg/pink_platform_opp.png";
+import playerPlatform from "../../assets/bg/pink_platform_player.png";
 
-import oppHpBlock from "../assets/health_bar/health_block_opp.png";
-import playerHpBlock from "../assets/health_bar/health_block_player.png";
-import pokeballAlive from "../assets/health_bar/pokeball_alive.png";
-import pokeballDead from "../assets/health_bar/pokeball_dead.png";
+import oppHpBlock from "../../assets/health_bar/health_block_opp.png";
+import playerHpBlock from "../../assets/health_bar/health_block_player.png";
+import pokeballAlive from "../../assets/health_bar/pokeball_alive.png";
+import pokeballDead from "../../assets/health_bar/pokeball_dead.png";
 
-import greenHp from "../assets/health_bar/green_hp.png"
-import yellowHp from "../assets/health_bar/yellow_hp.png"
-import redHp from "../assets/health_bar/red_hp.png"
+import greenHp from "../../assets/health_bar/green_hp.png"
+import yellowHp from "../../assets/health_bar/yellow_hp.png"
+import redHp from "../../assets/health_bar/red_hp.png"
 
-import menuBar from "../assets/menu_bar/menu_bar.png"
-import cleffaIcon from "../assets/pokemon/water/slowpoke/slowpoke_icon.png"
-import togepiIcon from "../assets/pokemon/water/slowpoke/shiny_slowpoke_icon.png"
+import menuBar from "../../assets/menu_bar/menu_bar.png"
+import cleffaIcon from "../../assets/pokemon/fire/ponyta/ponyta_icon.png"
+import togepiIcon from "../../assets/pokemon/fire/ponyta/shiny_ponyta_icon.png"
 
 export default function Battle() {
   return (
@@ -119,7 +119,7 @@ export default function Battle() {
                 pointerEvents: "none",
             }}
             >
-                SLOWPOKE
+                PONYTA
             </div>
             <div
                 style={{
@@ -184,18 +184,6 @@ export default function Battle() {
           }}
         />
         {/* player details */}
-        {/* <img
-          src={playerHpBlock}
-          alt="Player Hp Block"
-          style={{
-            position: "absolute",
-            top: "12%",
-            left: "65%",
-            width: "45.83%",
-            imageRendering: "pixelated",
-          }}
-        /> */}
-
         <div
         style={{
             position: "absolute",
@@ -220,7 +208,7 @@ export default function Battle() {
                 position: "absolute",
                 top: "57%",
                 left: "47%",
-                width: "46.5%",
+                width: "54.5%",
                 height: "9.5%",
                 // background: "#666666",
             }}
@@ -246,7 +234,7 @@ export default function Battle() {
                 pointerEvents: "none",
             }}
             >
-                SLOWPOKE
+                PONYTA
             </div>
             <div
                 style={{
@@ -313,7 +301,7 @@ export default function Battle() {
             {/* LEFT: text box */}
             <div style={styles.textBox}>
             <p style={styles.text}>
-                WHAT WILL SLOWPOKE DO?
+                WHAT WILL PONYTA DO?
             </p>
             </div>
 

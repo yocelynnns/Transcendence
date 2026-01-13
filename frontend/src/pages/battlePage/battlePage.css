@@ -1,0 +1,68 @@
+/* Main battle container */
+.battle {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+/* Pixel art global rule */
+.battle img {
+  image-rendering: pixelated;
+}
+
+/* Enemy container */
+.enemy-container {
+  position: absolute;
+  left: 30%; /* adjust as needed */
+  top: 15%;
+  width: 60%;
+  height: 40%;
+}
+
+.enemy-platform {
+  position: absolute;
+  left: 40%;
+  top: 45%;
+  width: 60%;
+}
+
+.enemy-pokemon {
+  position: absolute;
+  left: 55%;
+  top: 0%;
+  width: 30%;
+}
+
+/* Player container */
+.player-container {
+  position: absolute;
+  top: 48%;
+  width: 75%;
+  height: 33%;
+}
+
+.player-platform {
+  position: absolute;
+  bottom: -5%;
+  width: 83%;
+}
+
+.player-pokemon {
+  position: absolute;
+  left: 17%;
+  top: -30%;
+  width: 45%;
+}
+
+/* Optional: make child components absolute inside their containers */
+.enemy-container > *:not(.enemy-pokemon):not(.enemy-platform) {
+  position: absolute;
+}
+
+.player-container > *:not(.player-pokemon):not(.player-platform) {
+  position: absolute;
+}

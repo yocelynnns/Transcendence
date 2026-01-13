@@ -38,6 +38,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/pokemonDb", pokemonDbRoutes);
 app.use("/battles", battlesRoutes);
+app.use("/battleDummy, battleDummyRoutes");
 
 // Game state
 const gameState: GameState = {
