@@ -1,12 +1,15 @@
-export const getPlayerOtherPokemons = (team: IBattlePokemon[], activeIndex: number): IBattlePokemon[] => {
-    const others = team.filter((_, idx) => idx !== activeIndex);
+export const getPlayerOtherPokemons = (
+  team: IBattlePokemon[],
+  activeIndex: number
+): IBattlePokemon[] => {
+  const others = team.filter((_, idx) => idx !== activeIndex);
 
-    for (let i = others.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [others[i], others[j]] = [others[j], others[i]];
-    }
+  if (others.length !== 2) return others;
 
-    return others.slice(0, 2);
+  return [...others].sort((a, b) => {
+    if (a.isDead === b.isDead) return 0;
+    return a.isDead ? 1 : -1;
+  });
 };
 
 export const getAliveCount = (team: IBattlePokemon[]): number => {

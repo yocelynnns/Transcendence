@@ -40,7 +40,7 @@ export const setupDummyBattleData = async () => {
 
     const playerSetup: [string, number][] = [
       ["Togepi", 1],
-      ["Shiny Togepi", 0.5],
+      ["Shiny Togepi", 0],
       ["Shiny Slowpoke", 0.2],
     ];
 

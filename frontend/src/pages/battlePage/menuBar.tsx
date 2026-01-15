@@ -4,31 +4,31 @@ import "./menuBar.css";
 // import togepiIcon from "../../assets/pokemon/normal/togepi/togepi_icon.png";
 
 interface MenuBarProps {
-  currentPokemon: string
-  pokemonIcon1: string;
-  pokemonIcon2: string;
+  currentPokemon: string;
+  pokemon1: { icon: string; isDead: boolean; onClick: () => void };
+  pokemon2: { icon: string; isDead: boolean; onClick: () => void };
+  onAttack: () => void;
 }
 
-export default function MenuBar({currentPokemon, pokemonIcon1, pokemonIcon2, }: MenuBarProps) {
-  
+export default function MenuBar({ currentPokemon, pokemon1, pokemon2, onAttack }: MenuBarProps) {
   const menuBar = "/assets/menu_bar/menu_bar.png";
+
+  const renderSwitchButton = (pokemon: { icon: string; isDead: boolean; onClick: () => void }) => (
+    <div className={`switch ${pokemon.isDead ? "disabled" : ""}`} onClick={!pokemon.isDead ? pokemon.onClick : undefined}>
+      <img src={pokemon.icon} />
+      {pokemon.isDead && <div className="switch-overlay" />}
+    </div>
+  );
 
   return (
     <div className="menu-bar">
       <img src={menuBar} className="menu-bg" />
-
       <div className="menu-content">
-        <div className="menu-text">WHAT WILL {currentPokemon.toUpperCase()} DO?</div>
-
+        <div className="menu-text">WHAT WILL <span>{currentPokemon.toUpperCase()}</span> DO?</div>
         <div className="menu-actions">
-          <div className="switch">
-            <img src={pokemonIcon1} />
-          </div>
-          <div className="switch">
-            <img src={pokemonIcon2} />
-          </div>
-
-          <button className="attack">ATTACK</button>
+          {renderSwitchButton(pokemon1)}
+          {renderSwitchButton(pokemon2)}
+          <button className="attack" onClick={onAttack}>ATTACK</button>
           <button className="surrender">SURRENDER</button>
         </div>
       </div>

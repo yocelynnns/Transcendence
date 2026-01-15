@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { socket } from "../../socket"; // your existing socket
 import "./battlePage.css";
 import StatusPanel from "./statusPanel";
 import MenuBar from "./menuBar";
@@ -8,6 +9,7 @@ import { getPlayerOtherPokemons, getAliveCount } from "../../utils/battleUtils";
 
 export default function Battle() {
   const [battleData, setBattleData] = useState<any>(null);
+  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
 
   useEffect(() => {
     fetch("http://localhost:3001/battleDummy")
@@ -24,15 +26,17 @@ export default function Battle() {
     );
 
     const background = "/assets/bg/background.png";
-    const enemyPlatform = "/assets/bg/pink_platform_enemy.png";
-    const playerPlatform = "/assets/bg/pink_platform_player.png";
+    const enemyPlatform = "/assets/bg/dry_platform_enemy.png";
+    const playerPlatform = "/assets/bg/dry_platform_player.png";
 
-    const activePlayerIndex = 0;
     const activeEnemyIndex = 1;
-    const PlayerOtherPokemons = getPlayerOtherPokemons(battleData!.player.pokemon, activePlayerIndex);
+    const otherPlayerPokemons = getPlayerOtherPokemons(
+      battleData.player.pokemon,
+      activePlayerIndex
+    );
 
     const activeEnemyPokemon = battleData!.enemy.pokemon[activeEnemyIndex];
-    const activePlayerPokemon = battleData!.player.pokemon[activePlayerIndex]
+    const activePlayerPokemon = battleData!.player.pokemon[activePlayerIndex];
 
   return (
     <div className="battle" style={{ backgroundImage: `url(${background})` }}>
@@ -48,7 +52,24 @@ export default function Battle() {
         <StatusPanel pokemon={activePlayerPokemon} isPlayer={true} aliveCount={getAliveCount(battleData.player.pokemon)} />
       </div>
 
-      <MenuBar currentPokemon={activePlayerPokemon.name} pokemonIcon1={getPokemonIcon(PlayerOtherPokemons[0])} pokemonIcon2={getPokemonIcon(PlayerOtherPokemons[1])}/>
+      <MenuBar
+        currentPokemon={activePlayerPokemon.name}
+        pokemon1={{
+          icon: getPokemonIcon(otherPlayerPokemons[0]),
+          isDead: otherPlayerPokemons[0].isDead,
+          onClick: () => setActivePlayerIndex(
+            battleData.player.pokemon.indexOf(otherPlayerPokemons[0])
+          ),
+        }}
+        pokemon2={{
+          icon: getPokemonIcon(otherPlayerPokemons[1]),
+          isDead: otherPlayerPokemons[1].isDead,
+          onClick: () => setActivePlayerIndex(
+            battleData.player.pokemon.indexOf(otherPlayerPokemons[1])
+          ),
+        }}
+      />
+
     </div>
   );
 }
