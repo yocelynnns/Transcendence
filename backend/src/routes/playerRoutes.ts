@@ -1,6 +1,5 @@
 import express from "express";
-import type { Request, Response } from "express"; // <-- type-only import
-
+import type { Request, Response } from "express";
 import Player from "../models/Player.js";
 
 const router = express.Router();
@@ -8,9 +7,9 @@ const router = express.Router();
 // Get all players
 router.get("/", async (_req: Request, res: Response) => {
   try {
-    const players = await Player.find().populate("pokemons");
+    const players = await Player.find();
     res.json(players);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch players" });
   }
 });
@@ -21,7 +20,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     const player = await Player.findById(req.params.id).populate("pokemons");
     if (!player) return res.status(404).json({ error: "Player not found" });
     res.json(player);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch player" });
   }
 });
@@ -29,11 +28,17 @@ router.get("/:id", async (req: Request, res: Response) => {
 // Create a new player
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { username, email, password } = req.body;
-    const newPlayer = new Player({ username, email, password });
+    const { username, password, avatarUrl } = req.body;
+
+    const newPlayer = new Player({
+      username,
+      password,
+      avatarUrl,
+    });
+
     await newPlayer.save();
     res.status(201).json(newPlayer);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to create player" });
   }
 });

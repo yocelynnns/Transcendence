@@ -105,18 +105,22 @@
 
 // export default App;
 import { Routes, Route } from "react-router-dom";
-import MapPage from "./pages/mapPage";      // PascalCase variable
+import MapPage from "./pages/mapPage";
 import PokemonDb from "./pages/pokemonDb";
+import PlayerDb from "./pages/playerDb";
 import BattlePage from "./pages/battlePage/battlePage";
 import BattleDummy from "./pages/battlePage/battleDummy";
+import TeamSelectPage from "./pages/teamSelect/teamSelectPage";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<MapPage />} />{}
-      <Route path="/pokemonDb" element={<PokemonDb />} />{}
-      <Route path="/battles" element={<BattlePage />} />{}
-      <Route path="/battleDummy" element={<BattleDummy />} />{}
+      <Route path="/" element={<MapPage />} />
+      <Route path="/pokemonDb" element={<PokemonDb />} />
+      <Route path="/playerDb" element={<PlayerDb />} />
+      <Route path="/battles" element={<BattlePage />} />
+      <Route path="/battleDummy" element={<BattleDummy />} />
+      <Route path="/teamSelect" element={<TeamSelectPage />} />
     </Routes>
   );
 }
