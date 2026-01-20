@@ -1,0 +1,81 @@
+/* App.css */
+@font-face {
+  font-family: 'Minecraftia-Regular';
+  src: url('./assets/fonts/Pixeled.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+:root {
+  font-family: Minecraftia-Regular;
+  line-height: 2;
+  font-weight: 400;
+}
+
+/* Make entire app full height and blue background */
+body, html, #root {
+  height: 100%;
+  margin: 0;
+  background: #b3e5fc; /* Pokémon blue */
+  /* font-family: monospace; retro pixel look */
+}
+
+/* Center content for forms like login/signup */
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* Form container style */
+.form-container {
+  background: #a2d5f2; /* lighter blue for forms */
+  border: 4px solid #000; /* pixel border */
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+}
+
+/* Inputs in forms */
+.form-container input {
+  font-family: monospace;
+  font-size: 16px;
+  margin-bottom: 12px;
+  padding: 8px;
+  border: 2px solid #000;
+  border-radius: 4px;
+  outline: none;
+  width: 100%;
+}
+
+/* Buttons in forms */
+.form-container button {
+  font-family: monospace;
+  font-size: 16px;
+  padding: 10px;
+  background: #ffcc00;
+  border: 2px solid #000;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Error messages */
+.error-message {
+  color: red;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* Links for login/signup switch */
+.form-container a {
+  font-weight: bold;
+  color: #0077cc;
+  text-decoration: none;
+}
+
+/* Optional: Hover effect for buttons */
+.form-container button:hover {
+  background: #ffd633;
+}

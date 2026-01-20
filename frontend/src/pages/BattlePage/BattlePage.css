@@ -1,0 +1,175 @@
+/* Main battle container */
+.battle {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+/* Pixel art global rule */
+.battle img {
+  image-rendering: pixelated;
+}
+
+/* Enemy container */
+.enemy-container {
+  position: absolute;
+  left: 30%; /* adjust as needed */
+  top: 15%;
+  width: 60%;
+  height: 40%;
+}
+
+.enemy-platform {
+  position: absolute;
+  left: 40%;
+  top: 45%;
+  width: 60%;
+}
+
+.enemy-pokemon {
+  position: absolute;
+  left: 55%;
+  top: 0%;
+  width: 30%;
+}
+
+/* Player container */
+.player-container {
+  position: absolute;
+  top: 48%;
+  width: 75%;
+  height: 33%;
+}
+
+.player-platform {
+  position: absolute;
+  bottom: -5%;
+  width: 83%;
+}
+
+.player-pokemon {
+  position: absolute;
+  left: 17%;
+  top: -30%;
+  width: 45%;
+}
+
+/* Optional: make child components absolute inside their containers */
+.enemy-container > *:not(.enemy-pokemon):not(.enemy-platform) {
+  position: absolute;
+}
+
+.player-container > *:not(.player-pokemon):not(.player-platform) {
+  position: absolute;
+}
+
+.faint-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  z-index: 100;
+  text-align: center;
+}
+
+.switch-options {
+  display: flex;
+  gap: 2%;           /* space between buttons as % of container */
+  margin-top: 2%;     /* distance from overlay heading */
+  justify-content: center;
+  width: 100%;
+}
+
+.switch-options button {
+  flex: 1 1 20%;       /* button takes 20% width, grows/shrinks */
+  max-width: 120px;    /* optional max size */
+  background-color: #f2f2f2;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  padding: 0.5rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* content starts at top */
+  gap: 10%;                     /* space between image and text */
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.switch-options button:hover {
+  background-color: #ffe5e5;
+  transform: scale(1.05);
+}
+
+.switch-options img {
+  width: 80%;       /* scale with button width */
+  aspect-ratio: 1;  /* keep square */
+  image-rendering: pixelated;
+}
+
+.switch-options span {
+  font-size: 1rem;
+  text-align: center;
+  display: block;
+}
+
+
+.battle-result-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(50, 50, 50, 0.85);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 200; /* above faint overlay and menu */
+  text-align: center;
+}
+
+.battle-result-buttons {
+  margin-top: 2rem;
+  display: flex;
+  gap: 2%;           /* space between buttons as % of container */
+  justify-content: center; /* center buttons horizontally */
+  width: 100%;       /* take full width of overlay */
+}
+
+.battle-result-buttons button {
+  display: inline-flex;      
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;       /* 10% of parent container's height */
+  width: 25%;        /* 25% of parent container's width */
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background-color: #fff;
+  color: #000;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.battle-result-buttons button:hover {
+  transform: scale(1.05);
+  background-color: #ffc0cb;
+  color: #fff;
+}
+

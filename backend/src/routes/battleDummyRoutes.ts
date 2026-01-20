@@ -1,4 +1,3 @@
-// NOT USED ANYMORE
 // backend/routes/battleDummyRoutes.ts
 import express from "express";
 import { dummyBattle } from "../db_setup/battledummy";

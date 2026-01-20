@@ -6,9 +6,9 @@ import pokemonRoutes from "./routes/pokemon";
 import avatarRoutes from "./routes/avatar";
 import pokemonDbRoutes from "./routes/pokemonDbRoutes";
 import battleRoutes from "./routes/battleRoutes";
+// import battleDummyRoutes from "./routes/battleDummyRoutes"
 import { setupSocket } from "./ws/server";
 import { connectDB } from "./db/connection";
-// import battleDummyRoutes from "./routes/battleDummyRoutes"
 // import { dummyBattle } from "./db_setup/battledummy";
 
 const app: Express = express();
@@ -25,6 +25,15 @@ app.use("/api/avatar", avatarRoutes);
 
 app.use("/api/pokemonDb", pokemonDbRoutes);
 app.use("/api/battle", battleRoutes);
+// app.use("/api/battleDummy", battleDummyRoutes);
+
+// app.get("/battleDummy", (_, res) => {
+//   if (!dummyBattle) {
+//     // send a response even if battle isn't ready
+//     return res.status(503).json({ message: "Battle not ready" });
+//   }
+//   return res.json(dummyBattle); // always return
+// });
 
 const PORT: number = Number(process.env.PORT) || 5001;
 

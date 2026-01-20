@@ -1,4 +1,3 @@
-// NOT USED ANYMORE
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IPokemonBattle extends Document {

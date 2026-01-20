@@ -6,6 +6,21 @@ import Battle from "../db/battle";
 
 const router = express.Router();
 
+router.get("/", (_req, res) => {
+  // just a placeholder for now
+  res.json({
+    message: "Hi! This is your battle placeholder",
+    enemy: {
+      name: "Enemy Cleffa",
+      image: "/images/front_cleffa.gif",
+    },
+    player: {
+      name: "Your Cleffa",
+      image: "/images/back_cleffa.gif",
+    },
+  });
+});
+
 router.get("/:battleId", async (req, res) => {
   const { battleId } = req.params;
 

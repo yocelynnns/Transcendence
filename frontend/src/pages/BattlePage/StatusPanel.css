@@ -1,0 +1,91 @@
+.sp {
+  position: absolute;
+  width: 55%;
+  image-rendering: pixelated;
+}
+
+.enemy-sp {
+  left: -10%;
+  top: -5%;
+}
+
+.player-sp {
+  left: 65%;
+  top: 12%;
+  width: 45.83%;
+}
+
+.sp-bg {
+  width: 100%;
+  display: block;
+}
+
+.hp-bar {
+  position: absolute;
+  top: 58%;
+  left: 39%;
+  width: 46.5%;
+  height: 9.5%;
+}
+
+.hp-bar.player {
+  left: 47%;
+  top: 58.2%;
+}
+
+.hp-bar img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.sp-name {
+  position: absolute;
+  top: 18%;
+  left: 8%;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #222;
+}
+
+.sp-name.player {
+  left: 15%;
+}
+
+.sp-balls {
+  position: absolute;
+  top: 42%;
+  left: 8%;
+  height: 10%;
+}
+
+.sp-balls.player {
+  left: 15%;
+}
+
+.sp-balls img {
+    width: 4.25%;
+    padding-right: 1%;
+}
+
+.sp-balls.player img {
+    width: 4.5%;
+}
+
+.sp-atk {
+  position: absolute;
+  top: 30%;
+  right: 16%;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #666;
+  text-align: right;
+}
+
+.sp-atk span {
+    color: #999;
+}
+
+.sp-atk.player {
+  right: 8%;
+}

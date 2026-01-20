@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IBattlePokemon {
-  pokemonId: Types.ObjectId; 
+  pokemonId: Types.ObjectId; // points to PlayerPokemon
   name: string;
   type: "grass" | "water" | "normal" | "fire";
   attack: number;
@@ -12,7 +12,7 @@ export interface IBattlePokemon {
 }
 
 interface IBattlePlayer {
-  playerId: Types.ObjectId; 
+  playerId: Types.ObjectId; // points to Avatar
   team: IBattlePokemon[];
   activeIndex: number;
 }
@@ -38,7 +38,7 @@ const BattlePokemonSchema = new Schema<IBattlePokemon>({
 const BattlePlayerSchema = new Schema<IBattlePlayer>({
   playerId: { type: Schema.Types.ObjectId, ref: "Avatar", required: true },
   team: { type: [BattlePokemonSchema], required: true },
-  activeIndex: { type: Number, default: 0 },
+  activeIndex: { type: Number, default: 0 }, // 👈 add default
 }, { _id: false });
 
 const BattleSchema = new Schema<IBattle>({
