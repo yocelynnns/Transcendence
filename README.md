@@ -157,10 +157,6 @@ backend/
 │   ├── middleware/     # Auth, guards
 │   └── server.ts
 
-docs/
-├── 01-game-design/
-├── 02-architecture/
-└── 03-implementation/
 ```
 
 ---
