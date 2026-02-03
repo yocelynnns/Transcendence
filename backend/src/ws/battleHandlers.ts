@@ -2,6 +2,8 @@ import { Server, Socket } from "socket.io";
 import axios from "axios";
 import Battle, { IBattlePokemon } from "../db/battle";
 import { IAvatar } from "../db/avatar";
+import MatchInvite from "../db/matchInvite";
+import Avatar from "../db/avatar";
 
 export function setupBattleHandlers(
   io: Server,
@@ -106,222 +108,221 @@ export function setupBattleHandlers(
     }, BATTLE_TIMEOUT);
   }
 
-// Player ready socket
-socket.on(
-  "playerReady",
-  async ({
-    currentBattleId,
-    playerId,
-    selectedPokemon,
-  }: {
-    currentBattleId: string;
-    playerId: string;
-    selectedPokemon: IBattlePokemon[];
-  }) => {
-    try {
-      const battle = await Battle.findById(currentBattleId);
-      if (!battle) return;
+  // Player ready socket
+  socket.on(
+    "playerReady",
+    async ({
+      currentBattleId,
+      playerId,
+      selectedPokemon,
+    }: {
+      currentBattleId: string;
+      playerId: string;
+      selectedPokemon: IBattlePokemon[];
+    }) => {
+      try {
+        const battle = await Battle.findById(currentBattleId);
+        if (!battle) return;
 
-      const isPlayer1 = battle.player1.toString() === playerId;
-      if (isPlayer1) battle.pokemon1 = selectedPokemon;
-      else battle.pokemon2 = selectedPokemon;
+        const isPlayer1 = battle.player1.toString() === playerId;
+        if (isPlayer1) battle.pokemon1 = selectedPokemon;
+        else battle.pokemon2 = selectedPokemon;
 
-      await battle.save();
-
-      const roomName = `battle_${battle._id}`;
-
-      const player1Ready = (battle.pokemon1?.length || 0) > 0;
-      const player2Ready = (battle.pokemon2?.length || 0) > 0;
-
-      if (player1Ready && player2Ready) {
-        // Both ready, emit battleReady and clear timeout
-        if (battleTimers[currentBattleId]) {
-          clearTimeout(battleTimers[currentBattleId]);
-          delete battleTimers[currentBattleId];
-        }
-
-        if (!battle.currentTurn) battle.currentTurn = "player1";
-        battle.lastPlayer1Turn = new Date(); // record last turn time
         await battle.save();
 
-        io.to(roomName).emit("battleReady", { battleId: battle._id });
-        return;
-      }
+        const roomName = `battle_${battle._id}`;
 
-      // Start the timeout if only one player is ready
-      startBattleTimeout(currentBattleId, io);
-    } catch (err) {
-      console.error("Error processing playerReady:", err);
-    }
-  }
-);
+        const player1Ready = (battle.pokemon1?.length || 0) > 0;
+        const player2Ready = (battle.pokemon2?.length || 0) > 0;
 
-const MOVE_TIMEOUT = 60_000; // 60 seconds per move
-const moveTimers: Record<string, NodeJS.Timeout> = {};
-
-// Check if current player exceeded move timeout
-async function checkMoveTimeout(battleId: string, io: any) {
-  const battle = await Battle.findById(battleId)
-    .populate("player1")
-    .populate("player2");
-  if (!battle || battle.endedAt) return;
-
-  const now = Date.now();
-  const currentTurn = battle.currentTurn; // "player1" | "player2"
-  const lastTurnTime =
-    currentTurn === "player1"
-      ? battle.lastPlayer1Turn?.getTime()
-      : battle.lastPlayer2Turn?.getTime();
-
-  if (!lastTurnTime) return;
-
-  if (now - lastTurnTime >= MOVE_TIMEOUT) {
-    battle.endedAt = new Date();
-    const loser = currentTurn;
-    const winner = currentTurn === "player1" ? "player2" : "player1";
-
-    battle.winner = winner;
-    battle.winnerReason = `${loser} did not move in time`;
-    await battle.save();
-
-    if (moveTimers[battleId]) {
-      clearTimeout(moveTimers[battleId]);
-      delete moveTimers[battleId];
-    }
-
-    // Update players
-    const updatePlayers = async (player: IAvatar) => {
-      player.currentBattle = undefined;
-      if (!player.battleHistory) player.battleHistory = [];
-      player.battleHistory.push(battle._id);
-      await player.save();
-    };
-    await Promise.all([
-      updatePlayers(battle.player1 as IAvatar),
-      updatePlayers(battle.player2 as IAvatar),
-    ]);
-
-    io.to(`battle_${battle._id}`).emit("battleError", {
-      message: `Battle ended: ${loser} did not move in time`,
-      battleId: battle._id,
-    });
-  }
-}
-
-// Start/restart move timeout
-function startMoveTimeout(battleId: string, io: any) {
-  if (moveTimers[battleId]) {
-    clearTimeout(moveTimers[battleId]);
-  }
-  moveTimers[battleId] = setTimeout(() => {
-    checkMoveTimeout(battleId, io);
-  }, MOVE_TIMEOUT);
-}
-
-// Player action socket
-socket.on(
-  "playerAction",
-  async ({
-    battleId,
-    action,
-    isPlayer1,
-    attackerActiveIndex,
-    defenderActiveIndex,
-  }: {
-    battleId: string;
-    action: any;
-    isPlayer1: boolean;
-    attackerActiveIndex: number;
-    defenderActiveIndex: number;
-  }) => {
-    try {
-      const battle = await Battle.findById(battleId)
-        .populate("player1")
-        .populate("player2");
-      if (!battle || battle.endedAt) return;
-
-      const roomName = `battle_${battle._id}`;
-      const attackerTeam = isPlayer1 ? battle.pokemon1 : battle.pokemon2;
-      const defenderTeam = isPlayer1 ? battle.pokemon2 : battle.pokemon1;
-      const attackerIndexField = isPlayer1 ? "active1" : "active2";
-
-      // Record last turn time
-      if (isPlayer1) battle.lastPlayer1Turn = new Date();
-      else battle.lastPlayer2Turn = new Date();
-
-      if (action.type === "switch" || action.type === "forcedswitch") {
-        battle[attackerIndexField] = action.payload.newIndex;
-        battle.currentTurn = isPlayer1 ? "player2" : "player1";
-      }
-
-      if (action.type === "attack") {
-        const attackerPokemon = attackerTeam[attackerActiveIndex];
-        const defenderPokemon = defenderTeam[defenderActiveIndex];
-        if (!attackerPokemon || !defenderPokemon) return;
-
-        defenderPokemon.currentHp -= attackerPokemon.attack;
-        if (defenderPokemon.currentHp <= 0) {
-          defenderPokemon.currentHp = 0;
-          defenderPokemon.isDead = true;
-        }
-
-        const attackerAlive = attackerTeam.some((p) => !p.isDead);
-        const defenderAlive = defenderTeam.some((p) => !p.isDead);
-
-        if (!attackerAlive || !defenderAlive) {
-          battle.endedAt = new Date();
-          if (!defenderAlive) {
-            battle.winner = isPlayer1 ? "player1" : "player2";
-            battle.winnerReason = `${defenderPokemon.name} fainted`;
-          } else {
-            battle.winner = isPlayer1 ? "player2" : "player1";
-            battle.winnerReason = `${attackerPokemon.name} fainted`;
+        if (player1Ready && player2Ready) {
+          // Both ready, emit battleReady and clear timeout
+          if (battleTimers[currentBattleId]) {
+            clearTimeout(battleTimers[currentBattleId]);
+            delete battleTimers[currentBattleId];
           }
 
-          // Update players
-          const updatePlayers = async (player: IAvatar) => {
-            player.currentBattle = undefined;
-            if (!player.battleHistory) player.battleHistory = [];
-            player.battleHistory.push(battle._id);
-            await player.save();
-          };
-          await Promise.all([
-            updatePlayers(battle.player1 as IAvatar),
-            updatePlayers(battle.player2 as IAvatar),
-          ]);
-        } else {
-          battle.currentTurn = isPlayer1 ? "player2" : "player1";
-        }
-      }
+          if (!battle.currentTurn) battle.currentTurn = "player1";
+          battle.lastPlayer1Turn = new Date(); // record last turn time
+          await battle.save();
 
-      battle.markModified("pokemon1");
-      battle.markModified("pokemon2");
+          io.to(roomName).emit("battleReady", { battleId: battle._id });
+          return;
+        }
+
+        // Start the timeout if only one player is ready
+        startBattleTimeout(currentBattleId, io);
+      } catch (err) {
+        console.error("Error processing playerReady:", err);
+      }
+    }
+  );
+
+  const MOVE_TIMEOUT = 60_000; // 60 seconds per move
+  const moveTimers: Record<string, NodeJS.Timeout> = {};
+
+  // Check if current player exceeded move timeout
+  async function checkMoveTimeout(battleId: string, io: any) {
+    const battle = await Battle.findById(battleId)
+      .populate("player1")
+      .populate("player2");
+    if (!battle || battle.endedAt) return;
+
+    const now = Date.now();
+    const currentTurn = battle.currentTurn; // "player1" | "player2"
+    const lastTurnTime =
+      currentTurn === "player1"
+        ? battle.lastPlayer1Turn?.getTime()
+        : battle.lastPlayer2Turn?.getTime();
+
+    if (!lastTurnTime) return;
+
+    if (now - lastTurnTime >= MOVE_TIMEOUT) {
+      battle.endedAt = new Date();
+      const loser = currentTurn;
+      const winner = currentTurn === "player1" ? "player2" : "player1";
+
+      battle.winner = winner;
+      battle.winnerReason = `${loser} did not move in time`;
       await battle.save();
 
-      // Restart move timeout
-      startMoveTimeout(battle._id.toString(), io);
+      if (moveTimers[battleId]) {
+        clearTimeout(moveTimers[battleId]);
+        delete moveTimers[battleId];
+      }
 
-      const payload = {
-        _id: battle._id,
-        pokemon1: battle.pokemon1,
-        pokemon2: battle.pokemon2,
-        active1: battle.active1,
-        active2: battle.active2,
-        currentTurn: battle.currentTurn,
-        lastPlayer1Turn: battle.lastPlayer1Turn,
-        lastPlayer2Turn: battle.lastPlayer2Turn,
-        endedAt: battle.endedAt,
-        winner: battle.winner,
-        winnerReason: battle.winnerReason,
+      // Update players
+      const updatePlayers = async (player: IAvatar) => {
+        player.currentBattle = undefined;
+        if (!player.battleHistory) player.battleHistory = [];
+        player.battleHistory.push(battle._id);
+        await player.save();
       };
+      await Promise.all([
+        updatePlayers(battle.player1 as IAvatar),
+        updatePlayers(battle.player2 as IAvatar),
+      ]);
 
-      io.to(roomName).emit("updateBattleState", payload);
-    } catch (err) {
-      console.error("Error processing player action:", err);
+      io.to(`battle_${battle._id}`).emit("battleError", {
+        message: `Battle ended: ${loser} did not move in time`,
+        battleId: battle._id,
+      });
     }
   }
-);
 
+  // Start/restart move timeout
+  function startMoveTimeout(battleId: string, io: any) {
+    if (moveTimers[battleId]) {
+      clearTimeout(moveTimers[battleId]);
+    }
+    moveTimers[battleId] = setTimeout(() => {
+      checkMoveTimeout(battleId, io);
+    }, MOVE_TIMEOUT);
+  }
+
+  // Player action socket
+  socket.on(
+    "playerAction",
+    async ({
+      battleId,
+      action,
+      isPlayer1,
+      attackerActiveIndex,
+      defenderActiveIndex,
+    }: {
+      battleId: string;
+      action: any;
+      isPlayer1: boolean;
+      attackerActiveIndex: number;
+      defenderActiveIndex: number;
+    }) => {
+      try {
+        const battle = await Battle.findById(battleId)
+          .populate("player1")
+          .populate("player2");
+        if (!battle || battle.endedAt) return;
+
+        const roomName = `battle_${battle._id}`;
+        const attackerTeam = isPlayer1 ? battle.pokemon1 : battle.pokemon2;
+        const defenderTeam = isPlayer1 ? battle.pokemon2 : battle.pokemon1;
+        const attackerIndexField = isPlayer1 ? "active1" : "active2";
+
+        // Record last turn time
+        if (isPlayer1) battle.lastPlayer1Turn = new Date();
+        else battle.lastPlayer2Turn = new Date();
+
+        if (action.type === "switch" || action.type === "forcedswitch") {
+          battle[attackerIndexField] = action.payload.newIndex;
+          battle.currentTurn = isPlayer1 ? "player2" : "player1";
+        }
+
+        if (action.type === "attack") {
+          const attackerPokemon = attackerTeam[attackerActiveIndex];
+          const defenderPokemon = defenderTeam[defenderActiveIndex];
+          if (!attackerPokemon || !defenderPokemon) return;
+
+          defenderPokemon.currentHp -= attackerPokemon.attack;
+          if (defenderPokemon.currentHp <= 0) {
+            defenderPokemon.currentHp = 0;
+            defenderPokemon.isDead = true;
+          }
+
+          const attackerAlive = attackerTeam.some((p) => !p.isDead);
+          const defenderAlive = defenderTeam.some((p) => !p.isDead);
+
+          if (!attackerAlive || !defenderAlive) {
+            battle.endedAt = new Date();
+            if (!defenderAlive) {
+              battle.winner = isPlayer1 ? "player1" : "player2";
+              battle.winnerReason = `${defenderPokemon.name} fainted`;
+            } else {
+              battle.winner = isPlayer1 ? "player2" : "player1";
+              battle.winnerReason = `${attackerPokemon.name} fainted`;
+            }
+
+            // Update players
+            const updatePlayers = async (player: IAvatar) => {
+              player.currentBattle = undefined;
+              if (!player.battleHistory) player.battleHistory = [];
+              player.battleHistory.push(battle._id);
+              await player.save();
+            };
+            await Promise.all([
+              updatePlayers(battle.player1 as IAvatar),
+              updatePlayers(battle.player2 as IAvatar),
+            ]);
+          } else {
+            battle.currentTurn = isPlayer1 ? "player2" : "player1";
+          }
+        }
+
+        battle.markModified("pokemon1");
+        battle.markModified("pokemon2");
+        await battle.save();
+
+        // Restart move timeout
+        startMoveTimeout(battle._id.toString(), io);
+
+        const payload = {
+          _id: battle._id,
+          pokemon1: battle.pokemon1,
+          pokemon2: battle.pokemon2,
+          active1: battle.active1,
+          active2: battle.active2,
+          currentTurn: battle.currentTurn,
+          lastPlayer1Turn: battle.lastPlayer1Turn,
+          lastPlayer2Turn: battle.lastPlayer2Turn,
+          endedAt: battle.endedAt,
+          winner: battle.winner,
+          winnerReason: battle.winnerReason,
+        };
+
+        io.to(roomName).emit("updateBattleState", payload);
+      } catch (err) {
+        console.error("Error processing player action:", err);
+      }
+    }
+  );
 
   socket.on("joinAsSpectator", async (data: { battleId: string }) => {
     const { battleId } = data;
@@ -337,4 +338,159 @@ socket.on(
     console.log(`Spectator joined room ${roomName}`);
   });
 
+  // SEND MATCH INVITE - MOVED INSIDE THE FUNCTION
+  socket.on("sendMatchInvite", async (data: {
+    senderId: string;
+    receiverId: string;
+  }) => {
+    const { senderId, receiverId } = data;
+
+    if (socket.data.avatarId !== senderId) {
+      socket.emit("matchInviteError", { error: "Unauthorized" });
+      return;
+    }
+
+    // Check if receiver is online - need to get onlineUsers from somewhere
+    // We'll need to pass onlineUsers to this function or use a different approach
+    // For now, emit to the specific socket if we can find it
+    // Actually, we need access to onlineUsers map - let's use io.sockets.sockets to check
+    
+    // Check if receiver is online by looking through all sockets
+    let receiverSocketId: string | null = null;
+    for (const [sid, s] of io.sockets.sockets) {
+      if (s.data.avatarId === receiverId) {
+        receiverSocketId = sid;
+        break;
+      }
+    }
+
+    if (!receiverSocketId) {
+      socket.emit("matchInviteError", { error: "User is offline" });
+      return;
+    }
+
+    // Check for existing pending invite
+    const existing = await MatchInvite.findOne({
+      senderId,
+      receiverId,
+      status: 'pending'
+    });
+
+    if (existing) {
+      socket.emit("matchInviteError", { error: "Invite already pending" });
+      return;
+    }
+
+    // Create invite
+    const invite = await MatchInvite.create({
+      senderId,
+      receiverId,
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 30000), // 30 seconds
+    });
+
+    // Get sender info
+    const senderAvatar = await Avatar.findById(senderId).select("userName avatar");
+
+    // Notify receiver
+    io.to(receiverSocketId).emit("matchInviteReceived", {
+      inviteId: invite._id,
+      senderId,
+      senderName: senderAvatar?.userName || "Unknown",
+      senderAvatar: senderAvatar?.avatar || "",
+    });
+
+    socket.emit("matchInviteSent", { inviteId: invite._id });
+  });
+
+  // RESPOND TO MATCH INVITE - MOVED INSIDE THE FUNCTION
+  socket.on("respondToMatchInvite", async (data: {
+    inviteId: string;
+    senderId: string;
+    receiverId: string;
+    accept: boolean;
+  }) => {
+    const { inviteId, senderId, receiverId, accept } = data;
+
+    if (socket.data.avatarId !== receiverId) {
+      socket.emit("matchInviteError", { error: "Unauthorized" });
+      return;
+    }
+
+    const invite = await MatchInvite.findById(inviteId);
+    if (!invite || invite.status !== 'pending') {
+      socket.emit("matchInviteError", { error: "Invite expired or invalid" });
+      return;
+    }
+
+    if (!accept) {
+      invite.status = 'declined';
+      await invite.save();
+      
+      // Notify sender of decline - find their socket
+      for (const [sid, s] of io.sockets.sockets) {
+        if (s.data.avatarId === senderId) {
+          io.to(sid).emit("matchInviteDeclined", { by: receiverId });
+          break;
+        }
+      }
+      return;
+    }
+
+    // ACCEPTED - Check if sender still online
+    let senderSocketId: string | null = null;
+    for (const [sid, s] of io.sockets.sockets) {
+      if (s.data.avatarId === senderId) {
+        senderSocketId = sid;
+        break;
+      }
+    }
+
+    if (!senderSocketId) {
+      socket.emit("matchInviteError", { error: "Sender went offline" });
+      invite.status = 'expired';
+      await invite.save();
+      return;
+    }
+
+    // Mark as accepted
+    invite.status = 'accepted';
+    await invite.save();
+
+    // Create battle directly (skip matching pool)
+    try {
+      const response = await axios.post("http://localhost:25001/api/battle", {
+        player1: senderId,
+        player2: receiverId,
+      });
+      const battle = response.data;
+      const roomName = `battle_${battle._id}`;
+
+      // Update both players' currentBattle
+      const token = socket.data.token;
+      await Promise.all([
+        axios.put(
+          `http://localhost:25001/api/avatar/${senderId}`,
+          { currentBattle: battle },
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+        axios.put(
+          `http://localhost:25001/api/avatar/${receiverId}`,
+          { currentBattle: battle },
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+      ]);
+
+      // Join both to battle room
+      const senderSocket = io.sockets.sockets.get(senderSocketId);
+      senderSocket?.join(roomName);
+      socket.join(roomName);
+
+      // Notify both
+      io.to(roomName).emit("directMatchReady", { battle });
+    } catch (err) {
+      console.error("Failed to create direct battle:", err);
+      socket.emit("matchInviteError", { error: "Failed to start battle" });
+    }
+  });
 }

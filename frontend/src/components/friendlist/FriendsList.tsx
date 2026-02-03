@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { ASSETS } from "../../assets";
+import ChatWindow from "../chat/ChatWindow";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 
@@ -23,9 +24,17 @@ interface FriendRequest {
   createdAt: string;
 }
 
+interface AvatarData {
+  _id: string;
+  userName: string;
+  avatar: string;
+  characterOption?: number;
+}
+
 interface FriendsListProps {
   token: string;
   myAvatarId: string;
+  myAvatarData?: AvatarData;
 }
 
 // STYLES - Matching GameProfile aesthetic
@@ -147,6 +156,17 @@ const styles = {
     fontSize: 12,
     color: "#666",
   },
+  chatBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: "50%",
+    background: "#4CAF50",
+    color: "white",
+    border: "2px solid #333",
+    cursor: "pointer",
+    fontSize: 16,
+    marginRight: 8,
+  },
   deleteBtn: {
     width: 32,
     height: 32,
@@ -237,7 +257,7 @@ const styles = {
   },
 };
 
-export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
+export default function FriendsList({ token, myAvatarId, myAvatarData }: FriendsListProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [showPanel, setShowPanel] = useState(false);
@@ -245,6 +265,7 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
   const [friendEmail, setFriendEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
 
@@ -279,110 +300,103 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
     }
   };
 
-    // SEND FRIEND REQUEST
-    const handleSendRequest = async () => {
+  // SEND FRIEND REQUEST
+  const handleSendRequest = async () => {
     if (!friendEmail.trim()) return;
 
     setLoading(true);
     setMessage("");
 
     try {
-        const res = await fetch("http://localhost:25001/api/friends/request", {
+      const res = await fetch("http://localhost:25001/api/friends/request", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ friendEmail: friendEmail.trim() }),
-        });
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (res.ok) {
-            if (data.autoAccepted) {
-            setMessage("✅ Auto-accepted! You are now friends!");
-            
-            // Add to my friends list immediately
-            if (data.accepterInfo) {
-                setFriends((prev) => [...prev, { ...data.accepterInfo, online: false }]);
-            }
-            
-            // Notify the original requester to refresh their list
-            if (data.targetAvatarId) {
-                emitEvent("friendRequestAccepted", {
-                targetAvatarId: data.targetAvatarId,
-                accepterInfo: {
-                    avatarId: myAvatarId, // I am the accepter
-                    userName: avatarData?.userName || "Unknown",
-                    avatarImage: avatarData?.avatar || "",
-                },
-                });
-            }
-            } else {
-            setMessage("✅ Friend request sent!");
-            setFriendEmail("");
-            // Notify the recipient in real-time
-            if (data.targetAvatarId) {
-            emitEvent("friendRequestSent", {
-                targetAvatarId: data.targetAvatarId,
-                requesterInfo: data.requesterInfo,
+      if (res.ok) {
+        if (data.autoAccepted) {
+          setMessage("✅ Auto-accepted! You are now friends!");
+          
+          if (data.accepterInfo) {
+            setFriends((prev) => [...prev, { ...data.accepterInfo, online: false }]);
+          }
+          
+          if (data.targetAvatarId) {
+            emitEvent("friendRequestAccepted", {
+              targetAvatarId: data.targetAvatarId,
+              accepterInfo: {
+                avatarId: myAvatarId,
+                userName: myAvatarData?.userName || "Unknown",
+                avatarImage: myAvatarData?.avatar || "",
+              },
             });
-            }
-        }
+          }
         } else {
-        setMessage(`❌ ${data.message}`);
+          setMessage("✅ Friend request sent!");
+          setFriendEmail("");
+          if (data.targetAvatarId) {
+            emitEvent("friendRequestSent", {
+              targetAvatarId: data.targetAvatarId,
+              requesterInfo: data.requesterInfo,
+            });
+          }
         }
+      } else {
+        setMessage(`❌ ${data.message}`);
+      }
     } catch (err) {
-        setMessage("❌ Failed to send request");
+      setMessage("❌ Failed to send request");
     } finally {
-        setLoading(false);
-        setTimeout(() => setMessage(""), 3000);
+      setLoading(false);
+      setTimeout(() => setMessage(""), 3000);
     }
-    };
+  };
 
-    // ACCEPT FRIEND REQUEST
-    const handleAcceptRequest = async (requestId: string) => {
+  // ACCEPT FRIEND REQUEST
+  const handleAcceptRequest = async (requestId: string) => {
     try {
-        const res = await fetch(`http://localhost:25001/api/friends/accept/${requestId}`, {
+      const res = await fetch(`http://localhost:25001/api/friends/accept/${requestId}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-        });
+      });
 
-        if (res.ok) {
+      if (res.ok) {
         const data = await res.json();
         
-        // Remove from requests
         setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
         
-        // Request online status for the new friend BEFORE adding to list
         if (data.requesterInfo?.avatarId) {
-            emitEvent("requestFriendsStatus", [data.requesterInfo.avatarId]);
-            
-            // Add to friends list with undefined online status (will update when response arrives)
-            setFriends((prev) => [
+          emitEvent("requestFriendsStatus", [data.requesterInfo.avatarId]);
+          
+          setFriends((prev) => [
             ...prev,
-            { ...data.requesterInfo, online: undefined }, // Don't assume false
-            ]);
+            { ...data.requesterInfo, online: undefined },
+          ]);
         } else {
-            await fetchFriends();
+          await fetchFriends();
         }
         
         setMessage("✅ Friend request accepted!");
         
-        // Notify the requester to refresh their list
         if (data.requesterAvatarId) {
-            emitEvent("friendRequestAccepted", {
+          emitEvent("friendRequestAccepted", {
             targetAvatarId: data.requesterAvatarId,
             accepterInfo: data.accepterInfo,
-            });
+          });
         }
         
         setTimeout(() => setMessage(""), 3000);
-        }
+      }
     } catch (err) {
-        console.error("Failed to accept request:", err);
+      console.error("Failed to accept request:", err);
     }
-    };
+  };
 
   // REJECT FRIEND REQUEST
   const handleRejectRequest = async (requestId: string) => {
@@ -403,37 +417,33 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
   };
 
   // REMOVE FRIEND
-    const handleRemoveFriend = async (friendAvatarId: string) => {
+  const handleRemoveFriend = async (friendAvatarId: string) => {
     if (!confirm("Remove this friend?")) return;
 
     try {
-        const res = await fetch(`http://localhost:25001/api/friends/${friendAvatarId}`, {
+      const res = await fetch(`http://localhost:25001/api/friends/${friendAvatarId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-        });
+      });
 
-        if (res.ok) {
+      if (res.ok) {
         const data = await res.json();
-        // Remove from local state immediately
         setFriends((prev) => prev.filter((f) => f.avatarId !== friendAvatarId));
         setMessage("Friend removed");
         
-        // Notify the other person
         emitEvent("friendRemoved", { targetAvatarId: friendAvatarId });
         
         setTimeout(() => setMessage(""), 3000);
-        }
+      }
     } catch (err) {
-        console.error("Failed to remove friend:", err);
+      console.error("Failed to remove friend:", err);
     }
-    };
+  };
 
   // SOCKET LISTENERS
   useEffect(() => {
-    // Announce self as online
     emitEvent("userOnline", myAvatarId);
 
-    // Subscribe to online status updates
     const cleanupStatusUpdate = subscribeEvent<{ avatarId: string; online: boolean }[]>(
       "friendsStatusUpdate",
       (statuses) => {
@@ -446,7 +456,6 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
       }
     );
 
-    // Subscribe to individual status changes
     const cleanupStatusChange = subscribeEvent<{ avatarId: string; online: boolean }>(
       "userStatusChange",
       ({ avatarId, online }) => {
@@ -458,13 +467,11 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
       }
     );
 
-    // Subscribe to avatar updates (profile pic/name changes)
     const cleanupAvatarUpdate = subscribeEvent<{
       avatarId: string;
       avatarImage: string;
       userName?: string;
     }>("friendAvatarUpdated", (update) => {
-      // Update in friends list
       setFriends((prev) =>
         prev.map((friend) =>
           friend.avatarId === update.avatarId
@@ -476,7 +483,6 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
             : friend
         )
       );
-      // Update in requests too
       setRequests((prev) =>
         prev.map((req) =>
           req.avatarId === update.avatarId
@@ -490,58 +496,48 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
       );
     });
 
-    // Subscribe to auto-accept notifications
     const cleanupAutoAccept = subscribeEvent<{
       avatarId: string;
       userName: string;
       avatarImage: string;
     }>("friendRequestAutoAccepted", (data) => {
-      // Refresh friends list
       fetchFriends();
-      // Clear any pending request from this user
       setRequests((prev) => prev.filter((req) => req.avatarId !== data.avatarId));
-      // Show message
       setMessage(`✅ ${data.userName} accepted your request!`);
       setTimeout(() => setMessage(""), 3000);
     });
 
-    // Subscribe to being removed by a friend
     const cleanupRemovedByFriend = subscribeEvent<{ removerAvatarId: string }>(
-    "removedByFriend",
-    (data) => {
-        // Remove the friend from our list
+      "removedByFriend",
+      (data) => {
         setFriends((prev) => prev.filter((f) => f.avatarId !== data.removerAvatarId));
         setMessage("A friend removed you");
         setTimeout(() => setMessage(""), 3000);
-    }
+      }
     );
 
-    // Subscribe to receiving a friend request
     const cleanupFriendRequestReceived = subscribeEvent<{
-    requestId: string;
-    avatarId: string;
-    email: string;
-    userName: string;
-    avatarImage: string;
-    createdAt: string;
+      requestId: string;
+      avatarId: string;
+      email: string;
+      userName: string;
+      avatarImage: string;
+      createdAt: string;
     }>("friendRequestReceived", (data) => {
-    // Add to requests list
-    setRequests((prev) => [...prev, data]);
-    setMessage("📨 New friend request received!");
-    setTimeout(() => setMessage(""), 3000);
+      setRequests((prev) => [...prev, data]);
+      setMessage("📨 New friend request received!");
+      setTimeout(() => setMessage(""), 3000);
     });
 
-    // Subscribe to my request being accepted by someone else
     const cleanupRequestAccepted = subscribeEvent<{
-    avatarId: string;
-    userName: string;
-    avatarImage: string;
-    message: string;
+      avatarId: string;
+      userName: string;
+      avatarImage: string;
+      message: string;
     }>("friendRequestAcceptedByOther", (data) => {
-    // Refresh friends list (we were accepted by someone)
-    fetchFriends();
-    setMessage(`✅ ${data.userName} ${data.message}`);
-    setTimeout(() => setMessage(""), 3000);
+      fetchFriends();
+      setMessage(`✅ ${data.userName} ${data.message}`);
+      setTimeout(() => setMessage(""), 3000);
     });
 
     return () => {
@@ -661,6 +657,16 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
                         {friend.online ? "🟢 Online" : "⚫ Offline"}
                       </div>
                     </div>
+                    
+                    {/* CHAT BUTTON */}
+                    <button
+                      onClick={() => setSelectedFriend(friend)}
+                      style={styles.chatBtn}
+                      title="Chat"
+                    >
+                      💬
+                    </button>
+                    
                     <button
                       onClick={() => handleRemoveFriend(friend.avatarId)}
                       style={styles.deleteBtn}
@@ -711,6 +717,18 @@ export default function FriendsList({ token, myAvatarId }: FriendsListProps) {
             </div>
           )}
         </div>
+      )}
+
+      {/* CHAT WINDOW */}
+      {selectedFriend && myAvatarData && (
+        <ChatWindow
+          token={token}
+          myAvatarId={myAvatarId}
+          myUserName={myAvatarData.userName}
+          myAvatarImage={myAvatarData.avatar}
+          friend={selectedFriend}
+          onClose={() => setSelectedFriend(null)}
+        />
       )}
     </>
   );
