@@ -1,0 +1,55 @@
+/* ===== stats.css ===== */
+.mm-stats{
+  margin-top: 12px;
+  background: rgba(255,255,255,.75);
+  border-radius: 12px;
+  padding: 12px;
+  border: 3px solid rgba(0,0,0,.08);
+}
+.mm-stats.is-dim{ opacity: .75; }
+
+.mm-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.06);
+  margin-bottom: 8px;
+}
+
+.mm-k{
+  opacity: .75;
+  text-transform: lowercase;
+  letter-spacing: 1px;
+  font-size: 10px;
+}
+.mm-v{
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.mm-split{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+.mm-mini{
+  background: rgba(0,0,0,.10);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+.mm-miniK{
+  font-size: 9px;
+  opacity: .70;
+  letter-spacing: 1px;
+  text-transform: lowercase;
+}
+.mm-miniV{
+  margin-top: 6px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}

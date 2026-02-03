@@ -1,38 +1,30 @@
 {
   "compilerOptions": {
-    // File layout
-    "rootDir": "./src",
-    "outDir": "./dist",
-
-    // Environment settings
-    "module": "NodeNext",           
-    "moduleResolution": "NodeNext",
-    "target": "ES2022",             
-    "lib": ["ESNext"],
-
-    // Type settings
-    "types": ["node"],              
-    "esModuleInterop": true,        
+    // Node environment
+    "target": "ES2020",                  // modern JS features
+    "module": "CommonJS",                // Node default
+    "rootDir": "./src",                  // TS source folder
+    "outDir": "./dist",                  // compiled JS output
+    "esModuleInterop": true,             // allow default imports from CJS modules
     "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,                // skip type checking for node_modules
 
-    // Output
+    // Type checking
+    "strict": true,                      // strict TS checks
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+
+    // Useful for Node
+    "types": ["node"],                   // include Node typings
+    "moduleResolution": "node",          // Node-style module resolution
+
+    // Source maps & declaration
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": true,
-
-    // Strict Typechecking
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Module behavior
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "noUncheckedSideEffectImports": true,   // <-- fixed
-    "moduleDetection": "force",
-
-    // Skip checking dependencies
-    "skipLibCheck": true
+    "declarationMap": true
   },
-  "include": ["src"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

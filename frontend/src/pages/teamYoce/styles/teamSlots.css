@@ -1,0 +1,91 @@
+.ts2-teamRow{
+  margin-top: 14px;
+  background: #efefef;
+  border-radius: 8px;
+  padding: 12px 14px;
+  border: 4px solid rgba(0,0,0,.08);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ts2-teamLabel{
+  color: #4f6f7f;
+  font-size: 20px;
+  letter-spacing: 2px;
+  text-transform: capitalize;
+}
+
+.ts2-slots{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ts2-slot{
+  width: 70px;
+  height: 54px;
+  border-radius: 8px;
+  background: #d9d9d9;
+  border: 4px solid rgba(0,0,0,.06);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.10);
+  position: relative;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.ts2-slot.is-active{
+  outline: 4px solid rgba(125,182,214,.7);
+  outline-offset: 2px;
+}
+
+.ts2-slotEmpty{
+  width: 100%;
+  height: 100%;
+}
+
+.ts2-slotIcon{
+  width: 44px;
+  height: 44px;
+  image-rendering: pixelated;
+}
+
+.ts2-x{
+  position: absolute;
+  top: -10px;
+  right: -10px;
+
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+
+  display: grid;
+  place-items: center;
+
+  background: #d77d9a;
+  color: #fff;
+
+  border: 0;
+  font-size: 16px;
+  font-family: system-ui, sans-serif;
+  line-height: 1;
+  padding: 0;
+
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,.25);
+  transform: translateY(-1px);
+}
+
+.ts2-x:hover{ filter: brightness(1.08); }
+
+.ts2-toast{
+  position: absolute;
+  left: 18px;
+  bottom: -42px;
+  background: rgba(0,0,0,.70);
+  color: white;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}

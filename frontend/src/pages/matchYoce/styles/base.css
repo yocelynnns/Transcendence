@@ -1,0 +1,30 @@
+/* ===== base.css ===== */
+@font-face {
+  font-family: "PokemonGB";
+  src: url("/src/assets/fonts/Pixeled.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.mm-page{
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  font-family: "PokemonGB", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+  background:
+    linear-gradient(0deg, rgba(0,0,0,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,.07) 1px, transparent 1px),
+    #dedede;
+  background-size: 44px 44px;
+}
+
+.mm-loading{
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  color: #222;
+}

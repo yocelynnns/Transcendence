@@ -1,14 +1,20 @@
-export const getPlayerOtherPokemons = (team: IBattlePokemon[], activeIndex: number): IBattlePokemon[] => {
-    const others = team.filter((_, idx) => idx !== activeIndex);
+import { BattlePokemon } from "../types/battleTypes";
 
-    for (let i = others.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [others[i], others[j]] = [others[j], others[i]];
-    }
 
-    return others.slice(0, 2);
+export const getPlayerOtherPokemons = (
+  team: BattlePokemon[],
+  activeIndex: number
+): BattlePokemon[] => {
+  const others = team.filter((_, idx) => idx !== activeIndex);
+
+  if (others.length !== 2) return others;
+
+  return [...others].sort((a, b) => {
+    if (a.isDead === b.isDead) return 0;
+    return a.isDead ? 1 : -1;
+  });
 };
 
-export const getAliveCount = (team: IBattlePokemon[]): number => {
+export const getAliveCount = (team: BattlePokemon[]): number => {
   return team.filter(p => !p.isDead).length;
 };
