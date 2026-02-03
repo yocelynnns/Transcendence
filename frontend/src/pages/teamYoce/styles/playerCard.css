@@ -1,0 +1,68 @@
+.ts2-player{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.ts2-avatarWrap{
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding-top: 6px;
+}
+
+.ts2-avatarCircle{
+  width: 130px;
+  height: 130px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.25);
+  border: 6px solid rgba(0,0,0,.10);
+  display: grid;
+  place-items: center;
+}
+
+.ts2-avatarImg{
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.ts2-nameRibbon{
+  background: #bfe3ff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  letter-spacing: 2px;
+  text-transform: lowercase;
+  color: rgba(0,0,0,.70);
+  border: 3px solid rgba(0,0,0,.08);
+}
+
+.ts2-status{
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(0,0,0,.65);
+  padding: 0 8px;
+}
+
+.ts2-readyBtn{
+  width: 85%;
+  background: #bfeab9;
+  color: rgba(0,0,0,.70);
+  border: 3px solid rgba(0,0,0,.10);
+  border-radius: 10px;
+  padding: 12px 10px;
+  text-transform: lowercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.12);
+}
+
+.ts2-readyBtn:hover{ filter: brightness(1.03); }
+
+.ts2-readyBtn.is-disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}

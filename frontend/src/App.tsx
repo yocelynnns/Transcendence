@@ -1,122 +1,218 @@
-// import { useEffect, useState } from "react";
-// import { socket } from "./socket";
-// import type { Player, Pokemon } from "./types.js";
+import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState,useEffect } from 'react';
 
-// function App() {
-//   const [players, setPlayers] = useState<Player[]>([]);
-//   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
-//   const [playerId, setPlayerId] = useState<string>("");
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import ProfilePage from './pages/ProfilePage';
+import HomePage from './pages/HomePage';
+import BattlePage from "./pages/BattlePage";
+import MatchingPage from "./pages/MatchingPage"
+import TeamSelectPage from "./pages/teamSelectPage";
 
-//   // Handle key presses for movement
-//   useEffect(() => {
-//     const handleKey = (e: KeyboardEvent) => {
-//       const player = players.find((p) => p.id === playerId);
-//       if (!player) return;
-//       let { x, y } = player;
+// import MatchingPage from "./pages/matchYoce/MatchingPage"
+// import TeamSelectPage from "./pages/teamYoce/teamSelectPage";
 
-//       switch (e.key) {
-//         case "ArrowUp": y -= 10; break;
-//         case "ArrowDown": y += 10; break;
-//         case "ArrowLeft": x -= 10; break;
-//         case "ArrowRight": x += 10; break;
-//       }
+import { useAvatar } from "./hooks/useAvatar";
 
-//       socket.emit("move", { x, y });
-//     };
+import {getUserInfo} from "./services/authService"
+import { Battle } from './types/battleTypes';
+import SpectatorPage from './pages/SpectatorPage';
+import axios from 'axios';
+import AIPages from './pages/AiPages';
+import EventPage from './pages/eventPage';
 
-//     window.addEventListener("keydown", handleKey);
-//     return () => window.removeEventListener("keydown", handleKey);
-//   }, [players, playerId]);
 
-//   // Socket.IO listeners
-//   useEffect(() => {
-//     socket.on("gameState", (state: { players: Player[]; pokemons: Pokemon[] }) => {
-//       setPlayers(state.players);
-//       setPokemons(state.pokemons);
-//       if (socket.id) {
-//         setPlayerId(socket.id);
-//       }
-//     });
+function App() {
+  const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('token'));
 
-//     socket.on("playerJoined", (player: Player) => setPlayers((prev) => [...prev, player]));
-//     socket.on("playerMoved", (player: Player) =>
-//       setPlayers((prev) => prev.map((p) => (p.id === player.id ? player : p)))
-//     );
-//     socket.on("playerLeft", (id: string) => setPlayers((prev) => prev.filter((p) => p.id !== id)));
-//     socket.on("pokemonCaught", (pokemon: Pokemon) =>
-//       setPokemons((prev) => prev.map((p) => (p.id === pokemon.id ? pokemon : p)))
-//     );
+  const [avatarId, setAvatarId] = useState<string | null>(null); 
+  const [battleId, setBattleId] = useState<string | null>(null); 
+  const [currentBattle, setCurrentBattle] = useState<Battle | null>(null); 
+  const [spectatingBattle, setSpectatingBattle] = useState<Battle | null>(null); 
 
-//     return () => { socket.off(); };
-//   }, []);
+  useEffect(() => {
+    if (!token) return;
+    if (currentBattle) return ;
 
-//   const catchPokemon = (id: string) => {
-//     socket.emit("catchPokemon", id);
-//   };
+    async function fetchUser() {
+      try {
+        const user = await getUserInfo(token as string);
+        setAvatarId(user.avatar?._id ?? null);
+        setBattleId(user.avatar?.currentBattle?.toString() ?? null);
+      } catch (err) {
+        setToken(null); 
+        console.error("Failed to fetch user info:", err);
+      }
+    }
 
-//   return (
-//     <div style={{ position: "relative", width: 600, height: 600, border: "1px solid black" }}>
-//       <h2>Use arrow keys to move. Click Pokémon to catch!</h2>
+    fetchUser();
+  }, [token, currentBattle]);
 
-//       {/* Players */}
-//       {players.map((p) => (
-//         <div
-//           key={p.id}
-//           style={{
-//             position: "absolute",
-//             top: p.y,
-//             left: p.x,
-//             width: 20,
-//             height: 20,
-//             backgroundColor: p.id === playerId ? "blue" : "green",
-//             borderRadius: "50%",
-//             textAlign: "center",
-//             color: "white",
-//           }}
-//         >
-//           P
-//         </div>
-//       ))}
+  useEffect(() => {
+    if (!battleId || !avatarId) return;
 
-//       {/* Pokémons */}
-//       {pokemons.map((poke) => (
-//         <div
-//           key={poke.id}
-//           style={{
-//             position: "absolute",
-//             top: poke.y,
-//             left: poke.x,
-//             width: 20,
-//             height: 20,
-//             backgroundColor: poke.caughtBy ? "gray" : "red",
-//             borderRadius: "50%",
-//             textAlign: "center",
-//             color: "white",
-//             cursor: poke.caughtBy ? "not-allowed" : "pointer",
-//           }}
-//           onClick={() => !poke.caughtBy && catchPokemon(poke.id)}
-//         >
-//           🟢
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
+    async function fetchBattle() {
+      try {
+        const res = await fetch(`http://localhost:25001/api/battle/${battleId}`);
+        if (!res.ok) throw new Error("Failed to fetch battle");
 
-// export default App;
-import { Routes, Route } from "react-router-dom";
-import MapPage from "./pages/mapPage";      // PascalCase variable
-import PokemonDb from "./pages/pokemonDb";
-import BattlePage from "./pages/battlePage/battlePage";
-import BattleDummy from "./pages/battlePage/battleDummy";
+        const battleData: Battle = await res.json();
 
-export default function App() {
+        // If the battle has ended, clear currentBattle and battleId
+        if (battleData.endedAt) {
+          setCurrentBattle(null);
+          setBattleId(null);
+
+          // Also clear currentBattle on avatar
+          try {
+            const token = localStorage.getItem("token"); // or however you store your token
+            if (token) {
+              await axios.put(
+                `http://localhost:25001/api/avatar/${avatarId}`,
+                { currentBattle: null },
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+            }
+          } catch (err) {
+            console.error("Failed to clear avatar currentBattle:", err);
+          }
+
+          return;
+        }
+
+        setCurrentBattle(battleData);
+      } catch (err) {
+        console.error("Failed to fetch battle:", err);
+        setCurrentBattle(null);
+        setBattleId(null);
+      }
+    }
+
+    fetchBattle();
+  }, [battleId, avatarId]);
+
+  const { avatarData } = useAvatar(avatarId);
+
+  console.log("RENDER: APP");
+  
   return (
-    <Routes>
-      <Route path="/" element={<MapPage />} />{}
-      <Route path="/pokemonDb" element={<PokemonDb />} />{}
-      <Route path="/battles" element={<BattlePage />} />{}
-      <Route path="/battleDummy" element={<BattleDummy />} />{}
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        {/* PUBLIC PAGES */}
+        <Route
+          path="/login"
+          element={token ? <Navigate to="/" /> : <LoginPage setToken={setToken} setAvatarId={setAvatarId} />}
+        />
+        <Route
+          path="/signup"
+          element={token ? <Navigate to="/" /> : <SignupPage setToken={setToken} setAvatarId={setAvatarId} />}
+        />
+
+        {/* PROFILE CREATION (ONLY IF LOGGED IN AND AVATAR NOT SET) */}
+        <Route
+          path="/profile"
+          element={
+            token
+              ? !avatarId
+                ? <ProfilePage setAvatarId={setAvatarId} />
+                : <Navigate to="/" />
+              : <Navigate to="/login" />
+          }
+        />
+
+        <Route
+          path="/Matching"
+          element={
+            avatarData ? (
+              <MatchingPage
+                avatarData={avatarData}
+                currentBattle={currentBattle}
+                setCurrentBattle={setCurrentBattle}
+              />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        <Route
+          path="/teamSelect/:battleId"
+          element={
+            avatarData ? (
+              <TeamSelectPage
+                avatarData={avatarData}
+                currentBattle={currentBattle}
+                setCurrentBattle={setCurrentBattle}
+              />
+            ) : (
+              <Navigate to="/profile" />
+            )
+          }
+        />
+
+         <Route
+          path="/battle/:battleId"
+          element={
+            avatarData ? (
+              <BattlePage
+                setCurrentBattle={setCurrentBattle}
+                avatarData={avatarData}
+                currentBattle={currentBattle}
+              />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+
+        <Route
+          path="/spectating/:battleId"
+          element={
+            spectatingBattle ? (
+              <SpectatorPage
+                spectatingBattle={spectatingBattle}
+                setSpectatingBattle={setSpectatingBattle}
+              />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        {/* HOME PAGE (REQUIRES LOGIN AND AVATAR) */}
+        <Route
+          path="/"
+          element={
+            token
+              ? avatarId
+                ? <HomePage setToken={setToken} avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle}/>
+                : <Navigate to="/profile" />
+              : <Navigate to="/login" />
+          }
+        />
+
+
+        <Route
+          path="/event"
+          element={
+                <EventPage avatarData={avatarData ?? null}/>
+          }
+        />
+
+        <Route
+          path="/aiBattle"
+          element={
+              <AIPages/>
+          }
+        />
+
+        {/* FALLBACK FOR UNKNOWN ROUTES */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
+
+export default App;

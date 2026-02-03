@@ -1,0 +1,99 @@
+.menu-bar {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 20%;
+}
+
+.menu-bg {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.menu-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 3%;
+  gap: 2%;
+}
+
+.menu-text {
+  width: 46.875%;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #222;
+  align-items: center;
+  margin-left: 2%;
+}
+
+.menu-text span {
+  color: #08519C;
+}
+
+.menu-actions {
+  width: 53.125%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3.125%;
+  padding-right: 3.125%;
+}
+
+.switch {
+  height: 50%;
+  width: 10%;
+  /* aspect-ratio: 1; */
+  background: #eaeaea;
+  border-radius: 12px;
+  border: 2px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relatives;
+  cursor: pointer;
+}
+
+.switch img {
+  width: 90%;
+  height: 90%;
+  image-rendering: pixelated;
+}
+
+.switch.disabled {
+  cursor: not-allowed;
+}
+
+.switch.disabled img {
+  filter: grayscale(100%) brightness(0.6);
+  width: 90%;
+  height: 90%;
+  image-rendering: pixelated;
+}
+/* 
+.switch-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(120, 120, 120, 0.45);
+  pointer-events: none;
+  border-radius: 4px;
+} */
+
+.attack {
+  background: #f01e2c;
+}
+
+.surrender {
+  background: #676767;
+}
+
+.menu-button {
+  display: flex;
+  height: 50%;
+  border-radius: 12px;
+  font-weight: bold;
+  color: white;
+}
