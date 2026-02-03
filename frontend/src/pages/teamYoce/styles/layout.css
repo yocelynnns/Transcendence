@@ -1,0 +1,47 @@
+.ts2-stage{
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 980px){
+  .ts2-stage{ grid-template-columns: 1fr; }
+}
+
+.ts2-board{
+  position: relative;
+  background: #f7f7f7;
+  border-radius: 10px;
+  padding: 18px 18px 16px 18px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.25);
+  border: 4px solid rgba(0,0,0,.08);
+}
+
+.ts2-banner{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ts2-bannerText{
+  background: #7db6d6;
+  color: #ffffff;
+  padding: 14px 18px;
+  border-radius: 8px;
+  letter-spacing: 2px;
+  font-size: 20px;
+  text-transform: uppercase;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.15);
+}
+
+.ts2-rightCard{
+  background: #79aecd;
+  border-radius: 10px;
+  padding: 18px 16px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.25);
+  border: 4px solid rgba(0,0,0,.10);
+}
