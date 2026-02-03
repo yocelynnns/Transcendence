@@ -7,6 +7,7 @@ import { setupEventHandlers } from "./eventHandler";
 import { cleanupPlayer } from "./playerCleanup";
 import AvatarSchema  from "../db/avatar";
 import { createCatchEvent } from "../utils/createEvent";
+import { setupChatHandlers } from "./chatHandlers";
 
 interface PlayerData {
   id: string;
@@ -244,6 +245,8 @@ export function setupSocket(server: any) {
     setupBattleHandlers(io, socket, matchingPool);
 
     setupEventHandlers(io, socket);
+
+    setupChatHandlers(io, socket, onlineUsers);
 
     // -------------------------
     // PLAYER SIGNOUT

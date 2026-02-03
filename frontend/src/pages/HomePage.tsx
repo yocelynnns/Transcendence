@@ -66,8 +66,11 @@ export default function HomePage({
         />
 
         {/* ✅ ADD FRIENDS LIST HERE */}
-        <FriendsList token={token} myAvatarId={avatarData._id} />
-
+        <FriendsList 
+          token={token} 
+          myAvatarId={avatarData._id} 
+          myAvatarData={avatarData}  // Add this
+        />
 
         {/* Toggle Menu Button */}
         {!profileOpen && (

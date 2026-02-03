@@ -9,6 +9,8 @@ import guildRoutes from "./routes/guild";
 import guildMessageRoutes from "./routes/guildMessage";
 import eventRoutes from "./routes/event";
 import friendRoutes from "./routes/friends";
+import chatRoutes from "./routes/chat";
+import socialRoutes from "./routes/social";
 import { setupSocket } from "./ws/server";
 import { connectDB } from "./db/connection";
 
@@ -33,6 +35,8 @@ app.use("/api/guild", guildRoutes);
 app.use("/api/guildMessage", guildMessageRoutes);
 app.use("/api/event", eventRoutes);
 app.use("/api/friends", friendRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/social", socialRoutes);
 
 const PORT: number = Number(process.env.PORT) || 25001;
 
