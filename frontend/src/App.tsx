@@ -1,7 +1,6 @@
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState,useEffect } from 'react';
-
+import { useState,useEffect, useCallback } from 'react';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
@@ -9,19 +8,13 @@ import HomePage from './pages/HomePage';
 import BattlePage from "./pages/BattlePage";
 import MatchingPage from "./pages/MatchingPage"
 import TeamSelectPage from "./pages/teamSelectPage";
-
-// import MatchingPage from "./pages/matchYoce/MatchingPage"
-// import TeamSelectPage from "./pages/teamYoce/teamSelectPage";
-
 import { useAvatar } from "./hooks/useAvatar";
-
 import {getUserInfo} from "./services/authService"
 import { Battle } from './types/battleTypes';
 import SpectatorPage from './pages/SpectatorPage';
-import axios from 'axios';
 import AIPages from './pages/AiPages';
 import EventPage from './pages/eventPage';
-
+import SocketManager from "./SocketManager";
 
 function App() {
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('token'));
@@ -31,75 +24,69 @@ function App() {
   const [currentBattle, setCurrentBattle] = useState<Battle | null>(null); 
   const [spectatingBattle, setSpectatingBattle] = useState<Battle | null>(null); 
 
-  useEffect(() => {
+  // --- stable refetchUser ---
+  const refetchUser = useCallback(async () => {
     if (!token) return;
-    if (currentBattle) return ;
-
-    async function fetchUser() {
-      try {
-        const user = await getUserInfo(token as string);
-        setAvatarId(user.avatar?._id ?? null);
-        setBattleId(user.avatar?.currentBattle?.toString() ?? null);
-      } catch (err) {
-        setToken(null); 
-        console.error("Failed to fetch user info:", err);
-      }
+    try {
+      const user = await getUserInfo(token);
+      setAvatarId(user.avatar?._id ?? null);
+      setBattleId(user.avatar?.currentBattle?.toString() ?? null);
+    } catch (err) {
+      setToken(null);
+      console.error("Failed to fetch user info:", err);
     }
+  }, [token]);
 
-    fetchUser();
-  }, [token, currentBattle]);
+  // --- stable refetchBattle ---
+  const refetchBattle = useCallback(
+    async (avatarIdParam?: string, battleIdParam?: string) => {
+      const _avatarId = avatarIdParam ?? avatarId;
+      const _battleId = battleIdParam ?? battleId;
+      if (!_avatarId || !_battleId) return;
 
-  useEffect(() => {
-    if (!battleId || !avatarId) return;
-
-    async function fetchBattle() {
       try {
-        const res = await fetch(`http://localhost:25001/api/battle/${battleId}`);
+        const res = await fetch(`http://localhost:5001/api/battle/${_battleId}`);
         if (!res.ok) throw new Error("Failed to fetch battle");
 
         const battleData: Battle = await res.json();
 
-        // If the battle has ended, clear currentBattle and battleId
         if (battleData.endedAt) {
           setCurrentBattle(null);
           setBattleId(null);
-
-          // Also clear currentBattle on avatar
-          try {
-            const token = localStorage.getItem("token"); // or however you store your token
-            if (token) {
-              await axios.put(
-                `http://localhost:25001/api/avatar/${avatarId}`,
-                { currentBattle: null },
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-            }
-          } catch (err) {
-            console.error("Failed to clear avatar currentBattle:", err);
-          }
-
-          return;
+          return battleData;
         }
 
         setCurrentBattle(battleData);
+        return battleData;
       } catch (err) {
         console.error("Failed to fetch battle:", err);
         setCurrentBattle(null);
         setBattleId(null);
       }
-    }
+    },
+    [avatarId, battleId]
+  );
 
-    fetchBattle();
-  }, [battleId, avatarId]);
+  // ---- auto fetch on mount or currentBattle change ----
+  useEffect(() => {
+    if (!token) return;
+    if (!currentBattle) {
+      refetchUser();
+    }
+  }, [token, currentBattle, refetchUser]);
+
+  // ---- auto fetch battle when avatarId or battleId changes ----
+  useEffect(() => {
+    refetchBattle();
+  }, [battleId, avatarId, refetchBattle]);
 
   const { avatarData } = useAvatar(avatarId);
-
-  console.log("RENDER: APP");
   
   return (
     <BrowserRouter>
+      {token && avatarId && <SocketManager avatarId={avatarId} />}
+
       <Routes>
-        {/* PUBLIC PAGES */}
         <Route
           path="/login"
           element={token ? <Navigate to="/" /> : <LoginPage setToken={setToken} setAvatarId={setAvatarId} />}
@@ -109,7 +96,6 @@ function App() {
           element={token ? <Navigate to="/" /> : <SignupPage setToken={setToken} setAvatarId={setAvatarId} />}
         />
 
-        {/* PROFILE CREATION (ONLY IF LOGGED IN AND AVATAR NOT SET) */}
         <Route
           path="/profile"
           element={
@@ -144,6 +130,7 @@ function App() {
                 avatarData={avatarData}
                 currentBattle={currentBattle}
                 setCurrentBattle={setCurrentBattle}
+                refetchBattle={refetchBattle}
               />
             ) : (
               <Navigate to="/profile" />
@@ -159,6 +146,7 @@ function App() {
                 setCurrentBattle={setCurrentBattle}
                 avatarData={avatarData}
                 currentBattle={currentBattle}
+                refetchBattle={refetchBattle}
               />
             ) : (
               <Navigate to="/login" />
@@ -166,11 +154,10 @@ function App() {
           }
         />
 
-
         <Route
           path="/spectating/:battleId"
           element={
-            spectatingBattle ? (
+            avatarData && spectatingBattle ? (
               <SpectatorPage
                 spectatingBattle={spectatingBattle}
                 setSpectatingBattle={setSpectatingBattle}
@@ -181,7 +168,6 @@ function App() {
           }
         />
 
-        {/* HOME PAGE (REQUIRES LOGIN AND AVATAR) */}
         <Route
           path="/"
           element={
@@ -193,22 +179,24 @@ function App() {
           }
         />
 
-
         <Route
           path="/event"
           element={
+            token && avatarData? 
                 <EventPage avatarData={avatarData ?? null}/>
+            : <Navigate to="/profile" />
           }
         />
 
         <Route
           path="/aiBattle"
           element={
+            token && avatarData?
               <AIPages/>
+              : <Navigate to="/profile" />
           }
         />
 
-        {/* FALLBACK FOR UNKNOWN ROUTES */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

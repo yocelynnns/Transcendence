@@ -4,19 +4,19 @@ import { CatchEventModel } from "../db/event";
 import fs from "fs";
 import path from "path";
 
-// CONFIG
+// Config
 const TILE_SIZE = 64;
 const MAP_PATH = path.join(__dirname, "../assets/map/map.json");
 const TOTAL_POKEMON = 30;
 
-// LOAD MAP
+// Load map
 const rawMap = fs.readFileSync(MAP_PATH, "utf-8");
 const mapJson = JSON.parse(rawMap);
 const MAP_WIDTH = mapJson.width;
 const MAP_HEIGHT = mapJson.height;
 const mapData: number[] = mapJson.map;
 
-// HELPER: GENERATE POKEMON
+// Generate Pokemon function
 function generatePokemons(count: number) {
   const emptyTiles: { x: number; y: number }[] = [];
   for (let y = 0; y < MAP_HEIGHT; y++) {
@@ -50,7 +50,6 @@ function generatePokemons(count: number) {
       caught: false,
     });
 
-    // Block surrounding tiles
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         available.delete(`${x + dx},${y + dy}`);
@@ -61,42 +60,40 @@ function generatePokemons(count: number) {
   return pokemons;
 }
 
+// Create event
 export async function createCatchEvent(io: any) {
   const EVENT_ID = "catch_event";
 
-  // Check if event already exists
   const existingEvent = await CatchEventModel.findOne({ eventId: EVENT_ID });
 
   if (existingEvent) {
     if (existingEvent.status === "waiting") {
-      // Delete the old finished event
       existingEvent.status = "running";
+      existingEvent.lastCheckedAt = new Date();
       await existingEvent.save();
       console.log("Event Started!!!", existingEvent._id);
       return;
     } 
       else if  (existingEvent.status === "finished") {
-      // Delete the old finished event
       await CatchEventModel.findByIdAndDelete(existingEvent._id);
       console.log("Old finished event deleted:", existingEvent._id);
-      return;
     } else {
-      // Event is still running, do nothing
+      existingEvent.lastCheckedAt = new Date();
+      await existingEvent.save();
       console.log("Event still running, skipping creation");
       return;
     }
   }
 
-  // Create a new event
   const newEvent = await CatchEventModel.create({
     eventId: EVENT_ID,
     players: [],
     pokemon: generatePokemons(TOTAL_POKEMON),
     status: "waiting",
+    lastCheckedAt:  new Date(),
   });
 
   console.log("New catch event created:", newEvent._id);
 
-  // Notify all connected players
   io.emit("catchEventStarted", newEvent);
 }

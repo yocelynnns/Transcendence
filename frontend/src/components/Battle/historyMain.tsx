@@ -42,7 +42,7 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
         const results = await Promise.all(
           avatarData.battleHistory.map(async (battleId) => {
             const res = await fetch(
-              `http://localhost:25001/api/battle/${battleId.toString()}`
+              `http://localhost:5001/api/battle/${battleId.toString()}`
             );
             const data = await res.json();
 
@@ -90,9 +90,6 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
         <div
           onClick={() => setPanelOpen(!panelOpen)}
           style={{
-            // position: "absolute",
-            // top: 190,
-            // right: 20,
             cursor: "pointer",
             zIndex: 100,
             width: 48,

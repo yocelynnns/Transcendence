@@ -13,14 +13,15 @@ import { Battle, BattlePokemon } from "../types/battleTypes";
 import { AvatarData } from "../types/avatarTypes";
 
 interface BattlePageProps {
-  avatarData: AvatarData | null;
+  avatarData: AvatarData | null | undefined;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
+  refetchBattle: () => Promise<Battle | undefined>;
 }
 
-const MOVE_TIMEOUT = 60_000; // 60 seconds
+const MOVE_TIMEOUT = 30_000;
 
-export default function BattlePage({ avatarData, currentBattle, setCurrentBattle }: BattlePageProps) {
+export default function BattlePage({ avatarData, currentBattle, setCurrentBattle, refetchBattle }: BattlePageProps) {
   const navigate = useNavigate();
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
   const myAvatarId = avatarData?._id || sessionStorage.getItem("avatarId");
@@ -38,13 +39,20 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
         : null
       : null;
 
-  // Fetch battle data
+  useEffect(() => {
+    const fetchAndCheck = async () => {
+     const updatedBattle = await refetchBattle();
+      if (updatedBattle?.endedAt) navigate(`/matching`);
+    };
+    fetchAndCheck();
+  }, [refetchBattle, navigate]);
+
   useEffect(() => {
     if (!battleId) return;
 
     async function fetchBattle() {
       try {
-        const res = await fetch(`http://localhost:25001/api/battle/${battleId}`);
+        const res = await fetch(`http://localhost:5001/api/battle/${battleId}`);
         if (!res.ok) throw new Error("Failed to fetch battle");
         const fetchedBattle: Battle = await res.json();
 
@@ -74,7 +82,6 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
     fetchBattle();
   }, [battleId]);
 
-  // Subscribe to updates and battle errors
   useEffect(() => {
     if (!subscribeEvent || !battleId) return;
 
@@ -112,7 +119,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       (err) => {
         alert(err.message);
         setCurrentBattle(null);
-        navigate("/"); // navigate home on error
+        navigate("/");
       }
     );
 
@@ -122,7 +129,6 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
     };
   }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent]);
 
-  // Move timer (accurate even if disconnected)
   useEffect(() => {
     if (!battleData || !myRole || battleData.endedAt) return;
 
@@ -138,14 +144,6 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
       const timeLeft = MOVE_TIMEOUT - (now - lastTurnTime);
       setMoveTimeLeft(timeLeft > 0 ? timeLeft : 0);
-
-      if (timeLeft <= 0 && battleData.currentTurn === myRole) {
-        emitEvent("playerAction", {
-          battleId,
-          action: { type: "timeout" },
-          isPlayer1: myRole === "player1",
-        });
-      }
     }, 250);
 
     return () => clearInterval(interval);
@@ -201,7 +199,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
   return (
     <div className="battle" style={{ backgroundImage: `url(/assets/bg/background.png)` }}>
-      {/* Enemy Pokémon */}
+      {/* Enemy Pokemon */}
       <div className="player2-container">
         <img src="/assets/bg/dry_platform_enemy.png" className="player2-platform" />
         {activeEnemyPokemon && (
@@ -219,7 +217,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
         )}
       </div>
 
-      {/* Player Pokémon */}
+      {/* Player Pokemon */}
       <div className="player-container">
         <img src="/assets/bg/dry_platform_player.png" className="player-platform" />
         {activePlayerPokemon && (
@@ -247,7 +245,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       {/* Forced switch overlay */}
       {activePlayerIsDead && !battleResult && (
         <div className="faint-overlay">
-          <h2>Your Pokémon fainted! Choose a new one:</h2>
+          <h2>Your Pokemon fainted! Choose a new one:</h2>
           <div className="switch-options">
             {playerPokemons.map((p, idx) =>
               !p.isDead ? (

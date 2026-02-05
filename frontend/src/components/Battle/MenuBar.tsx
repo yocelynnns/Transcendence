@@ -5,7 +5,7 @@ interface MenuBarProps {
   pokemon1?: { icon: string; isDead: boolean; onClick: () => void };
   pokemon2?: { icon: string; isDead: boolean; onClick: () => void };
   onAttack: () => void;
-  disabled: boolean; // 👈 ADD
+  disabled: boolean;
 }
 
 export default function MenuBar({ currentPokemon, pokemon1, pokemon2, onAttack, disabled }: MenuBarProps) {

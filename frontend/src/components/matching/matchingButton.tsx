@@ -17,7 +17,7 @@ export default function MatchingButton({ avatarData }: MatchingButtonProps) {
     const pokemonInventory = avatarData.pokemonInventory ?? [];
 
     if (pokemonInventory.length < 3) {
-      alert("You need at least 3 Pokémon to enter matchmaking!");
+      alert("You need at least 3 Pokemon to enter matchmaking!");
       return;
     }
 

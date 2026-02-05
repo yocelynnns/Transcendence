@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 
 export type AvatarData = {
   _id: string;
+  userId: string;
   userName: string;
   avatar: string;
   characterOption: number;

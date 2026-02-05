@@ -11,6 +11,7 @@ interface TeamSelectPageProps {
   avatarData?: AvatarData | null;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
+  refetchBattle: () => Promise<Battle | undefined>;
 }
 
 const TEAM_SIZE = 3;
@@ -19,6 +20,7 @@ export default function TeamSelectPage({
   avatarData,
   currentBattle,
   setCurrentBattle,
+  refetchBattle,
 }: TeamSelectPageProps) {
   const navigate = useNavigate();
 
@@ -40,12 +42,33 @@ export default function TeamSelectPage({
 
   const battleId = currentBattle?._id;
 
-  // Auto navigate if battle already has both teams
+  const avatarId = avatarData?._id;
+
   useEffect(() => {
-    if (!currentBattle || !avatarData) return;
+    const fetchAndCheck = async () => {
+     const updatedBattle = await refetchBattle();
+      if (updatedBattle?.endedAt) navigate(`/matching`);
+      if (!updatedBattle) return;
+      const createdAt = new Date(updatedBattle.createdAt).getTime();
+        const endTime = createdAt + 35_000;
+        const now = Date.now();
+        setTimeout(
+          () =>
+            setTimeLeft(
+              Math.max(Math.ceil((endTime - now) / 1000), 0)
+            ),
+          0
+        );
+    };
+
+    fetchAndCheck();
+  }, [refetchBattle, navigate]);
+
+  useEffect(() => {
+    if (!currentBattle || !avatarId) return;
 
     const isPlayer1 =
-      currentBattle.player1._id.toString() === avatarData._id;
+      currentBattle.player1._id.toString() === avatarId;
 
     const me = isPlayer1
       ? currentBattle.pokemon1
@@ -56,10 +79,28 @@ export default function TeamSelectPage({
       : currentBattle.pokemon1;
 
     if (me.length > 0 && enemy.length > 0) {
-      navigate(`/battle/${currentBattle._id}`, {
-        state: { battleId: currentBattle._id, avatarData },
-      });
+      navigate(`/battle/${currentBattle._id}`);
       return;
+    }
+
+    const myPicked = isPlayer1 ? currentBattle.pokemon1 : currentBattle.pokemon2;
+
+    if (myPicked.length > 0) {
+      const mySlots: (PlayerPokemon | null)[] = myPicked.map((b) => ({
+          _id: b.pokemonId,
+          name: b.name,
+          type: b.type,
+          attack: b.attack,
+          hp: b.maxHp,
+          is_shiny: b.is_shiny,
+        }));
+
+      while (mySlots.length < TEAM_SIZE) mySlots.push(null);
+
+      setTimeout(() => {
+        setSlots(mySlots);
+        setSaving(true);
+      }, 0);
     }
 
     if (currentBattle.createdAt) {
@@ -74,9 +115,8 @@ export default function TeamSelectPage({
         0
       );
     }
-  }, [currentBattle, avatarData, navigate]);
+  }, [currentBattle, avatarId, navigate, playerReadyMatch]);
 
-  // READY handler
   const handleReady = useCallback(
     (currentSlots = slots) => {
       if (!currentSlots.every(Boolean)) return;
@@ -97,14 +137,12 @@ export default function TeamSelectPage({
       playerReadyMatch(
         currentBattle,
         selectedBattlePokemon,
-        avatarData._id
       );
       setSaving(true);
     },
     [avatarData, slots, playerReadyMatch, currentBattle]
   );
 
-  // Countdown + auto-pick
   useEffect(() => {
     const timer = window.setInterval(() => {
       setTimeLeft((s) => {
@@ -126,14 +164,12 @@ export default function TeamSelectPage({
               nextSlots[i] = available.splice(idx, 1)[0];
             }
           }
-
           setSlots(nextSlots);
 
           if (nextSlots.every(Boolean)) {
             handleReady(nextSlots);
           }
         }
-
         return 0;
       });
     }, 1000);
@@ -141,8 +177,8 @@ export default function TeamSelectPage({
     return () => window.clearInterval(timer);
   }, [avatarData, slots, handleReady]);
 
-  // Slot actions
   const pickPokemon = (p: PlayerPokemon) => {
+    if (saving) return;
     if (timeLeft === 0) return;
     if (usedIds.has(p._id)) return;
 
@@ -156,6 +192,7 @@ export default function TeamSelectPage({
   };
 
   const removeSlot = (idx: number) => {
+    if (saving) return;
     setSlots((prev) => {
       const next = [...prev];
       next[idx] = null;
@@ -164,7 +201,6 @@ export default function TeamSelectPage({
     setActiveSlot(idx);
   };
 
-  // Socket events
   useEffect(() => {
     if (!battleId) return;
 
@@ -181,8 +217,9 @@ export default function TeamSelectPage({
       "TeamUpError",
       (data: { message: string }) => {
         console.error("Battle error:", data.message);
+        alert(`enemy has disconnected from the battle!`);
         setCurrentBattle(null);
-        navigate("/home", { replace: true });
+        navigate("/", { replace: true });
       }
     );
 
@@ -192,12 +229,9 @@ export default function TeamSelectPage({
     };
   }, [battleId, subscribeEvent, navigate, setCurrentBattle]);
 
-  // Final transition
   useEffect(() => {
     if (battleReady && battleId) {
-      navigate(`/battle/${battleId}`, {
-        state: { battleId, avatarData },
-      });
+      navigate(`/battle/${battleId}`);
     }
   }, [battleReady, battleId, navigate, avatarData]);
 

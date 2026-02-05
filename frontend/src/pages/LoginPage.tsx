@@ -71,7 +71,7 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", width: "100vw", background: "#b3e5fc", fontFamily: "monospace" }}>
       <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", background: "#fff", border: "4px solid #000", padding: 20, borderRadius: 8, width: 300, textAlign: "center" }}>
         {/*HEADER*/}
-        <h1 style={{ fontSize: 32, marginBottom: 20 }}>Pokémon Login</h1>
+        <h1 style={{ fontSize: 32, marginBottom: 20 }}>Pokemon Login</h1>
 
         {/*EMAIL INPUT*/}
         <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}

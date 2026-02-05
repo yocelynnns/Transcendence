@@ -3,7 +3,7 @@ import { IAvatar } from "./avatar";
 import { IPlayerPokemon } from "./playerPokemon";
 
 export interface IBattlePokemon {
-  pokemonId: Types.ObjectId | IPlayerPokemon; // points to PlayerPokemon
+  pokemonId: Types.ObjectId | IPlayerPokemon;
   name: string;
   type: "grass" | "water" | "normal" | "fire";
   attack: number;
@@ -53,20 +53,19 @@ const BattleSchema = new Schema<IBattle>({
   pokemon1: { type: [BattlePokemonSchema], default: [] },
   pokemon2: { type: [BattlePokemonSchema], default: [] },
 
-  // Track the active Pokémon index for each player
-  active1: { type: Number, default: 0 }, // index of currently active Pokémon for player1
+  active1: { type: Number, default: 0 },
   active2: { type: Number, default: 0 }, 
 
-  currentTurn: { type: String, enum: ["player1" , "player2"], default: "player1" }, // optional
+  currentTurn: { type: String, enum: ["player1" , "player2"], default: "player1" },
 
   createdAt: { type: Date, default: Date.now },
-  endedAt: { type: Date }, // optional
+  endedAt: { type: Date },
 
   lastPlayer1Turn: { type: Date },
-  lastPlayer2Turn: { type: Date }, // optional
+  lastPlayer2Turn: { type: Date },
 
-  winner: { type: String, enum: ["player1", "player2", "draw"] }, // optional
-  winnerReason: { type: String }, // optional
+  winner: { type: String, enum: ["player1", "player2", "draw"] },
+  winnerReason: { type: String },
 });
 
 const Battle = mongoose.model<IBattle>("Battle", BattleSchema);

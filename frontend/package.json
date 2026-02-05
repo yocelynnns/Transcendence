@@ -13,6 +13,7 @@
     "@tailwindcss/cli": "^4.1.18",
     "@tanstack/react-query": "^5.90.17",
     "axios": "^1.13.2",
+    "express-mongo-sanitize": "^2.2.0",
     "mongoose": "^9.1.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

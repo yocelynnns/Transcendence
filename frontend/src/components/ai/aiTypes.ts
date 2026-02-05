@@ -100,7 +100,7 @@ export type AiGameState = {
 
 export type AiDecision = {
   action: 'attack' | 'swap';
-  target?: AiPokemon; // For swap actions
+  target?: AiPokemon;
   reason: string;
   score: number;
 };

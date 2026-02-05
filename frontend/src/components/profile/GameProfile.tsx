@@ -272,9 +272,9 @@ export default function AvatarProfile({
             </div>
           </div>
 
-          {/* POKÉMON INVENTORY */}
+          {/* Pokemon INVENTORY */}
           <div style={{ marginBottom: 10 }}>
-            <h3 style={{ textAlign: "center" }}>Inventory / Pokémon</h3>
+            <h3 style={{ textAlign: "center" }}>Inventory / Pokemon</h3>
             <div
               style={{
                 display: "grid",

@@ -32,7 +32,7 @@ export default function PlayerCard({
         {saving ? "SAVING..." : "READY!"}
       </button>
 
-      <div className="ts-note">Tip: click a slot, then click a Pokémon to fill it.</div>
+      <div className="ts-note">Tip: click a slot, then click a Pokemon to fill it.</div>
     </div>
   );
 }

@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { ASSETS } from "../../assets";
-// interface EventButtonProps {
-// }
 
 export default function EventButton() {
   const navigate = useNavigate();
@@ -16,9 +14,6 @@ export default function EventButton() {
     <div
       onClick={handleClick}
       style={{
-        // position: "absolute",
-        // top: 320,
-        // right: 13,
         cursor: "pointer",
         zIndex: 100,
         width: 60,

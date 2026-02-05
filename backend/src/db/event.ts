@@ -1,10 +1,10 @@
 import { Schema, Document, model } from "mongoose";
-import { IMapPokemon, MapPokemonSchema } from "./mapPokemon"; // make sure MapPokemonSchema is exported
+import { IMapPokemon, MapPokemonSchema } from "./mapPokemon";
 
 export interface EventPlayer {
   playerId: string;
   playerName: string;
-  catchCount: number; // increment when a catch succeeds
+  catchCount: number;
 }
 
 export interface ICatchEvent extends Document {
@@ -13,16 +13,15 @@ export interface ICatchEvent extends Document {
   players: EventPlayer[];
   status: "waiting" | "running" | "finished";
   createdAt: Date;
+  lastCheckedAt: Date;
 }
 
-// Sub-schema for players
 const EventPlayerSchema = new Schema<EventPlayer>({
   playerId: { type: String, required: true },
   playerName: { type: String, required: true },
   catchCount: { type: Number, default: 0 },
 });
 
-// Main schema
 const CatchEventSchema = new Schema<ICatchEvent>({
   eventId: { type: String, required: true, unique: true },
   players: { type: [EventPlayerSchema], default: [] },
@@ -32,7 +31,9 @@ const CatchEventSchema = new Schema<ICatchEvent>({
     type: Date,
     default: Date.now,
   },
+  lastCheckedAt: {
+    type: Date,
+  }
 }, { timestamps: true });
 
-// Export model
 export const CatchEventModel = model<ICatchEvent>("CatchEvent", CatchEventSchema);

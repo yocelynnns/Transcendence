@@ -47,7 +47,7 @@ export default function GuildCreate({
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:25001/api/guild", {
+      const res = await fetch("http://localhost:5001/api/guild", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -59,7 +59,7 @@ export default function GuildCreate({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to create guild");
 
-      emitEvent("guildUpdate", { guildId: data._id, token:token, action:"update" });
+      emitEvent("guildUpdate", { guildId: data._id, action:"update" });
 
       queryClient.invalidateQueries({ queryKey: ["avatar", avatarData._id], exact: true });
       onBack();

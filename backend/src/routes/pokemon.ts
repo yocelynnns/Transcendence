@@ -1,16 +1,16 @@
-import { Router, Request, Response } from "express";
-import Pokemon from "../db/mapPokemon";
+import { Router} from "express";
+import * as PokemonService from "../services/pokemon.service";
 
 const router = Router();
 
-// FETCH AVAILABLE POKEMON
-router.get("/", async (_req: Request, res: Response) => {
+// Fetch available Pokemon
+router.get("/", async (_req, res) => {
   try {
-    const pokemons = await Pokemon.find({ caught: false });
+    const pokemons = await PokemonService.fetchAvailablePokemon({ limit: 50 });
     return res.json(pokemons);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server error" });
+  } catch (err: any) {
+    console.error("[GET /pokemon]", err);
+    return res.status(500).json({ message: err.message || "Server error" });
   }
 });
 

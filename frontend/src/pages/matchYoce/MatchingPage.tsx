@@ -52,7 +52,7 @@ export default function Matching({ avatarData }: MatchMakingProps) {
   useEffect(() => {
     if (!currentId) return;
 
-    joinMatching(currentId);
+    joinMatching();
 
     const cleanupWaiting = subscribeEvent("waitingForOpponent", () => {
       setOpponentDetails(null);
@@ -66,7 +66,7 @@ export default function Matching({ avatarData }: MatchMakingProps) {
         setBattleId(data.battleId);
 
         try {
-          const res = await fetch(`http://localhost:25001/api/avatar/${data.avatarId}`);
+          const res = await fetch(`http://localhost:5001/api/avatar/${data.avatarId}`);
           const avatar: AvatarData = await res.json();
           setOpponentDetails({ ...data, avatar });
         } catch (err) {

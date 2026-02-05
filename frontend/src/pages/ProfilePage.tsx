@@ -15,8 +15,6 @@ interface ProfilePageProps {
   setAvatarId: (id: string) => void;
 }
 
-
-
 //MAIN COMPONENT
 export default function ProfilePage({ setAvatarId }: ProfilePageProps) {
 
