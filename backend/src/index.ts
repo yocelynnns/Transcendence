@@ -8,7 +8,6 @@ import avatarRoutes from "./routes/avatar";
 import battleRoutes from "./routes/battleRoutes";
 import guildRoutes from "./routes/guild";
 import guildMessageRoutes from "./routes/guildMessage";
-// import eventRoutes from "./routes/event";
 import friendRoutes from "./routes/friends";
 import chatRoutes from "./routes/chat";
 import socialRoutes from "./routes/social";
@@ -17,7 +16,6 @@ import { connectDB } from "./db/connection";
 
 const app: Express = express();
 
-// MIDDLEWARES
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -36,32 +34,29 @@ app.use((req, _res, next) => {
   next();
 });
 
-
-
-// ROUTES
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/pokemon", pokemonRoutes);
 app.use("/api/avatar", avatarRoutes);
 app.use("/api/battle", battleRoutes);
 app.use("/api/guild", guildRoutes);
 app.use("/api/guildMessage", guildMessageRoutes);
-// app.use("/api/event", eventRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/social", socialRoutes);
 
 const PORT: number = Number(process.env.PORT) || 5001;
 
-// CREATE HTTP SERVER
+// Create http server
 const server = http.createServer(app);
 
-// SETUP SOCKET.IO
+// Set up socket
 setupSocket(server);
 
-// CONNECT MONGODB
+// Connect MongoDB
 connectDB().catch(err => console.error("FAILED TO CONNECT DB:", err));
 
-// START SERVER
+// Start server
 server.listen(PORT, () => {
   console.log(`HTTP + Socket.io server running on http://localhost:${PORT}`);
 });

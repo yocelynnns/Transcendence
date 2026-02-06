@@ -9,7 +9,7 @@ export const setupPokemonHandlers = (io: Server, socket: Socket) => {
       const userId = socket.data.userId;
       if (!userId) return;
 
-      console.log("Catching Pokémon:", mapPokemonId);
+      console.log("Catching Pokemon:", mapPokemonId);
 
       const result = await AvatarService.catchPokemon({
         mapPokemonId,
@@ -22,7 +22,7 @@ export const setupPokemonHandlers = (io: Server, socket: Socket) => {
 
       socket.emit("catchPokemonSuccess", result);
     } catch (err) {
-      console.error("ERROR CATCHING POKÉMON:", err);
+      console.error("ERROR CATCHING Pokemon:", err);
       socket.emit("catchPokemonError", { message: "Catch failed" });
     }
   });

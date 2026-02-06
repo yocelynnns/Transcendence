@@ -3,7 +3,7 @@ import * as PokemonService from "../services/pokemon.service";
 
 const router = Router();
 
-// Fetch available Pokémon
+// Fetch available Pokemon
 router.get("/", async (_req, res) => {
   try {
     const pokemons = await PokemonService.fetchAvailablePokemon({ limit: 50 });

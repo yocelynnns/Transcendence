@@ -1,4 +1,3 @@
-// MONGODB CONNECTION
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Pokemon from "./mapPokemon";
@@ -6,7 +5,7 @@ import { seedPokemons } from "../utils/seedPokemon";
 
 dotenv.config();
 
-// CONNECT TO MONGODB + SEED DB TO ENSURE 30 POKÉMON
+// Connect to mongodb & seed 30 pokemon
 export async function connectDB() {
   try {
     await mongoose.connect(process.env.MONGO_URI || "");
@@ -17,11 +16,11 @@ export async function connectDB() {
 
     if (currentCount < TARGET_COUNT) {
       const remaining = TARGET_COUNT - currentCount;
-      console.log(`Seeding ${remaining} more Pokémon to reach ${TARGET_COUNT}...`);
+      console.log(`Seeding ${remaining} more Pokemon to reach ${TARGET_COUNT}...`);
       await seedPokemons(remaining);
       console.log("Seeding complete");
     } else {
-      console.log(`DB already has ${currentCount} Pokémon, skipping seed`);
+      console.log(`DB already has ${currentCount} Pokemon, skipping seed`);
     }
   } catch (err) {
     console.error("MongoDB connection error:", err);

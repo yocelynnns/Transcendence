@@ -28,13 +28,13 @@ export function usePokemonSpawner() {
           setPokemonList(data);
         }
         else if ("pokemons" in data && Array.isArray(data.pokemons)) {
-          console.log("Received wrapped Pokémon object:", data.pokemons);
+          console.log("Received wrapped Pokemon object:", data.pokemons);
           setPokemonList(data.pokemons);
         } else {
-          console.warn("Unexpected Pokémon response format:", data);
+          console.warn("Unexpected Pokemon response format:", data);
         }
       } catch (err) {
-        console.error("Failed to fetch Pokémon:", err);
+        console.error("Failed to fetch Pokemon:", err);
       }
     };
 

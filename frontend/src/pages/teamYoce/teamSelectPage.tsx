@@ -97,7 +97,7 @@ export default function TeamSelectPage({ avatarData: propAvatarData }: TeamSelec
   );
 
   const handleReady = useCallback(() => {
-    if (!canReady) return flashMsg("Pick 3 Pokémon first!");
+    if (!canReady) return flashMsg("Pick 3 Pokemon first!");
     const selected = slots.map((p) => p!) as PlayerPokemon[];
     sendReady(selected);
   }, [canReady, flashMsg, sendReady, slots]);
@@ -107,7 +107,7 @@ export default function TeamSelectPage({ avatarData: propAvatarData }: TeamSelec
 
     const inventory = avatarData.pokemonInventory ?? [];
     if (inventory.length === 0) {
-      flashMsg("No Pokémon in inventory!");
+      flashMsg("No Pokemon in inventory!");
       return null;
     }
 

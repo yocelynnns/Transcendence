@@ -201,7 +201,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
   return (
     <div className="battle" style={{ backgroundImage: `url(/assets/bg/background.png)` }}>
-      {/* Enemy Pokémon */}
+      {/* Enemy Pokemon */}
       <div className="player2-container">
         <img src="/assets/bg/dry_platform_enemy.png" className="player2-platform" />
         {activeEnemyPokemon && (
@@ -219,7 +219,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
         )}
       </div>
 
-      {/* Player Pokémon */}
+      {/* Player Pokemon */}
       <div className="player-container">
         <img src="/assets/bg/dry_platform_player.png" className="player-platform" />
         {activePlayerPokemon && (
@@ -247,7 +247,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       {/* Forced switch overlay */}
       {activePlayerIsDead && !battleResult && (
         <div className="faint-overlay">
-          <h2>Your Pokémon fainted! Choose a new one:</h2>
+          <h2>Your Pokemon fainted! Choose a new one:</h2>
           <div className="switch-options">
             {playerPokemons.map((p, idx) =>
               !p.isDead ? (

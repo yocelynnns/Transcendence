@@ -104,7 +104,7 @@ export interface CatchPokemonInput {
 }
 
 export async function catchPokemon({ mapPokemonId, userId }: CatchPokemonInput) {
-  if (!mongoose.Types.ObjectId.isValid(mapPokemonId)) throw new Error("Invalid map Pokémon ID");
+  if (!mongoose.Types.ObjectId.isValid(mapPokemonId)) throw new Error("Invalid map Pokemon ID");
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new Error("Invalid user ID");
 
   const user = await User.findById(userId).populate<{ avatar: IAvatar }>("avatar");
@@ -113,7 +113,7 @@ export async function catchPokemon({ mapPokemonId, userId }: CatchPokemonInput) 
   const avatar = user.avatar;
 
   const mapPokemon = await MapPokemon.findById(mapPokemonId);
-  if (!mapPokemon) throw new Error("Map Pokémon not found");
+  if (!mapPokemon) throw new Error("Map Pokemon not found");
 
   const playerPokemon = await PlayerPokemon.create({
     name: mapPokemon.name,

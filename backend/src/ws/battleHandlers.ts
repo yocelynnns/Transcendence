@@ -152,12 +152,11 @@ export function setupBattleHandlers(
       const senderId = socket.data.avatarId.toString();
       if (!senderId) {
         socket.emit("matchInviteError", { error: "Unauthorized" });
-        return; // explicitly return void
+        return;
       }
 
       const receiverId = data.receiverId;
 
-      // Find receiver socket
       let receiverSocketId: string | null = null;
       for (const [sid, s] of io.sockets.sockets) {
         if (s.data.avatarId === receiverId) {
@@ -168,13 +167,11 @@ export function setupBattleHandlers(
 
       if (!receiverSocketId) {
         socket.emit("matchInviteError", { error: "User is offline" });
-        return; // explicitly return void
+        return;
       }
 
-      // Call service to create invite
       const { invite, senderInfo } = await BattleService.sendMatchInvite({ senderId, receiverId });
 
-      // Notify receiver
       io.to(receiverSocketId).emit("matchInviteReceived", {
         inviteId: invite._id,
         senderId,
@@ -182,14 +179,13 @@ export function setupBattleHandlers(
         senderAvatar: senderInfo.avatar,
       });
 
-      // Notify sender
       socket.emit("matchInviteSent", { inviteId: invite._id });
-      return; // explicitly return void
+      return;
     } catch (err) {
       console.error("Error sending match invite:", err);
       const message = err instanceof Error ? err.message : "Unknown error";
       socket.emit("matchInviteError", { error: message });
-      return; // explicitly return void
+      return;
     }
   });
 
@@ -206,7 +202,6 @@ export function setupBattleHandlers(
 
         const { inviteId, accept } = data;
 
-        // Call service
         const result = await BattleService.respondToMatchInvite({
           inviteId,
           receiverId,
@@ -214,7 +209,6 @@ export function setupBattleHandlers(
         });
 
         if (result.declined) {
-          // Notify sender if socket exists
           if (result.senderId) {
             for (const [sid, s] of io.sockets.sockets) {
               if (s.data.avatarId === result.senderId) {
@@ -223,14 +217,12 @@ export function setupBattleHandlers(
               }
             }
           }
-          return; // exit early
+          return;
         }
 
-        // ACCEPTED → join battle room
         const battle = result.battle;
         const roomName = `battle_${battle._id}`;
 
-        // Join both sockets
         for (const [_, s] of io.sockets.sockets) {
           if (
             s.data.avatarId?.toString() === battle.player1.toString() ||

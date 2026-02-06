@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { ASSETS } from "../../assets";
-// interface AiButtonProps {
-// }
 
 export default function AiButton() {
   const navigate = useNavigate();
@@ -16,9 +14,6 @@ export default function AiButton() {
     <div
       onClick={handleClick}
       style={{
-        // position: "absolute",
-        // top: 250,
-        // right: 13,
         cursor: "pointer",
         zIndex: 100,
         width: 60,

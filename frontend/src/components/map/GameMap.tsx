@@ -70,7 +70,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     axios
       .get<MapPokemon[]>("http://localhost:5001/api/pokemon")
       .then((res) => setPokemonList(res.data))
-      .catch((err) => console.error("Failed to fetch initial Pokémon:", err));
+      .catch((err) => console.error("Failed to fetch initial Pokemon:", err));
   }, [setPokemonList]);
 
   //SUBSCRIBE POKEMON UPDATES
@@ -218,7 +218,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
             fontFamily: "monospace",
           }}
         >
-          <div style={{ marginBottom: 8 }}>Catch this Pokémon?</div>
+          <div style={{ marginBottom: 8 }}>Catch this Pokemon?</div>
           <button onClick={() => handleCatchPokemon(encounterPokemon)}>Yes</button>
           <button onClick={handleCatchNo} style={{ marginLeft: 8 }}>
             No

@@ -29,7 +29,7 @@ export default function Matching({
 
     const inventory = avatarData.pokemonInventory ?? [];
     if (inventory.length < 3) {
-      alert("You need at least 3 Pokémon to enter matchmaking.");
+      alert("You need at least 3 Pokemon to enter matchmaking.");
       navigate("/", { replace: true });
     }
   }, [avatarData, navigate]);

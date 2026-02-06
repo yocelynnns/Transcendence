@@ -49,7 +49,7 @@ export default function TeamSelectLayout({
           <div className="ts-invHeader">
             <div>
               <div className="ts-title">Choose Your Team</div>
-              <div className="ts-sub">Pick 3 Pokémon from your inventory.</div>
+              <div className="ts-sub">Pick 3 Pokemon from your inventory.</div>
             </div>
 
             <div className={`ts-timer ${timeLeft <= 10 ? "danger" : ""}`}>

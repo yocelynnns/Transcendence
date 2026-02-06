@@ -144,7 +144,7 @@ export default function AiPages() {
 
       {activePlayerIsDead && !battleResult && (
         <div className="faint-overlay">
-          <h2>Your Pokémon fainted! Choose a new one:</h2>
+          <h2>Your Pokemon fainted! Choose a new one:</h2>
           <div className="switch-options">
             {playerTeam.map((p, idx) =>
               isAlive(p) ? (

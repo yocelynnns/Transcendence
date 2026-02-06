@@ -1,6 +1,6 @@
 import MapPokemon from "../db/mapPokemon";
 
-// Fetch available Pokémon
+// Fetch available Pokemon
 export interface FetchAvailablePokemonInput {
   limit?: number; 
 }

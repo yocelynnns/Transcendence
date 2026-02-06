@@ -283,9 +283,7 @@ export interface SendMatchInviteInput {
   receiverId: string;
 }
 
- // Sends a match invite from sender to receiver
 export async function sendMatchInvite({ senderId, receiverId }: SendMatchInviteInput) {
-  // Check for existing pending invite
   const existing = await MatchInvite.findOne({
     senderId,
     receiverId,
@@ -294,15 +292,13 @@ export async function sendMatchInvite({ senderId, receiverId }: SendMatchInviteI
 
   if (existing) throw new Error("Invite already pending");
 
-  // Create new invite
   const invite = await MatchInvite.create({
     senderId,
     receiverId,
     status: "pending",
-    expiresAt: new Date(Date.now() + 30_000), // 30 seconds
+    expiresAt: new Date(Date.now() + 30_000),
   });
 
-  // Fetch sender info
   const senderAvatar = await Avatar.findById(senderId).select("userName avatar");
 
   return {
@@ -322,7 +318,7 @@ export interface RespondToMatchInviteInput {
 export interface RespondToMatchInviteOutput {
   battle?: any;
   declined?: boolean;
-  senderId?: string; // <-- added
+  senderId?: string;
 }
 
  // Respond match invite
@@ -343,14 +339,12 @@ export async function respondToMatchInvite({
   if (!accept) {
     invite.status = "declined";
     await invite.save();
-    return { declined: true, senderId: invite.senderId.toString() }; // <-- return senderId
+    return { declined: true, senderId: invite.senderId.toString() };
   }
 
-  // ACCEPTED
   invite.status = "accepted";
   await invite.save();
 
-  // Create battle directly
   const battle = await Battle.create({
     player1: invite.senderId,
     player2: invite.receiverId,
@@ -359,7 +353,6 @@ export async function respondToMatchInvite({
     currentTurn: "player1",
   });
 
-  // Update avatars
   await Promise.all([
     Avatar.findByIdAndUpdate(invite.senderId, { currentBattle: battle._id }),
     Avatar.findByIdAndUpdate(invite.receiverId, { currentBattle: battle._id }),

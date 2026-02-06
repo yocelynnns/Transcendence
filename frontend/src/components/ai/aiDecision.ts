@@ -20,7 +20,7 @@ export function decideNextAction(state: AiGameState, forced : boolean): AiDecisi
     const turnsToKO = Math.ceil(attacker.stats.hp / opponentDamage);
     score += turnsToKO * 10;
 
-    score += 5; // slight aggressive bias
+    score += 5;
     return score;
   };
 
@@ -47,7 +47,6 @@ export function decideNextAction(state: AiGameState, forced : boolean): AiDecisi
     return bestOption ? { pokemon: bestOption, score: bestScore } : null;
   };
 
-  // ---------- AiDecision Checks ----------
   const decisions: AiDecision[] = [];
   const playerActive = state.playerActive;
   const opponentActive = state.opponentActive;
@@ -70,7 +69,7 @@ export function decideNextAction(state: AiGameState, forced : boolean): AiDecisi
   }
 
 
-  // 1. Critical Health
+  // Critical Health
   const opponentDamage = calculateDamage(opponentActive, playerActive);
   const turnsUntilFaint = Math.ceil(playerActive.stats.hp / opponentDamage);
   if (turnsUntilFaint === 1) {
@@ -93,7 +92,7 @@ export function decideNextAction(state: AiGameState, forced : boolean): AiDecisi
     }
   }
 
-  // 2. Kill opportunity
+  // Kill opportunity
   const damage = calculateDamage(playerActive, opponentActive);
   if (damage >= opponentActive.stats.hp) {
     decisions.push({
@@ -109,7 +108,7 @@ export function decideNextAction(state: AiGameState, forced : boolean): AiDecisi
     });
   }
 
-  // 3. Strategic swap for type advantage
+  // Strategic swap for type advantage
   for (const pokemon of state.playerAlive) {
     if (pokemon.name === playerActive.name) continue;
     if (typeMultiplier(pokemon.type, opponentActive.type) === 1.5) {
@@ -126,7 +125,7 @@ export function decideNextAction(state: AiGameState, forced : boolean): AiDecisi
     }
   }
 
-  // 4. Type advantage strategy
+  // Type advantage strategy
   const multiplier = typeMultiplier(playerActive.type, opponentActive.type);
   if (multiplier === 1.5) {
     decisions.push({
@@ -150,7 +149,7 @@ export function decideNextAction(state: AiGameState, forced : boolean): AiDecisi
     }
   }
 
-  // 5. Neutral matchup fallback
+  // Neutral matchup fallback
   if (decisions.length === 0) {
     decisions.push({
       action: 'attack',

@@ -228,7 +228,7 @@ export default function PublicProfile({
             </div>
             <div style={styles.statBox}>
               <div style={styles.statNumber}>{profile.pokemonInventory.length}</div>
-              <div style={styles.statLabel}>POKÉMON</div>
+              <div style={styles.statLabel}>Pokemon</div>
             </div>
             <div style={styles.statBox}>
               <div style={styles.statNumber}>{profile.raceWin}</div>
@@ -250,7 +250,7 @@ export default function PublicProfile({
           {profile.pokemonInventory.length > 0 && (
             <div style={styles.section}>
               <div style={styles.sectionTitle}>
-                Pokémon ({profile.pokemonInventory.length})
+                Pokemon ({profile.pokemonInventory.length})
               </div>
               <div style={styles.pokemonGrid}>
                 {profile.pokemonInventory.slice(0, 8).map((p, i) => (

@@ -75,10 +75,10 @@ export function useBattleLogic() {
 
     if (!playerAlive) {
       setBattleResult("lose");
-      setBattleData({ winnerReason: "All your Pokémon fainted!" });
+      setBattleData({ winnerReason: "All your Pokemon fainted!" });
     } else if (!enemyAlive) {
       setBattleResult("win");
-      setBattleData({ winnerReason: "All enemy Pokémon fainted!" });
+      setBattleData({ winnerReason: "All enemy Pokemon fainted!" });
     }
   };
 

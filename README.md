@@ -1,4 +1,4 @@
-# 🎮 Transcendence — Pokémon-Style Multiplayer Web Game
+# 🎮 Transcendence — Pokemon-Style Multiplayer Web Game
 
 *A multiplayer 2D web game built for the 42 ft_transcendence project*
 
@@ -23,9 +23,9 @@ The objective is to implement **14+ curriculum modules** while focusing on:
 ### Key Features
 
 * Real-time player movement in a shared **2D world map**
-* Wild Pokémon encounters and **catching into inventory**
-* Team selection (**3 Pokémon**) with **timer + auto-pick fallback**
-* Turn-based **PvP Pokémon battles** with type advantage and swap/attack turns
+* Wild Pokemon encounters and **catching into inventory**
+* Team selection (**3 Pokemon**) with **timer + auto-pick fallback**
+* Turn-based **PvP Pokemon battles** with type advantage and swap/attack turns
 * **Guild system** with chat and role management
 * **Friends & social features** (profiles, blocking, messaging)
 * **Spectator mode** and **AI opponent** components
@@ -43,7 +43,7 @@ The objective is to implement **14+ curriculum modules** while focusing on:
 
 * Global timed event inside the shared lobby
 * All online players compete simultaneously
-* Goal: **catch the most Pokémon within the time limit**
+* Goal: **catch the most Pokemon within the time limit**
 * Winner determined by total captures
 
 ---
@@ -96,7 +96,7 @@ Backend: [http://localhost:5001](http://localhost:5001)
 | **ysetiawa**         | Project Manager, Developer | Timeline coordination, module tracking, team selection UI, player/team database design       |
 | **dfasius**          | Tech Lead, Developer       | Backend architecture, realtime systems (WebSockets), event game implementation, code reviews |
 | **tiatan**    | Developer                  | Race mini-game implementation, statistics/history systems, testing                           |
-| **aputri-a** | Developer, Designer        | Game UI/UX design, battle layouts, Pokémon database design, visual polish                    |
+| **aputri-a** | Developer, Designer        | Game UI/UX design, battle layouts, Pokemon database design, visual polish                    |
 
 > All members contribute across the project. Roles reflect primary ownership areas.
 
@@ -188,7 +188,7 @@ Models located in: `backend/src/db/`
 
 * `battleId`
 * `player1`, `player2`
-* Embedded Pokémon snapshots
+* Embedded Pokemon snapshots
 * Turn state + match history
 
 **Guild / GuildMessage**
@@ -218,7 +218,7 @@ Battle (1) → Avatar (2) + team snapshots
 
 ## ⚔️ Game Rules & Balancing
 
-### Pokémon Types
+### Pokemon Types
 
 Fire > Grass > Water > Fire
 Normal = neutral
@@ -236,10 +236,10 @@ Shiny bonus:
 
 ### Battle Flow
 
-* Each player selects 3 Pokémon
+* Each player selects 3 Pokemon
 * First turn randomized
 * Each round: Attack or Swap
-* On death: select replacement Pokémon
+* On death: select replacement Pokemon
 
 Edge cases:
 
@@ -260,9 +260,9 @@ Damage:
 * Movement sync & presence — **dfasius**
 * Reconnect/disconnect handling — **dfasius**
 
-### Pokémon Systems
+### Pokemon Systems
 
-* Pokémon database design — **aputri-a**
+* Pokemon database design — **aputri-a**
 * Wild encounters & capture logic — **aputri-a / ysetiawa**
 * Inventory tracking — **ysetiawa**
 
@@ -305,7 +305,7 @@ So the modules section in your README should match THIS exactly:
 * Allow users to interact with other users — ✅
 * Standard user management and authentication — ✅
 * Organization system (Guilds) — ✅
-* Implement a complete web-based game (PvP Pokémon battle) — ✅
+* Implement a complete web-based game (PvP Pokemon battle) — ✅
 * Remote players (play from separate machines) — ✅
 * Multiplayer game (more than two players) — ✅
 * Add another game with user history and matchmaking — ✅
@@ -351,7 +351,7 @@ So the modules section in your README should match THIS exactly:
 
 * UI/UX visual design
 * Battle layouts
-* Pokémon database design
+* Pokemon database design
 
 ---
 
@@ -395,4 +395,4 @@ All AI output was reviewed and adapted by the team.
 ## 📜 License
 
 Educational use only under the 42 curriculum.
-Pokémon assets used strictly for learning/demo purposes.
+Pokemon assets used strictly for learning/demo purposes.

@@ -49,7 +49,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
       console.error("Failed to rejoin battle room:", err);
     }
 
-    // Send current players & Pokémon to this socket
+    // Send current players & Pokemon to this socket
     socket.emit("playersUpdate", Object.values(players));
     try {
       const currentPokemons = await PokemonService.fetchAvailablePokemon({ limit: 50 });

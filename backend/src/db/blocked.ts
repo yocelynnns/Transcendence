@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IBlocked extends Document {
-  blockerId: string;    // Avatar ID who blocked
-  blockedId: string;    // Avatar ID who got blocked
+  blockerId: string;
+  blockedId: string;
   createdAt: Date;
 }
 
@@ -12,7 +12,6 @@ const BlockedSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Compound index to prevent duplicate blocks
 BlockedSchema.index({ blockerId: 1, blockedId: 1 }, { unique: true });
 
 export default mongoose.model<IBlocked>("Blocked", BlockedSchema);
