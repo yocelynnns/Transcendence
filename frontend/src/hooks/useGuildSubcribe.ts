@@ -33,6 +33,7 @@ export function useFullGuildUpdates({ setGuilds, avatarId }: Props) {
           const newList = [...prev];
 
           if (updatedGuild.action === "kick" && updatedGuild.targetAvatarId) {
+
             if (updatedGuild.targetAvatarId === avatarId) {
               queryClient.invalidateQueries({ queryKey: ["avatar", avatarId], exact: true });
             }

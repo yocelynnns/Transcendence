@@ -3,7 +3,7 @@ import type { AvatarData } from "./avatarTypes";
 export type GuildMember = {
   _id: string;
   avatar:  AvatarData | string;
-  role: "leader" | "officer" | "member";
+  role: "leader" | "co-leader" | "member";
 };
 
 export interface Guild {

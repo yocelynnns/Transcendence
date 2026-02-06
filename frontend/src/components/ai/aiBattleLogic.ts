@@ -65,6 +65,12 @@ export function useBattleLogic() {
     };
   }, []);
 
+  const resetBattle = () => {
+    setPlayerTeam(getRandomTeam());
+    setEnemyTeam(getRandomTeam());
+    setTurn("p1");
+    setBattleResult(null);
+  };
 
   const checkBattleEnd = (
     playerTeam: AiPokemon[],
@@ -75,10 +81,10 @@ export function useBattleLogic() {
 
     if (!playerAlive) {
       setBattleResult("lose");
-      setBattleData({ winnerReason: "All your Pokémon fainted!" });
+      setBattleData({ winnerReason: "All your Pokemon fainted!" });
     } else if (!enemyAlive) {
       setBattleResult("win");
-      setBattleData({ winnerReason: "All enemy Pokémon fainted!" });
+      setBattleData({ winnerReason: "All enemy Pokemon fainted!" });
     }
   };
 
@@ -199,5 +205,7 @@ export function useBattleLogic() {
     battleData,
 
     activePlayerIsDead,
+
+    resetBattle,
   };
 }

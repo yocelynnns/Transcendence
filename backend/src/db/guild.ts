@@ -2,14 +2,14 @@ import mongoose, { Schema, Document, Types, Query } from "mongoose";
 import Avatar from "./avatar";
 
 export interface IGuildMember {
-  avatar: Types.ObjectId;      // Reference to Avatar
-  role: "leader" | "officer" | "member";
+  avatar: Types.ObjectId;
+  role: "leader" | "co-leader" | "member";
 }
 
 export interface IGuild extends Document {
   name: string;
   description: string;
-  image: string;               // Guild image URL/Base64
+  image: string;
   members: IGuildMember[];
 }
 
@@ -19,7 +19,7 @@ const GuildSchema: Schema = new Schema({
   image: { type: String, default: "" },
   members: [{
     avatar: { type: Schema.Types.ObjectId, ref: "Avatar", required: true },
-    role: { type: String, enum: ["leader", "officer", "member"], default: "member" }
+    role: { type: String, enum: ["leader", "co-leader", "member"], default: "member" }
   }]
 }, { timestamps: true });
 

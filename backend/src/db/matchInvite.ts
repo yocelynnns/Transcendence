@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMatchInvite extends Document {
-  senderId: string;      // Avatar ID who sent invite
-  receiverId: string;    // Avatar ID who receives
+  senderId: string;
+  receiverId: string;
   status: 'pending' | 'accepted' | 'declined' | 'expired';
   createdAt: Date;
   expiresAt: Date;
@@ -17,10 +17,9 @@ const MatchInviteSchema: Schema = new Schema({
     default: 'pending'
   },
   createdAt: { type: Date, default: Date.now },
-  expiresAt: { type: Date, default: () => new Date(Date.now() + 30000) }, // 30s expiry
+  expiresAt: { type: Date, default: () => new Date(Date.now() + 30000) },
 });
 
-// Auto-expire old invites
 MatchInviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<IMatchInvite>("MatchInvite", MatchInviteSchema);

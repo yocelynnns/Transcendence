@@ -1,27 +1,25 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-// INTERFACE
 export interface IMapPokemon extends Document {
   name: string;
-  type: "grass" | "water" | "normal" | "fire"; // POKÉMON TYPE
+  type: "grass" | "water" | "normal" | "fire";
   is_shiny: boolean;
   hp: number;
   attack: number;
-  x: number; // X POSITION
-  y: number; // Y POSITION
-  caught: boolean; // CAUGHT STATUS
+  x: number;
+  y: number;
+  caught: boolean;
 }
 
-// SCHEMA
 export const MapPokemonSchema: Schema = new Schema({
-  name: { type: String, required: true }, // NAME
-  type: { type: String, enum: ["grass", "water", "normal", "fire"], required: true }, // TYPE
+  name: { type: String, required: true },
+  type: { type: String, enum: ["grass", "water", "normal", "fire"], required: true },
   is_shiny: {type: Boolean, required: true},
   hp: { type: Number, required: true },
   attack: { type: Number, required: true},
-  x: { type: Number, required: true }, // X COORD
-  y: { type: Number, required: true }, // Y COORD
-  caught: { type: Boolean, default: false }, // DEFAULT NOT CAUGHT
+  x: { type: Number, required: true },
+  y: { type: Number, required: true },
+  caught: { type: Boolean, default: false },
 });
 
-export default mongoose.model<IMapPokemon>("Pokemon", MapPokemonSchema); // EXPORT MODEL
+export default mongoose.model<IMapPokemon>("Pokemon", MapPokemonSchema);

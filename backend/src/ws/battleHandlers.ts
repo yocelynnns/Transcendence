@@ -1,309 +1,133 @@
 import { Server, Socket } from "socket.io";
-import axios from "axios";
-import Battle, { IBattlePokemon } from "../db/battle";
-import { IAvatar } from "../db/avatar";
-import MatchInvite from "../db/matchInvite";
+import { IBattlePokemon } from "../db/battle";
+import User from "../db/user";
+import Friend from "../db/friend";
+import { onlineUsers } from "./server";
 import Avatar from "../db/avatar";
+
+import * as AvatarService from "../services/avatar.service";
+import * as BattleService from "../services/battle.service";
 
 export function setupBattleHandlers(
   io: Server,
   socket: Socket,
-  matchingPool: { socketId: string; avatarId: string }[]
+  matchingPool: { socketId: string; avatarId: string; userId:string }[]
 ) {
-  let isMatching = false;
 
-  socket.on("joinMatching", async (data: { avatarId: string; token: string }) => {
-    const { avatarId: playerAvatarId, token } = data;
-    if (matchingPool.some((p) => p.avatarId === playerAvatarId)) return;
+  // Helper to notify friends about battle status
+  async function notifyFriendsBattleStarted(io: Server, avatarId: string, battleId: string) {
+    try {
+      const userRecord = await User.findOne({ avatar: avatarId }).populate("avatar");
+      if (!userRecord) return;
+      
+      const friendships = await Friend.find({
+        $or: [{ userId: userRecord._id }, { friendId: userRecord._id }],
+        status: "accepted"
+      });
+      
+      const friendUserIds = friendships.map((f: any) => 
+        f.userId.toString() === userRecord._id.toString() ? f.friendId : f.userId
+      );
+      
+      const friendUsers = await User.find({ _id: { $in: friendUserIds } });
+      const friendAvatarIds = friendUsers.map((u: any) => u.avatar?.toString()).filter(Boolean);
+      
+      friendAvatarIds.forEach((friendAvatarId: string) => {
+        const friendSocketId = onlineUsers.get(friendAvatarId);
+        if (friendSocketId) {
+          io.to(friendSocketId).emit("friendBattleStarted", {
+            avatarId,
+            battleId
+          });
+        }
+      });
+    } catch (err) {
+      console.error("Error notifying friends battle started:", err);
+    }
+  }
 
-    matchingPool.push({ socketId: socket.id, avatarId: playerAvatarId });
-
-    if (isMatching) return;
-    isMatching = true;
-
+  // Join matching
+  async function tryMatch() {
     while (matchingPool.length >= 2) {
       const player1 = matchingPool.shift()!;
       const player2 = matchingPool.shift()!;
 
       try {
-        const response = await axios.post("http://localhost:25001/api/battle", {
+        const battle = await BattleService.createBattle({
           player1: player1.avatarId,
           player2: player2.avatarId,
         });
-        const battle = response.data;
-        const roomName = `battle_${battle._id}`;
+
+        const room = `battle_${battle._id}`;
 
         await Promise.all([
-          axios.put(
-            `http://localhost:25001/api/avatar/${player1.avatarId}`,
-            { currentBattle: battle },
-            { headers: { Authorization: `Bearer ${token}` } }
-          ),
-          axios.put(
-            `http://localhost:25001/api/avatar/${player2.avatarId}`,
-            { currentBattle: battle },
-            { headers: { Authorization: `Bearer ${token}` } }
-          ),
+          AvatarService.updateAvatar({ avatarId: player1.avatarId, data: { currentBattle: battle._id } }),
+          AvatarService.updateAvatar({ avatarId: player2.avatarId, data: { currentBattle: battle._id } }),
         ]);
 
-        const socket1 = io.sockets.sockets.get(player1.socketId);
-        const socket2 = io.sockets.sockets.get(player2.socketId);
+        const s1 = io.sockets.sockets.get(player1.socketId);
+        const s2 = io.sockets.sockets.get(player2.socketId);
 
-        socket1?.join(roomName);
-        socket2?.join(roomName);
+        s1?.join(room);
+        s2?.join(room);
 
-        io.to(roomName).emit("opponentFound", { battle });
+        io.to(room).emit("opponentFound", { battle });
+        await notifyFriendsBattleStarted(io, player1.avatarId, battle._id.toString());
+        await notifyFriendsBattleStarted(io, player2.avatarId, battle._id.toString());
+        BattleService.startBattleTimeout(battle._id.toString(), io);
       } catch (err) {
         matchingPool.unshift(player2, player1);
-        io.to(player1.socketId).emit("matchError", { message: "Failed to create battle, retrying..." });
-        io.to(player2.socketId).emit("matchError", { message: "Failed to create battle, retrying..." });
+
+        io.to(player1.socketId).emit("matchError", { message: "Match failed" });
+        io.to(player2.socketId).emit("matchError", { message: "Match failed" });
         break;
       }
     }
+  }
 
-    isMatching = false;
+  socket.on("joinMatching", async () => {
+    const userId = socket.data.userId;
+    const avatarId = socket.data.avatarId?.toString();
+
+    if (!userId || !avatarId) return;
+
+    if (matchingPool.some(p => p.avatarId === avatarId)) return;
+
+    matchingPool.push({
+      socketId: socket.id,
+      userId,
+      avatarId,
+    });
+
+    tryMatch();
   });
 
-  const BATTLE_TIMEOUT = 400_000; // 40 seconds
-  const battleTimers: Record<string, NodeJS.Timeout> = {};
+  // Player ready on team select
+  socket.on("playerReady", async ({ currentBattleId, selectedPokemon }: { currentBattleId: string; selectedPokemon: IBattlePokemon[] }) => {
+    try {
+      const avatarId = socket.data.avatarId?.toString();
+      if (!avatarId) return;
 
-  // Function to start the battle timeout
-  async function startBattleTimeout(battleId: string, io: any) {
-    if (battleTimers[battleId]) return; // already running
+      const battle = await BattleService.markPlayerReady(currentBattleId, avatarId, selectedPokemon);
+      const roomName = `battle_${battle._id}`;
 
-    battleTimers[battleId] = setTimeout(async () => {
-      try {
-        const battle = await Battle.findById(battleId);
-        if (!battle) return;
+      const player1Ready = (battle.pokemon1?.length || 0) > 0;
+      const player2Ready = (battle.pokemon2?.length || 0) > 0;
 
-        const roomName = `battle_${battle._id}`;
-        const p1Ready = (battle.pokemon1?.length || 0) > 0;
-        const p2Ready = (battle.pokemon2?.length || 0) > 0;
-
-        battle.endedAt = new Date();
-
-        if (p1Ready && !p2Ready) {
-          battle.winner = "player1";
-          battle.winnerReason = "enemy disconnected";
-        } else if (!p1Ready && p2Ready) {
-          battle.winner = "player2";
-          battle.winnerReason = "enemy disconnected";
-        } else {
-          battle.winner = "draw";
-          battle.winnerReason = "both disconnected or did not pick in time";
+      if (player1Ready && player2Ready) {
+        if (BattleService.battleTimers[currentBattleId]) {
+          clearTimeout(BattleService.battleTimers[currentBattleId]);
+          delete BattleService.battleTimers[currentBattleId];
         }
 
+        if (!battle.currentTurn) battle.currentTurn = "player1";
+        battle.lastPlayer1Turn = new Date();
         await battle.save();
 
-        io.to(roomName).emit("TeamUpError", {
-          message: "Battle ended due to inactivity/disconnection",
-          battleId: battle._id,
-        });
-
-        delete battleTimers[battleId];
-      } catch (err) {
-        console.error("Error in battle timeout:", err);
-        delete battleTimers[battleId];
-      }
-    }, BATTLE_TIMEOUT);
-  }
-
-  // Player ready socket
-  socket.on(
-    "playerReady",
-    async ({
-      currentBattleId,
-      playerId,
-      selectedPokemon,
-    }: {
-      currentBattleId: string;
-      playerId: string;
-      selectedPokemon: IBattlePokemon[];
-    }) => {
-      try {
-        const battle = await Battle.findById(currentBattleId);
-        if (!battle) return;
-
-        const isPlayer1 = battle.player1.toString() === playerId;
-        if (isPlayer1) battle.pokemon1 = selectedPokemon;
-        else battle.pokemon2 = selectedPokemon;
-
-        await battle.save();
-
-        const roomName = `battle_${battle._id}`;
-
-        const player1Ready = (battle.pokemon1?.length || 0) > 0;
-        const player2Ready = (battle.pokemon2?.length || 0) > 0;
-
-        if (player1Ready && player2Ready) {
-          // Both ready, emit battleReady and clear timeout
-          if (battleTimers[currentBattleId]) {
-            clearTimeout(battleTimers[currentBattleId]);
-            delete battleTimers[currentBattleId];
-          }
-
-          if (!battle.currentTurn) battle.currentTurn = "player1";
-          battle.lastPlayer1Turn = new Date(); // record last turn time
-          await battle.save();
-
-          io.to(roomName).emit("battleReady", { battleId: battle._id });
-          return;
-        }
-
-        // Start the timeout if only one player is ready
-        startBattleTimeout(currentBattleId, io);
-      } catch (err) {
-        console.error("Error processing playerReady:", err);
-      }
-    }
-  );
-
-  const MOVE_TIMEOUT = 60_000; // 60 seconds per move
-  const moveTimers: Record<string, NodeJS.Timeout> = {};
-
-  // Check if current player exceeded move timeout
-  async function checkMoveTimeout(battleId: string, io: any) {
-    const battle = await Battle.findById(battleId)
-      .populate("player1")
-      .populate("player2");
-    if (!battle || battle.endedAt) return;
-
-    const now = Date.now();
-    const currentTurn = battle.currentTurn; // "player1" | "player2"
-    const lastTurnTime =
-      currentTurn === "player1"
-        ? battle.lastPlayer1Turn?.getTime()
-        : battle.lastPlayer2Turn?.getTime();
-
-    if (!lastTurnTime) return;
-
-    if (now - lastTurnTime >= MOVE_TIMEOUT) {
-      battle.endedAt = new Date();
-      const loser = currentTurn;
-      const winner = currentTurn === "player1" ? "player2" : "player1";
-
-      battle.winner = winner;
-      battle.winnerReason = `${loser} did not move in time`;
-      await battle.save();
-
-      if (moveTimers[battleId]) {
-        clearTimeout(moveTimers[battleId]);
-        delete moveTimers[battleId];
-      }
-
-      // Update players
-      const updatePlayers = async (player: IAvatar) => {
-        player.currentBattle = undefined;
-        if (!player.battleHistory) player.battleHistory = [];
-        player.battleHistory.push(battle._id);
-        await player.save();
-      };
-      await Promise.all([
-        updatePlayers(battle.player1 as IAvatar),
-        updatePlayers(battle.player2 as IAvatar),
-      ]);
-
-      io.to(`battle_${battle._id}`).emit("battleError", {
-        message: `Battle ended: ${loser} did not move in time`,
-        battleId: battle._id,
-      });
-    }
-  }
-
-  // Start/restart move timeout
-  function startMoveTimeout(battleId: string, io: any) {
-    if (moveTimers[battleId]) {
-      clearTimeout(moveTimers[battleId]);
-    }
-    moveTimers[battleId] = setTimeout(() => {
-      checkMoveTimeout(battleId, io);
-    }, MOVE_TIMEOUT);
-  }
-
-  // Player action socket
-  socket.on(
-    "playerAction",
-    async ({
-      battleId,
-      action,
-      isPlayer1,
-      attackerActiveIndex,
-      defenderActiveIndex,
-    }: {
-      battleId: string;
-      action: any;
-      isPlayer1: boolean;
-      attackerActiveIndex: number;
-      defenderActiveIndex: number;
-    }) => {
-      try {
-        const battle = await Battle.findById(battleId)
-          .populate("player1")
-          .populate("player2");
-        if (!battle || battle.endedAt) return;
-
-        const roomName = `battle_${battle._id}`;
-        const attackerTeam = isPlayer1 ? battle.pokemon1 : battle.pokemon2;
-        const defenderTeam = isPlayer1 ? battle.pokemon2 : battle.pokemon1;
-        const attackerIndexField = isPlayer1 ? "active1" : "active2";
-
-        // Record last turn time
-        if (isPlayer1) battle.lastPlayer1Turn = new Date();
-        else battle.lastPlayer2Turn = new Date();
-
-        if (action.type === "switch" || action.type === "forcedswitch") {
-          battle[attackerIndexField] = action.payload.newIndex;
-          battle.currentTurn = isPlayer1 ? "player2" : "player1";
-        }
-
-        if (action.type === "attack") {
-          const attackerPokemon = attackerTeam[attackerActiveIndex];
-          const defenderPokemon = defenderTeam[defenderActiveIndex];
-          if (!attackerPokemon || !defenderPokemon) return;
-
-          defenderPokemon.currentHp -= attackerPokemon.attack;
-          if (defenderPokemon.currentHp <= 0) {
-            defenderPokemon.currentHp = 0;
-            defenderPokemon.isDead = true;
-          }
-
-          const attackerAlive = attackerTeam.some((p) => !p.isDead);
-          const defenderAlive = defenderTeam.some((p) => !p.isDead);
-
-          if (!attackerAlive || !defenderAlive) {
-            battle.endedAt = new Date();
-            if (!defenderAlive) {
-              battle.winner = isPlayer1 ? "player1" : "player2";
-              battle.winnerReason = `${defenderPokemon.name} fainted`;
-            } else {
-              battle.winner = isPlayer1 ? "player2" : "player1";
-              battle.winnerReason = `${attackerPokemon.name} fainted`;
-            }
-
-            // Update players
-            const updatePlayers = async (player: IAvatar) => {
-              player.currentBattle = undefined;
-              if (!player.battleHistory) player.battleHistory = [];
-              player.battleHistory.push(battle._id);
-              await player.save();
-            };
-            await Promise.all([
-              updatePlayers(battle.player1 as IAvatar),
-              updatePlayers(battle.player2 as IAvatar),
-            ]);
-          } else {
-            battle.currentTurn = isPlayer1 ? "player2" : "player1";
-          }
-        }
-
-        battle.markModified("pokemon1");
-        battle.markModified("pokemon2");
-        await battle.save();
-
-        // Restart move timeout
-        startMoveTimeout(battle._id.toString(), io);
-
-        const payload = {
+        io.to(roomName).emit("battleReady", { battleId: battle._id });
+        
+        // NEW: Emit initial battle state to room (including spectators)
+        io.to(roomName).emit("updateBattleState", {
           _id: battle._id,
           pokemon1: battle.pokemon1,
           pokemon2: battle.pokemon2,
@@ -315,15 +139,53 @@ export function setupBattleHandlers(
           endedAt: battle.endedAt,
           winner: battle.winner,
           winnerReason: battle.winnerReason,
-        };
-
-        io.to(roomName).emit("updateBattleState", payload);
-      } catch (err) {
-        console.error("Error processing player action:", err);
+        });
+        
+        BattleService.startMoveTimeout(battle._id.toString(), io);
+        return;
       }
+    } catch (err) {
+      console.error("Error processing playerReady:", err);
     }
-  );
+  });
 
+  // Player action on battle
+  socket.on("playerAction", async (data: any) => {
+    try {
+      const avatarId = socket.data.avatarId?.toString();
+      if (!avatarId) return;
+
+      const battle = await BattleService.playerAction(
+        data.battleId,
+        avatarId,
+        data.action,
+        data.attackerActiveIndex,
+        data.defenderActiveIndex
+      );
+
+      BattleService.startMoveTimeout(data.battleId, io);
+
+      const roomName = `battle_${battle._id}`;
+      io.to(roomName).emit("updateBattleState", {
+        _id: battle._id,
+        pokemon1: battle.pokemon1,
+        pokemon2: battle.pokemon2,
+        active1: battle.active1,
+        active2: battle.active2,
+        currentTurn: battle.currentTurn,
+        lastPlayer1Turn: battle.lastPlayer1Turn,
+        lastPlayer2Turn: battle.lastPlayer2Turn,
+        endedAt: battle.endedAt,
+        winner: battle.winner,
+        winnerReason: battle.winnerReason,
+      });
+    } catch (err) {
+      console.error("Error processing player action:", err);
+      socket.emit("playerActionError", { message: err instanceof Error ? err.message : "Unknown error" });
+    }
+  });
+
+  // join as spectator
   socket.on("joinAsSpectator", async (data: { battleId: string }) => {
     const { battleId } = data;
     const roomName = `battle_${battleId}`;
@@ -338,159 +200,127 @@ export function setupBattleHandlers(
     console.log(`Spectator joined room ${roomName}`);
   });
 
-  // SEND MATCH INVITE - MOVED INSIDE THE FUNCTION
-  socket.on("sendMatchInvite", async (data: {
-    senderId: string;
-    receiverId: string;
-  }) => {
-    const { senderId, receiverId } = data;
-
-    if (socket.data.avatarId !== senderId) {
-      socket.emit("matchInviteError", { error: "Unauthorized" });
-      return;
-    }
-
-    // Check if receiver is online - need to get onlineUsers from somewhere
-    // We'll need to pass onlineUsers to this function or use a different approach
-    // For now, emit to the specific socket if we can find it
-    // Actually, we need access to onlineUsers map - let's use io.sockets.sockets to check
-    
-    // Check if receiver is online by looking through all sockets
-    let receiverSocketId: string | null = null;
-    for (const [sid, s] of io.sockets.sockets) {
-      if (s.data.avatarId === receiverId) {
-        receiverSocketId = sid;
-        break;
+  // Send match invite
+  socket.on("sendMatchInvite", async (data: { receiverId: string }) => {
+    try {
+      const senderId = socket.data.avatarId?.toString(); 
+      if (!senderId) {
+        socket.emit("matchInviteError", { error: "Unauthorized" });
+        return;
       }
-    }
 
-    if (!receiverSocketId) {
-      socket.emit("matchInviteError", { error: "User is offline" });
-      return;
-    }
+      // NEW: Check sender has at least 3 Pokemon
+      const senderAvatar = await Avatar.findById(senderId).populate("pokemonInventory");
+      if (!senderAvatar || (senderAvatar.pokemonInventory?.length || 0) < 3) {
+        socket.emit("matchInviteError", { error: "You need at least 3 Pokemon to battle" });
+        return;
+      }
 
-    // Check for existing pending invite
-    const existing = await MatchInvite.findOne({
-      senderId,
-      receiverId,
-      status: 'pending'
-    });
+      const receiverId = data.receiverId;
 
-    if (existing) {
-      socket.emit("matchInviteError", { error: "Invite already pending" });
-      return;
-    }
+      // NEW: Check receiver has at least 3 Pokemon
+      const receiverAvatar = await Avatar.findById(receiverId).populate("pokemonInventory");
+      if (!receiverAvatar || (receiverAvatar.pokemonInventory?.length || 0) < 3) {
+        socket.emit("matchInviteError", { error: "Opponent needs at least 3 Pokemon to battle" });
+        return;
+      }
 
-    // Create invite
-    const invite = await MatchInvite.create({
-      senderId,
-      receiverId,
-      status: 'pending',
-      expiresAt: new Date(Date.now() + 30000), // 30 seconds
-    });
-
-    // Get sender info
-    const senderAvatar = await Avatar.findById(senderId).select("userName avatar");
-
-    // Notify receiver
-    io.to(receiverSocketId).emit("matchInviteReceived", {
-      inviteId: invite._id,
-      senderId,
-      senderName: senderAvatar?.userName || "Unknown",
-      senderAvatar: senderAvatar?.avatar || "",
-    });
-
-    socket.emit("matchInviteSent", { inviteId: invite._id });
-  });
-
-  // RESPOND TO MATCH INVITE - MOVED INSIDE THE FUNCTION
-  socket.on("respondToMatchInvite", async (data: {
-    inviteId: string;
-    senderId: string;
-    receiverId: string;
-    accept: boolean;
-  }) => {
-    const { inviteId, senderId, receiverId, accept } = data;
-
-    if (socket.data.avatarId !== receiverId) {
-      socket.emit("matchInviteError", { error: "Unauthorized" });
-      return;
-    }
-
-    const invite = await MatchInvite.findById(inviteId);
-    if (!invite || invite.status !== 'pending') {
-      socket.emit("matchInviteError", { error: "Invite expired or invalid" });
-      return;
-    }
-
-    if (!accept) {
-      invite.status = 'declined';
-      await invite.save();
-      
-      // Notify sender of decline - find their socket
+      let receiverSocketId: string | null = null;
       for (const [sid, s] of io.sockets.sockets) {
-        if (s.data.avatarId === senderId) {
-          io.to(sid).emit("matchInviteDeclined", { by: receiverId });
+        if (s.data.avatarId === receiverId) {
+          receiverSocketId = sid;
           break;
         }
       }
-      return;
-    }
 
-    // ACCEPTED - Check if sender still online
-    let senderSocketId: string | null = null;
-    for (const [sid, s] of io.sockets.sockets) {
-      if (s.data.avatarId === senderId) {
-        senderSocketId = sid;
-        break;
+      if (!receiverSocketId) {
+        socket.emit("matchInviteError", { error: "User is offline" });
+        return;
       }
-    }
 
-    if (!senderSocketId) {
-      socket.emit("matchInviteError", { error: "Sender went offline" });
-      invite.status = 'expired';
-      await invite.save();
-      return;
-    }
+      const { invite, senderInfo } = await BattleService.sendMatchInvite({ senderId, receiverId });
 
-    // Mark as accepted
-    invite.status = 'accepted';
-    await invite.save();
-
-    // Create battle directly (skip matching pool)
-    try {
-      const response = await axios.post("http://localhost:25001/api/battle", {
-        player1: senderId,
-        player2: receiverId,
+      io.to(receiverSocketId).emit("matchInviteReceived", {
+        inviteId: invite._id,
+        senderId,
+        senderName: senderInfo.name,
+        senderAvatar: senderInfo.avatar,
       });
-      const battle = response.data;
-      const roomName = `battle_${battle._id}`;
 
-      // Update both players' currentBattle
-      const token = socket.data.token;
-      await Promise.all([
-        axios.put(
-          `http://localhost:25001/api/avatar/${senderId}`,
-          { currentBattle: battle },
-          { headers: { Authorization: `Bearer ${token}` } }
-        ),
-        axios.put(
-          `http://localhost:25001/api/avatar/${receiverId}`,
-          { currentBattle: battle },
-          { headers: { Authorization: `Bearer ${token}` } }
-        ),
-      ]);
-
-      // Join both to battle room
-      const senderSocket = io.sockets.sockets.get(senderSocketId);
-      senderSocket?.join(roomName);
-      socket.join(roomName);
-
-      // Notify both
-      io.to(roomName).emit("directMatchReady", { battle });
+      socket.emit("matchInviteSent", { inviteId: invite._id });
+      return;
     } catch (err) {
-      console.error("Failed to create direct battle:", err);
-      socket.emit("matchInviteError", { error: "Failed to start battle" });
+      console.error("Error sending match invite:", err);
+      const message = err instanceof Error ? err.message : "Unknown error";
+      socket.emit("matchInviteError", { error: message });
+      return;
     }
   });
+
+  // Respond match invite
+  socket.on(
+    "respondToMatchInvite",
+    async (data: { inviteId: string; accept: boolean }): Promise<void> => {
+      try {
+        const receiverId = socket.data.avatarId.toString();
+        if (!receiverId) {
+          socket.emit("matchInviteError", { error: "Unauthorized" });
+          return;
+        }
+
+        const { inviteId, accept } = data;
+
+        // NEW: If accepting, check both players still have 3 Pokemon
+        if (accept) {
+          const receiverAvatar = await Avatar.findById(receiverId).populate("pokemonInventory");
+          if (!receiverAvatar || (receiverAvatar.pokemonInventory?.length || 0) < 3) {
+            socket.emit("matchInviteError", { error: "You need at least 3 Pokemon to battle" });
+            return;
+          }
+        }
+
+        const result = await BattleService.respondToMatchInvite({
+          inviteId,
+          receiverId,
+          accept,
+        });
+
+        if (result.declined) {
+          if (result.senderId) {
+            for (const [sid, s] of io.sockets.sockets) {
+              if (s.data.avatarId === result.senderId) {
+                io.to(sid).emit("matchInviteDeclined", { by: receiverId });
+                break;
+              }
+            }
+          }
+          return;
+        }
+
+        const battle = result.battle;
+        const roomName = `battle_${battle._id}`;
+
+        for (const [_, s] of io.sockets.sockets) {
+          if (
+            s.data.avatarId?.toString() === battle.player1.toString() ||
+            s.data.avatarId?.toString() === battle.player2.toString()
+          ) {
+            s.join(roomName);
+          }
+        }
+
+        io.to(roomName).emit("directMatchReady", { battle });
+        
+        // Notify friends
+        BattleService.startBattleTimeout(battle._id.toString(), io);
+        await notifyFriendsBattleStarted(io, battle.player1.toString(), battle._id.toString());
+        await notifyFriendsBattleStarted(io, battle.player2.toString(), battle._id.toString());
+        
+      } catch (err) {
+        console.error("Error responding to match invite:", err);
+        const message = err instanceof Error ? err.message : "Unknown error";
+        socket.emit("matchInviteError", { error: message });
+      }
+    }
+  );
 }

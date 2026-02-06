@@ -1,15 +1,16 @@
 import { Server, Socket } from "socket.io";
-import Message from "../db/message";
-import Avatar from "../db/avatar";
+import { markMessagesRead, sendMessage } from "../services/chat.service";
+import { getAvatarById } from "../services/avatar.service";
 
-// Track which sockets are in which chat rooms
 const chatRooms = new Map<string, Set<string>>();
 
 export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<string, string>) {
   
-  // JOIN PRIVATE CHAT ROOM
-  socket.on("joinChat", (data: { friendAvatarId: string; myAvatarId: string }) => {
-    const { friendAvatarId, myAvatarId } = data;
+  // Join private chat room
+  socket.on("joinChat", (data: { friendAvatarId: string}) => {
+    const myAvatarId = socket.data.avatarId.toString();
+
+    const { friendAvatarId } = data;
     
     if (!friendAvatarId || !myAvatarId) {
       console.log("❌ Invalid joinChat data:", data);
@@ -33,9 +34,11 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
     console.log(`💬 ${myAvatarId} joined chat room ${roomName}`);
   });
 
-  // LEAVE PRIVATE CHAT ROOM
-  socket.on("leaveChat", (data: { friendAvatarId: string; myAvatarId: string }) => {
-    const { friendAvatarId, myAvatarId } = data;
+  // Leave private chat room
+  socket.on("leaveChat", (data: { friendAvatarId: string }) => {
+    const myAvatarId = socket.data.avatarId.toString();
+
+    const { friendAvatarId } = data;
     
     if (!friendAvatarId || !myAvatarId) return;
     
@@ -47,36 +50,30 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
     console.log(`💬 ${myAvatarId} left chat room ${roomName}`);
   });
 
-  // SEND PRIVATE MESSAGE
+  // Send private message
   socket.on("sendPrivateMessage", async (data: { 
     receiverId: string; 
     content: string;
-    senderId: string;
   }) => {
-    const { receiverId, content, senderId } = data;
+    const { receiverId, content } = data;
 
     if (!content || content.trim().length === 0) return;
+    const userId = socket.data.userId.toString();
+    const senderId = socket.data.avatarId.toString();
     if (!senderId || !receiverId) {
       socket.emit("messageError", { error: "Missing sender or receiver" });
       return;
     }
-
     try {
-      // Verify sender matches socket's registered avatar
-      if (socket.data.avatarId !== senderId) {
-        socket.emit("messageError", { error: "Unauthorized sender" });
-        return;
-      }
-
-      // SAVE AS STRINGS (consistent with database)
-      const message = await Message.create({
-        senderId: senderId,
-        receiverId: receiverId,
+      const message = await sendMessage({
+        userId: userId,
+        friendAvatarId: receiverId,
         content: content.trim(),
       });
 
-      // Get sender info for the payload
-      const senderAvatar = await Avatar.findById(senderId).select("userName avatar");
+      if (!message) return;
+
+      const senderAvatar = await getAvatarById({avatarId: senderId});
 
       const messagePayload = {
         _id: message._id.toString(),
@@ -89,11 +86,9 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
         senderAvatar: senderAvatar?.avatar || "",
       };
 
-      // Send to chat room
       const roomName = [senderId, receiverId].sort().join("_");
       io.to(roomName).emit("receiveMessage", messagePayload);
 
-      // If receiver is online but NOT in chat room, send notification
       const receiverSocketId = onlineUsers.get(receiverId);
       const roomParticipants = chatRooms.get(roomName) || new Set();
       
@@ -112,13 +107,14 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
     }
   });
 
-  // TYPING INDICATOR
+  // Typing indicator
   socket.on("typing", (data: { 
     receiverId: string; 
-    senderId: string; 
     isTyping: boolean 
   }) => {
-    const { receiverId, senderId, isTyping } = data;
+    const senderId = socket.data.avatarId.toString();
+
+    const { receiverId, isTyping } = data;
     
     if (!receiverId || !senderId) return;
     
@@ -130,23 +126,19 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
     });
   });
 
-  // MARK MESSAGES AS READ
+  // Mark messages as read
   socket.on("markAsRead", async (data: { 
-    senderId: string; 
     receiverId: string 
   }) => {
-    const { senderId, receiverId } = data;
+    const { receiverId } = data;
+
+    const senderId = socket.data.avatarId.toString();
     
     if (!senderId || !receiverId) return;
     
     try {
-      // Use strings directly
-      await Message.updateMany(
-        { senderId: senderId, receiverId: receiverId, read: false },
-        { read: true }
-      );
+      await markMessagesRead({ senderId, receiverId });
       
-      // Notify sender that messages were read
       const senderSocketId = onlineUsers.get(senderId);
       if (senderSocketId) {
         io.to(senderSocketId).emit("messagesRead", { byAvatarId: receiverId });

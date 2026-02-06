@@ -37,7 +37,7 @@ export default function GuildList({
     setJoining(guildId);
 
     try {
-      const res = await fetch(`http://localhost:25001/api/guild/${guildId}/join`, {
+      const res = await fetch(`http://localhost:5001/api/guild/${guildId}/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,7 +58,6 @@ export default function GuildList({
       
       emitEvent("guildUpdate", {
         guildId: updatedGuild._id,
-        token: token,
         action: "update",
       });
     } catch (err: unknown) {

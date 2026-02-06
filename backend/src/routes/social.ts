@@ -1,240 +1,139 @@
 import { Router } from "express";
-import Blocked from "../db/blocked";
-import Avatar from "../db/avatar";
-import User from "../db/user";
-import Friend from "../db/friend";
 import { authMiddleware, AuthRequest } from "./auth";
+
+import * as SocialService from "../services/sosial.service";
 
 const router = Router();
 
-// BLOCK A USER
+// Block a user
 router.post("/block/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    if (!req.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const blockedAvatarId = Array.isArray(req.params.avatarId) 
-      ? req.params.avatarId[0] 
+    const blockedAvatarId = Array.isArray(req.params.avatarId)
+      ? req.params.avatarId[0]
       : req.params.avatarId;
 
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser?.avatar) {
-      res.status(404).json({ message: "Avatar not found" });
-      return;
-    }
-
-    const myAvatarId = currentUser.avatar.toString();
-
-    // Can't block yourself
-    if (myAvatarId === blockedAvatarId) {
-      res.status(400).json({ message: "Cannot block yourself" });
-      return;
-    }
-
-    // Remove from friends if they were friends
-    const friendUser = await User.findOne({ avatar: blockedAvatarId });
-    if (friendUser) {
-      await Friend.deleteMany({
-        $or: [
-          { userId: req.userId, friendId: friendUser._id },
-          { userId: friendUser._id, friendId: req.userId },
-        ],
-      });
-    }
-
-    // Create block
-    await Blocked.create({
-      blockerId: myAvatarId,
-      blockedId: blockedAvatarId,
+    await SocialService.blockUser({
+      userId: req.userId,
+      blockedAvatarId,
     });
 
-    res.status(201).json({ message: "User blocked" });
-    return;
+    return res.status(201).json({ message: "User blocked" });
   } catch (err: any) {
-    if (err.code === 11000) {
-      res.status(400).json({ message: "Already blocked" });
-      return;
+    if (err.code === 11000 || err.message === "ALREADY_BLOCKED") {
+      return res.status(400).json({ message: "Already blocked" });
     }
-    console.error("Block error:", err);
-    res.status(500).json({ message: "Failed to block user" });
-    return;
+    if (err.message === "CANNOT_BLOCK_SELF") {
+      return res.status(400).json({ message: "Cannot block yourself" });
+    }
+    if (err.message === "AVATAR_NOT_FOUND") {
+      return res.status(404).json({ message: "Avatar not found" });
+    }
+
+    console.error("[POST /block/:avatarId] error:", err);
+    return res.status(500).json({ message: "Failed to block user" });
   }
 });
 
-// UNBLOCK A USER
+// Unblock a user
 router.delete("/block/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    if (!req.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const blockedAvatarId = Array.isArray(req.params.avatarId) 
-      ? req.params.avatarId[0] 
+    const blockedAvatarId = Array.isArray(req.params.avatarId)
+      ? req.params.avatarId[0]
       : req.params.avatarId;
 
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser?.avatar) {
-      res.status(404).json({ message: "Avatar not found" });
-      return;
-    }
-
-    await Blocked.deleteOne({
-      blockerId: currentUser.avatar.toString(),
-      blockedId: blockedAvatarId,
+    await SocialService.unblockUser({
+      userId: req.userId,
+      blockedAvatarId,
     });
 
-    res.status(200).json({ message: "User unblocked" });
-    return;
-  } catch (err) {
-    console.error("Unblock error:", err);
-    res.status(500).json({ message: "Failed to unblock user" });
-    return;
+    return res.status(200).json({ message: "User unblocked" });
+  } catch (err: any) {
+    if (err.message === "AVATAR_NOT_FOUND") {
+      return res.status(404).json({ message: "Avatar not found" });
+    }
+
+    console.error("[DELETE /block/:avatarId] error:", err);
+    return res.status(500).json({ message: "Failed to unblock user" });
   }
 });
 
-// GET BLOCKED USERS LIST
+// Get blocked user list
 router.get("/blocked", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    if (!req.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const blockedUsers = await SocialService.getBlockedUsers(req.userId);
+
+    return res.status(200).json(blockedUsers);
+  } catch (err: any) {
+    if (err.message === "AVATAR_NOT_FOUND") {
+      return res.status(404).json({ message: "Avatar not found" });
     }
 
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser?.avatar) {
-      res.status(404).json({ message: "Avatar not found" });
-      return;
-    }
-
-    const blocked = await Blocked.find({ blockerId: currentUser.avatar.toString() })
-      .populate({
-        path: "blockedId",
-        model: "Avatar",
-        select: "userName avatar characterOption",
-      });
-
-    res.status(200).json(blocked);
-    return;
-  } catch (err) {
-    console.error("Get blocked error:", err);
-    res.status(500).json({ message: "Failed to fetch blocked users" });
-    return;
+    console.error("[GET /blocked] error:", err);
+    return res.status(500).json({ message: "Failed to fetch blocked users" });
   }
 });
 
-// CHECK IF BLOCKED (for chat)
+// Check if blocked (For chat)
 router.get("/block/check/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    if (!req.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const otherAvatarId = Array.isArray(req.params.avatarId) 
-      ? req.params.avatarId[0] 
+    const otherAvatarId = Array.isArray(req.params.avatarId)
+      ? req.params.avatarId[0]
       : req.params.avatarId;
 
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser?.avatar) {
-      res.status(404).json({ message: "Avatar not found" });
-      return;
+    const blockStatus = await SocialService.checkIfBlocked({
+      userId: req.userId,
+      otherAvatarId,
+    });
+
+    return res.status(200).json(blockStatus);
+  } catch (err: any) {
+    if (err.message === "AVATAR_NOT_FOUND") {
+      return res.status(404).json({ message: "Avatar not found" });
     }
 
-    const myAvatarId = currentUser.avatar.toString();
-
-    // Check if either has blocked the other
-    const blocked = await Blocked.findOne({
-      $or: [
-        { blockerId: myAvatarId, blockedId: otherAvatarId },
-        { blockerId: otherAvatarId, blockedId: myAvatarId },
-      ],
-    });
-
-    res.status(200).json({ 
-      isBlocked: !!blocked,
-      blockedBy: blocked ? blocked.blockerId : null 
-    });
-    return;
-  } catch (err) {
-    console.error("Check block error:", err);
-    res.status(500).json({ message: "Failed to check block status" });
-    return;
+    console.error("[GET /block/check/:avatarId] error:", err);
+    return res.status(500).json({ message: "Failed to check block status" });
   }
 });
 
-// GET PUBLIC PROFILE (view another user's profile)
+// Get public view (view another user's profile)
 router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    if (!req.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const targetAvatarId = Array.isArray(req.params.avatarId) 
-      ? req.params.avatarId[0] 
+    const targetAvatarId = Array.isArray(req.params.avatarId)
+      ? req.params.avatarId[0]
       : req.params.avatarId;
 
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser?.avatar) {
-      res.status(404).json({ message: "Avatar not found" });
-      return;
-    }
-
-    const myAvatarId = currentUser.avatar.toString();
-
-    // Check if blocked
-    const isBlocked = await Blocked.findOne({
-      $or: [
-        { blockerId: myAvatarId, blockedId: targetAvatarId },
-        { blockerId: targetAvatarId, blockedId: myAvatarId },
-      ],
+    const profileData = await SocialService.getPublicProfile({
+      userId: req.userId,
+      targetAvatarId,
     });
 
-    if (isBlocked) {
-      res.status(403).json({ message: "Cannot view this profile" });
-      return;
+    return res.status(200).json(profileData);
+  } catch (err: any) {
+    if (err.message === "AVATAR_NOT_FOUND") {
+      return res.status(404).json({ message: "Avatar not found" });
+    }
+    if (err.message === "PROFILE_BLOCKED") {
+      return res.status(403).json({ message: "Cannot view this profile" });
+    }
+    if (err.message === "PROFILE_NOT_FOUND") {
+      return res.status(404).json({ message: "Profile not found" });
     }
 
-    // Get target avatar with limited fields (public info)
-    const profile = await Avatar.findById(targetAvatarId)
-      .select("userName avatar characterOption battleWin battleLoss raceWin raceLoss guild pokemonInventory")
-      .populate("guild", "name image")
-      .lean();
-
-    if (!profile) {
-      res.status(404).json({ message: "Profile not found" });
-      return;
-    }
-
-    // Check friendship status
-    const targetUser = await User.findOne({ avatar: targetAvatarId });
-    let friendshipStatus = 'none';
-    
-    if (targetUser) {
-      const friendRecord = await Friend.findOne({
-        $or: [
-          { userId: req.userId, friendId: targetUser._id },
-          { userId: targetUser._id, friendId: req.userId },
-        ],
-        status: "accepted",
-      });
-      if (friendRecord) friendshipStatus = 'friend';
-    }
-
-    res.status(200).json({
-      ...profile,
-      friendshipStatus,
-      isMe: myAvatarId === targetAvatarId,
-    });
-    return;
-  } catch (err) {
-    console.error("Get profile error:", err);
-    res.status(500).json({ message: "Failed to fetch profile" });
-    return;
+    console.error("[GET /profile/:avatarId] error:", err);
+    return res.status(500).json({ message: "Failed to fetch profile" });
   }
 });
+
 
 export default router;

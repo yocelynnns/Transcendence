@@ -94,12 +94,14 @@ export default function usePlayer({
       let dx = 0;
       let dy = 0;
 
-      //KEY INPUT
+      // KEY INPUT
       if (!stopMovementRef.current) {
-        if (keysPressed.current.has("w")) dy -= MOVE_SPEED;
-        if (keysPressed.current.has("s")) dy += MOVE_SPEED;
-        if (keysPressed.current.has("a")) dx -= MOVE_SPEED;
-        if (keysPressed.current.has("d")) dx += MOVE_SPEED;
+        const keys = keysPressed.current;
+
+        if (keys.has("w") || keys.has("W")) dy -= MOVE_SPEED;
+        if (keys.has("s") || keys.has("S")) dy += MOVE_SPEED;
+        if (keys.has("a") || keys.has("A")) dx -= MOVE_SPEED;
+        if (keys.has("d") || keys.has("D")) dx += MOVE_SPEED;
 
         if (dx !== 0 && dy !== 0) {
           dx /= Math.sqrt(2);

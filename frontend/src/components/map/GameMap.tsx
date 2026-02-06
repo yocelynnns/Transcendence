@@ -68,9 +68,9 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
   //FETCH INITIAL POKEMON
   useEffect(() => {
     axios
-      .get<MapPokemon[]>("http://localhost:25001/api/pokemon")
+      .get<MapPokemon[]>("http://localhost:5001/api/pokemon")
       .then((res) => setPokemonList(res.data))
-      .catch((err) => console.error("Failed to fetch initial Pokémon:", err));
+      .catch((err) => console.error("Failed to fetch initial Pokemon:", err));
   }, [setPokemonList]);
 
   //SUBSCRIBE POKEMON UPDATES
@@ -116,7 +116,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
       };
     });
 
-    emitEvent("catchPokemon", { playerId: avatarId, pokemonId: p._id });
+    emitEvent("catchPokemon", {mapPokemonId: p._id});
 
     handleCatchNo();
 
@@ -218,7 +218,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
             fontFamily: "monospace",
           }}
         >
-          <div style={{ marginBottom: 8 }}>Catch this Pokémon?</div>
+          <div style={{ marginBottom: 8 }}>Catch this Pokemon?</div>
           <button onClick={() => handleCatchPokemon(encounterPokemon)}>Yes</button>
           <button onClick={handleCatchNo} style={{ marginLeft: 8 }}>
             No

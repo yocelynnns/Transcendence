@@ -1,4 +1,3 @@
-// POKÉMON TYPES
 export interface PokemonEntry {
   name: string;
   type: "grass" | "water" | "normal" | "fire";
@@ -7,9 +6,9 @@ export interface PokemonEntry {
   attack: number;
 }
 
-// ALL POKÉMON
+// All Pokemon
 const ALL_POKEMON: PokemonEntry[] = [
-  // FIRE
+  // fire
   { name: "charmander", type: "fire", is_shiny: false, hp: 8, attack: 6 },
   { name: "vulpix", type: "fire", is_shiny: false, hp: 10, attack: 5 },
   { name: "ponyta", type: "fire", is_shiny: false, hp: 12, attack: 4 },
@@ -17,7 +16,7 @@ const ALL_POKEMON: PokemonEntry[] = [
   { name: "shiny vulpix", type: "fire", is_shiny: true, hp: 12, attack: 6 },
   { name: "shiny ponyta", type: "fire", is_shiny: true, hp: 14, attack: 5 },
 
-  // GRASS
+  // Grass
   { name: "bulbasaur", type: "grass", is_shiny: false, hp: 8, attack: 6 },
   { name: "oddish", type: "grass", is_shiny: false, hp: 10, attack: 5 },
   { name: "bellsprout", type: "grass", is_shiny: false, hp: 12, attack: 4 },
@@ -25,7 +24,7 @@ const ALL_POKEMON: PokemonEntry[] = [
   { name: "shiny oddish", type: "grass", is_shiny: true, hp: 12, attack: 6 },
   { name: "shiny bellsprout", type: "grass", is_shiny: true, hp: 14, attack: 5 },
 
-  // NORMAL
+  // Normal
   { name: "cleffa", type: "normal", is_shiny: false, hp: 8, attack: 6 },
   { name: "togepi", type: "normal", is_shiny: false, hp: 10, attack: 5 },
   { name: "pikachu", type: "normal", is_shiny: false, hp: 12, attack: 4 },
@@ -33,7 +32,7 @@ const ALL_POKEMON: PokemonEntry[] = [
   { name: "shiny togepi", type: "normal", is_shiny: true, hp: 12, attack: 6 },
   { name: "shiny pikachu", type: "normal", is_shiny: true, hp: 14, attack: 5 },
 
-  // WATER
+  // Water
   { name: "squirtle", type: "water", is_shiny: false, hp: 8, attack: 6 },
   { name: "psyduck", type: "water", is_shiny: false, hp: 10, attack: 5 },
   { name: "slowpoke", type: "water", is_shiny: false, hp: 12, attack: 4 },

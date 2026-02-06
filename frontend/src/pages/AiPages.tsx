@@ -37,6 +37,7 @@ export default function AiPages() {
     battleResult,
     battleData,  
     activePlayerIsDead,
+    resetBattle,
   } = useBattleLogic();
 
   const playerPokemon = toBattlePokemon(playerActive);
@@ -51,7 +52,6 @@ export default function AiPages() {
       className="battle"
       style={{ backgroundImage: `url(/assets/bg/background.png)` }}
     >
-      {/* Enemy */}
       <div className="player2-container">
         <img src="/assets/bg/dry_platform_enemy.png" className="player2-platform" />
 
@@ -85,7 +85,6 @@ export default function AiPages() {
         })}
       </div>
 
-      {/* Player */}
       <div className="player-container">
         <img src="/assets/bg/dry_platform_player.png" className="player-platform" />
 
@@ -144,7 +143,7 @@ export default function AiPages() {
 
       {activePlayerIsDead && !battleResult && (
         <div className="faint-overlay">
-          <h2>Your Pokémon fainted! Choose a new one:</h2>
+          <h2>Your Pokemon fainted! Choose a new one:</h2>
           <div className="switch-options">
             {playerTeam.map((p, idx) =>
               isAlive(p) ? (
@@ -161,8 +160,6 @@ export default function AiPages() {
         </div>
 )}
 
-
-      {/* ---------------- Battle Result Overlay ---------------- */}
       {battleResult && (
         <div className="battle-result-overlay">
           <h1>{battleResult === "win" ? "You Won!" : "You Lost!"}</h1>
@@ -176,7 +173,7 @@ export default function AiPages() {
           </button>
           <button
             onClick={() => {
-              navigate("/matching");
+              resetBattle();
             }}
           >
             Play Again

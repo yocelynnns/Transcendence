@@ -5,10 +5,11 @@ interface MenuBarProps {
   pokemon1?: { icon: string; isDead: boolean; onClick: () => void };
   pokemon2?: { icon: string; isDead: boolean; onClick: () => void };
   onAttack: () => void;
-  disabled: boolean; // 👈 ADD
+  onSurrender: () => void;
+  disabled: boolean;
 }
 
-export default function MenuBar({ currentPokemon, pokemon1, pokemon2, onAttack, disabled }: MenuBarProps) {
+export default function MenuBar({ currentPokemon, pokemon1, pokemon2, onAttack, disabled, onSurrender }: MenuBarProps) {
   const menuBar = "/assets/menu_bar/menu_bar.png";
 
   const renderSwitchButton = (pokemon: { icon: string; isDead: boolean; onClick: () => void }) => (
@@ -38,7 +39,7 @@ export default function MenuBar({ currentPokemon, pokemon1, pokemon2, onAttack, 
             >
               ATTACK
             </button>
-            <button className="surrender">SURRENDER</button>
+            <button className="surrender" onClick={!disabled ? onSurrender : undefined}>SURRENDER</button>
           </div>
         )}
       </div>

@@ -1,9 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-// INTERFACE
 export interface IPlayerPokemon extends Document {
-  name: string; // POKÉMON NAME
-  type: "grass" | "water" | "normal" | "fire"; // POKÉMON TYPE
+  name: string;
+  type: "grass" | "water" | "normal" | "fire";
   is_shiny: boolean;
   hp: number;
   attack: number;
@@ -13,10 +12,9 @@ export interface IPlayerPokemon extends Document {
   usageTotalNum: number;
 }
 
-// SCHEMA
 const PlayerPokemonSchema: Schema = new Schema({
-  name: { type: String, required: true }, // NAME
-  type: { type: String, enum: ["grass", "water", "normal", "fire"], required: true }, // TYPE
+  name: { type: String, required: true },
+  type: { type: String, enum: ["grass", "water", "normal", "fire"], required: true },
 
   is_shiny: {type: Boolean, required: true},
   hp: { type: Number, required: true },
@@ -27,4 +25,4 @@ const PlayerPokemonSchema: Schema = new Schema({
   usageTotalNum: { type: Number, default: 0 },
 });
 
-export default mongoose.model<IPlayerPokemon>("PlayerPokemon", PlayerPokemonSchema); // EXPORT MODEL
+export default mongoose.model<IPlayerPokemon>("PlayerPokemon", PlayerPokemonSchema);

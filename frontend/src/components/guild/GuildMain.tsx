@@ -101,9 +101,6 @@ export default function GuildMain({ avatarData, token }: GuildMainProps) {
         <div
           onClick={() => setPanelOpen(!panelOpen)}
           style={{
-            // position: "absolute",
-            // top: 68,
-            // right: 8,
             cursor: "pointer",
             zIndex: 100,
             width: 50,
@@ -213,7 +210,7 @@ export default function GuildMain({ avatarData, token }: GuildMainProps) {
               />
             )}
 
-            {view === "chat" && <GuildChat guildId={avatarData.guild?._id} token={token} messages={messages} onBack={() => setView("list")}  />}
+            {view === "chat" && <GuildChat guildId={avatarData.guild?._id} messages={messages} onBack={() => setView("list")}  />}
           </div>
         </div>
       )}

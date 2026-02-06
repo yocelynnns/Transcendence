@@ -26,14 +26,12 @@ export default function StatusPanel({ pokemon, isPlayer = false, aliveCount = 3}
 
   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
 
-  // choose hp color based on percentage
   let hpImg = greenHp;
   if (hpPercent <= 30) hpImg = redHp;
   else if (hpPercent <= 60) hpImg = yellowHp;
 
   const hpBlockImg = isPlayer ? playerHpBlock : enemyHpBlock;
 
-  // create an array of pokeball statuses, for simplicity 3 balls
   const pokeballs = [0, 1, 2].map(i => i < aliveCount);
   
   return (

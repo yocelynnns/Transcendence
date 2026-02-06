@@ -10,13 +10,14 @@ import { Battle } from "../types/battleTypes";
 import HistoryMain from "../components/Battle/historyMain";
 import AiButton from "../components/ai/aiButton";
 import EventButton from "../components/event/eventButton";
-import FriendsList from "../components/friendlist/FriendsList";   // NEW 
+import FriendsList from "../components/friendlist/FriendsList";
 
 interface HomePageProps {
   setToken: (token: string | null) => void;
-  avatarData: AvatarData | null;
+  avatarData: AvatarData | null | undefined;
   token: string;
   setSpectatingBattle: Dispatch<React.SetStateAction<Battle | null>>;
+  setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;  // <-- ADD THIS
 }
 
 export default function HomePage({
@@ -24,6 +25,7 @@ export default function HomePage({
   avatarData,
   token,
   setSpectatingBattle,
+  setCurrentBattle,
 }: HomePageProps) {
   const { updateAvatar } = useAvatar(avatarData?._id ?? null);
 
@@ -69,7 +71,9 @@ export default function HomePage({
         <FriendsList 
           token={token} 
           myAvatarId={avatarData._id} 
-          myAvatarData={avatarData}  // Add this
+          myAvatarData={avatarData}
+          setSpectatingBattle={setSpectatingBattle}
+          setCurrentBattle={setCurrentBattle} 
         />
 
         {/* Toggle Menu Button */}
@@ -115,7 +119,7 @@ export default function HomePage({
             <Guild avatarData={avatarData} token={token} />
             <MatchingButton avatarData={avatarData} />
             <SpectatingButton
-              avatarId={"6975a8950c28628314e61f6f"}
+              avatarId={"6985698f183c87855c7a8d33"}
               setSpectatingBattle={setSpectatingBattle}
             />
             <HistoryMain avatarData={avatarData} />

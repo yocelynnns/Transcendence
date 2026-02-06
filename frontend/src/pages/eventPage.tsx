@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import usePlayer from "../hooks/usePlayer";
 import Player, { type Direction } from "../components/map/GamePlayer";
 import mapData from "../assets/map/map.json";
@@ -7,6 +7,7 @@ import { ASSETS } from "../assets";
 import { useGameSocket } from "../ws/useGameSocket";
 import Pokemon from "../components/map/GamePokemon";
 import { MapPokemon } from "../types/pokemonTypes";
+import { useNavigate } from "react-router-dom";
 
 export interface EventPlayer {
   playerId: string;
@@ -28,16 +29,16 @@ const VIEW_HEIGHT = 10;
 
 // PROPS
 interface EventPageProps {
-  avatarData: AvatarData | null;
+  avatarData: AvatarData | null | undefined;
 }
 
 export default function EventPage({ avatarData }: EventPageProps) {
+
+  const navigate = useNavigate();
   const avatarId = avatarData?._id;
   const playerName = avatarData?.userName;
 
-  // -------------------
   // PLAYER
-  // -------------------
   const player = usePlayer({
     startX: 10,
     startY: 17,
@@ -47,17 +48,11 @@ export default function EventPage({ avatarData }: EventPageProps) {
     charPref: avatarData?.characterOption ?? 0,
   });
 
-  // -------------------
   // SOCKET
-  // -------------------
   const [otherPlayers, setOtherPlayers] = useState<PlayerState[]>([]);
-  const { sendPlayerMove, emitEvent, subscribeEvent } = useGameSocket((players) => {
-    setOtherPlayers(players.filter((p) => p.id !== avatarId));
-  });
+  const { emitEvent, subscribeEvent } = useGameSocket(() => {});
 
-  // -------------------
   // EVENT STATE
-  // -------------------
   const [eventPokemons, setEventPokemons] = useState<MapPokemon[]>([]);
   const [catchCount, setCatchCount] = useState(0);
 
@@ -69,9 +64,10 @@ export default function EventPage({ avatarData }: EventPageProps) {
   const [eventStartAt, setEventStartAt] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
-  // -------------------
+  const emittedRef = useRef<Set<string>>(new Set());
+  const joinRef = useRef<boolean>(false);
+
   // INIT EVENT
-  // -------------------
   useEffect(() => {
     const unsubState = subscribeEvent<{
       pokemon: MapPokemon[];
@@ -82,7 +78,6 @@ export default function EventPage({ avatarData }: EventPageProps) {
       const me = data.players.find((p) => p.playerId === avatarId);
       if (me) setCatchCount(me.catchCount);
     });
-
 
     const FIVE_MIN = 5 * 60 * 1000;
 
@@ -99,8 +94,10 @@ export default function EventPage({ avatarData }: EventPageProps) {
         const timeoutId = setTimeout(() => {
           console.log("🚀 Event started!");
 
-          if (avatarId) {
-            emitEvent("joinCatchEvent", { avatarId, playerName });
+          if (avatarId && !joinRef.current)
+          {
+            joinRef.current = true;
+            emitEvent("joinCatchEvent", { playerName });
           }
         }, delay);
 
@@ -112,14 +109,22 @@ export default function EventPage({ avatarData }: EventPageProps) {
     const unsubFinished = subscribeEvent<{
       winnerId: string;
       scores: EventPlayer[];
+      lastCheckedAt: Date;
     }>("eventFinished", (data) => {
       setEventFinished(true);
       setWinnerId(data.winnerId);
       setFinalScores(data.scores);
+
+      const nextStart = new Date(data.lastCheckedAt).getTime() + 10 * 60 * 1000;
+      setEventStartAt(nextStart);
     });
 
-    if (avatarId) emitEvent("joinCatchEvent", { avatarId, playerName });
-
+    if (avatarId && !joinRef.current)
+    {
+      joinRef.current = true;
+      emitEvent("joinCatchEvent", { playerName });
+    }
+    
     return () => {
       unsubState();
       unsubFinished();
@@ -127,12 +132,25 @@ export default function EventPage({ avatarData }: EventPageProps) {
     };
   }, [subscribeEvent, emitEvent, avatarId, playerName]);
 
-  // -------------------
-  // SEND MOVE
-  // -------------------
   useEffect(() => {
-    sendPlayerMove(player.x, player.y, player.direction, player.frame, player.charIndex);
-  }, [player.x, player.y, player.direction, player.frame, player.charIndex, sendPlayerMove]);
+  const unsubEventPlayers = subscribeEvent<PlayerState[]>("eventPlayersUpdate", (players) => {
+    setOtherPlayers(players.filter((p) => p.id !== avatarId));
+  });
+
+  return () => unsubEventPlayers();
+}, [subscribeEvent, avatarId]);
+
+
+  useEffect(() => {
+  if (!avatarId) return;
+    emitEvent("eventPlayerMove", {
+      x: player.x,
+      y: player.y,
+      direction: player.direction,
+      frame: player.frame,
+      charIndex: player.charIndex,
+    });
+  }, [player.x, player.y, player.direction, player.frame, player.charIndex, emitEvent, avatarId]);
 
   useEffect(() => {
   if (!eventStartAt) return;
@@ -156,15 +174,18 @@ export default function EventPage({ avatarData }: EventPageProps) {
       eventPokemons.forEach((p) => {
         if (p.caught) return;
 
+        // ✅ already emitted for this pokemon → skip
+        if (emittedRef.current.has(p._id)) return;
+
         const dx = player.x - p.x;
         const dy = player.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < TILE_SIZE / 1.5) {
+          emittedRef.current.add(p._id); // 🔒 lock it
           emitEvent("attemptCatch", {
             eventId: "catch_event",
             pokemonId: p._id,
-            avatarId,
           });
         }
       });
@@ -172,6 +193,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
 
     return () => cancelAnimationFrame(handle);
   }, [player.x, player.y, avatarId, emitEvent, eventPokemons, eventFinished]);
+
 
   // -------------------
   // CAMERA
@@ -233,6 +255,24 @@ export default function EventPage({ avatarData }: EventPageProps) {
       >
         Catch count: {catchCount}
       </div>
+
+      <button
+        onClick={() => navigate("/")}
+        style={{
+          position: "absolute",
+          top: 60,
+          left: 60,
+          zIndex: 100,
+          background: "#fff",
+          border: "3px solid #000",
+          padding: "6px 10px",
+          fontFamily: "monospace",
+          cursor: "pointer",
+        }}
+      >
+        ← Back
+      </button>
+
 
       {/* EVENT FINISHED OVERLAY */}
       {eventFinished && (

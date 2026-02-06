@@ -5,29 +5,51 @@ import { AvatarData } from "../types/avatarTypes";
 import { useGameSocket } from "../ws/useGameSocket";
 import { Battle, BattlePokemon } from "../types/battleTypes";
 import { PlayerPokemon } from "../types/pokemonTypes";
+import { useLocation } from "react-router-dom";
 import "./../styles/teamSelect.css";
 
 interface TeamSelectPageProps {
   avatarData?: AvatarData | null;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
+  refetchBattle: () => Promise<Battle | undefined>;
 }
 
 const TEAM_SIZE = 3;
+
+// Helper to get player ID from either string or populated object
+const getPlayerId = (player: any): string => {
+  if (typeof player === 'string') return player;
+  if (player?._id) return player._id.toString();
+  return '';
+};
 
 export default function TeamSelectPage({
   avatarData,
   currentBattle,
   setCurrentBattle,
+  refetchBattle,
 }: TeamSelectPageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get battle from navigation state or props
+  const navBattle = location.state?.battle;
+  const activeBattle = navBattle || currentBattle;
+  
+  // Sync to parent state if we have nav state but no currentBattle
+  useEffect(() => {
+    if (navBattle && !currentBattle) {
+      setCurrentBattle(navBattle);
+    }
+  }, [navBattle, currentBattle, setCurrentBattle]);
 
+  // Use activeBattle for everything instead of currentBattle
   const [slots, setSlots] = useState<(PlayerPokemon | null)[]>(
     Array.from({ length: TEAM_SIZE }, () => null)
   );
   const [activeSlot, setActiveSlot] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-
   const [battleReady, setBattleReady] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -38,32 +60,74 @@ export default function TeamSelectPage({
     [slots]
   );
 
-  const battleId = currentBattle?._id;
+  const battleId = activeBattle?._id;
+  const avatarId = avatarData?._id;
 
-  // Auto navigate if battle already has both teams
   useEffect(() => {
-    if (!currentBattle || !avatarData) return;
+    if (!activeBattle) return;
+    const fetchAndCheck = async () => {
+     const updatedBattle = await refetchBattle();
+      if (updatedBattle?.endedAt) navigate(`/matching`);
+      if (!updatedBattle) return;
+      const createdAt = new Date(updatedBattle.createdAt).getTime();
+        const endTime = createdAt + 35_000;
+        const now = Date.now();
+        setTimeout(
+          () =>
+            setTimeLeft(
+              Math.max(Math.ceil((endTime - now) / 1000), 0)
+            ),
+          0
+        );
+    };
 
-    const isPlayer1 =
-      currentBattle.player1._id.toString() === avatarData._id;
+    fetchAndCheck();
+  }, [refetchBattle, navigate, activeBattle]);
+
+  useEffect(() => {
+    if (!activeBattle || !avatarId) return;
+
+    // Handle both populated objects and string IDs
+    const player1Id = getPlayerId(activeBattle.player1);
+    const player2Id = getPlayerId(activeBattle.player2);
+
+    const isPlayer1 = player1Id === avatarId;
 
     const me = isPlayer1
-      ? currentBattle.pokemon1
-      : currentBattle.pokemon2;
+      ? activeBattle.pokemon1
+      : activeBattle.pokemon2;
 
     const enemy = isPlayer1
-      ? currentBattle.pokemon2
-      : currentBattle.pokemon1;
+      ? activeBattle.pokemon2
+      : activeBattle.pokemon1;
 
     if (me.length > 0 && enemy.length > 0) {
-      navigate(`/battle/${currentBattle._id}`, {
-        state: { battleId: currentBattle._id, avatarData },
-      });
+      navigate(`/battle/${activeBattle._id}`);
       return;
     }
 
-    if (currentBattle.createdAt) {
-      const createdAt = new Date(currentBattle.createdAt).getTime();
+    const myPicked = isPlayer1 ? activeBattle.pokemon1 : activeBattle.pokemon2;
+
+    if (myPicked.length > 0) {
+      const mySlots: (PlayerPokemon | null)[] = myPicked.map((b) => ({
+          _id: b.pokemonId,
+          name: b.name,
+          type: b.type,
+          attack: b.attack,
+          hp: b.maxHp,
+          is_shiny: b.is_shiny,
+        }));
+
+      while (mySlots.length < TEAM_SIZE) mySlots.push(null);
+
+      setTimeout(() => {
+        setSlots(mySlots);
+        setSaving(true);
+      }, 0);
+    }
+
+    if (activeBattle.createdAt) {
+      const createdAt = new Date(activeBattle.createdAt).getTime();
       const endTime = createdAt + 35_000;
       const now = Date.now();
       setTimeout(
@@ -74,13 +138,12 @@ export default function TeamSelectPage({
         0
       );
     }
-  }, [currentBattle, avatarData, navigate]);
+  }, [activeBattle, avatarId, navigate, playerReadyMatch]);
 
-  // READY handler
   const handleReady = useCallback(
     (currentSlots = slots) => {
       if (!currentSlots.every(Boolean)) return;
-      if (!currentBattle || !avatarData) return;
+      if (!activeBattle || !avatarData) return;
 
       const selectedBattlePokemon: BattlePokemon[] =
         currentSlots.map((p) => ({
@@ -95,16 +158,14 @@ export default function TeamSelectPage({
         }));
 
       playerReadyMatch(
-        currentBattle,
+        activeBattle,
         selectedBattlePokemon,
-        avatarData._id
       );
       setSaving(true);
     },
-    [avatarData, slots, playerReadyMatch, currentBattle]
+    [avatarData, slots, playerReadyMatch, activeBattle]
   );
 
-  // Countdown + auto-pick
   useEffect(() => {
     const timer = window.setInterval(() => {
       setTimeLeft((s) => {
@@ -126,14 +187,12 @@ export default function TeamSelectPage({
               nextSlots[i] = available.splice(idx, 1)[0];
             }
           }
-
           setSlots(nextSlots);
 
           if (nextSlots.every(Boolean)) {
             handleReady(nextSlots);
           }
         }
-
         return 0;
       });
     }, 1000);
@@ -141,8 +200,8 @@ export default function TeamSelectPage({
     return () => window.clearInterval(timer);
   }, [avatarData, slots, handleReady]);
 
-  // Slot actions
   const pickPokemon = (p: PlayerPokemon) => {
+    if (saving) return;
     if (timeLeft === 0) return;
     if (usedIds.has(p._id)) return;
 
@@ -156,6 +215,7 @@ export default function TeamSelectPage({
   };
 
   const removeSlot = (idx: number) => {
+    if (saving) return;
     setSlots((prev) => {
       const next = [...prev];
       next[idx] = null;
@@ -164,7 +224,6 @@ export default function TeamSelectPage({
     setActiveSlot(idx);
   };
 
-  // Socket events
   useEffect(() => {
     if (!battleId) return;
 
@@ -181,8 +240,9 @@ export default function TeamSelectPage({
       "TeamUpError",
       (data: { message: string }) => {
         console.error("Battle error:", data.message);
+        alert(`enemy has disconnected from the battle!`);
         setCurrentBattle(null);
-        navigate("/home", { replace: true });
+        navigate("/", { replace: true });
       }
     );
 
@@ -192,12 +252,9 @@ export default function TeamSelectPage({
     };
   }, [battleId, subscribeEvent, navigate, setCurrentBattle]);
 
-  // Final transition
   useEffect(() => {
     if (battleReady && battleId) {
-      navigate(`/battle/${battleId}`, {
-        state: { battleId, avatarData },
-      });
+      navigate(`/battle/${battleId}`);
     }
   }, [battleReady, battleId, navigate, avatarData]);
 
