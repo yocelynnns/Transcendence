@@ -28,16 +28,15 @@ const VIEW_HEIGHT = 10;
 
 // PROPS
 interface EventPageProps {
-  avatarData: AvatarData | null;
+  avatarData: AvatarData | null | undefined;
 }
 
 export default function EventPage({ avatarData }: EventPageProps) {
+
   const avatarId = avatarData?._id;
   const playerName = avatarData?.userName;
 
-  // -------------------
   // PLAYER
-  // -------------------
   const player = usePlayer({
     startX: 10,
     startY: 17,
@@ -47,17 +46,13 @@ export default function EventPage({ avatarData }: EventPageProps) {
     charPref: avatarData?.characterOption ?? 0,
   });
 
-  // -------------------
   // SOCKET
-  // -------------------
   const [otherPlayers, setOtherPlayers] = useState<PlayerState[]>([]);
   const { sendPlayerMove, emitEvent, subscribeEvent } = useGameSocket((players) => {
     setOtherPlayers(players.filter((p) => p.id !== avatarId));
   });
 
-  // -------------------
   // EVENT STATE
-  // -------------------
   const [eventPokemons, setEventPokemons] = useState<MapPokemon[]>([]);
   const [catchCount, setCatchCount] = useState(0);
 
@@ -69,9 +64,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
   const [eventStartAt, setEventStartAt] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
-  // -------------------
   // INIT EVENT
-  // -------------------
   useEffect(() => {
     const unsubState = subscribeEvent<{
       pokemon: MapPokemon[];

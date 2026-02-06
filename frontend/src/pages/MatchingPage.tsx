@@ -6,7 +6,7 @@ import { useGameSocket } from "../ws/useGameSocket";
 import { Battle } from "../types/battleTypes";
 
 interface MatchMakingProps {
-  avatarData: AvatarData | null;
+  avatarData: AvatarData | null | undefined;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
 }

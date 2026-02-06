@@ -14,6 +14,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
     if (avatarSockets[avatarId] && avatarSockets[avatarId] !== socket.id) {
       const oldSocket = io.sockets.sockets.get(avatarSockets[avatarId]);
       if (oldSocket) {
+        oldSocket.emit("signout");
         oldSocket.disconnect(true);
         console.log("⚠️ DISCONNECTED OLD SOCKET FOR AVATAR:", avatarId);
       }

@@ -10,11 +10,11 @@ import { Battle } from "../types/battleTypes";
 import HistoryMain from "../components/Battle/historyMain";
 import AiButton from "../components/ai/aiButton";
 import EventButton from "../components/event/eventButton";
-import FriendsList from "../components/friendlist/FriendsList";   // NEW 
+import FriendsList from "../components/friendlist/FriendsList";
 
 interface HomePageProps {
   setToken: (token: string | null) => void;
-  avatarData: AvatarData | null;
+  avatarData: AvatarData | null | undefined;
   token: string;
   setSpectatingBattle: Dispatch<React.SetStateAction<Battle | null>>;
 }

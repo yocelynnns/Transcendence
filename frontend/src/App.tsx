@@ -1,7 +1,6 @@
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState,useEffect } from 'react';
-
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
@@ -9,20 +8,13 @@ import HomePage from './pages/HomePage';
 import BattlePage from "./pages/BattlePage";
 import MatchingPage from "./pages/MatchingPage"
 import TeamSelectPage from "./pages/teamSelectPage";
-
-// import MatchingPage from "./pages/matchYoce/MatchingPage"
-// import TeamSelectPage from "./pages/teamYoce/teamSelectPage";
-
 import { useAvatar } from "./hooks/useAvatar";
-
 import {getUserInfo} from "./services/authService"
 import { Battle } from './types/battleTypes';
 import SpectatorPage from './pages/SpectatorPage';
 import axios from 'axios';
 import AIPages from './pages/AiPages';
 import EventPage from './pages/eventPage';
-
-
 function App() {
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('token'));
 
@@ -39,14 +31,6 @@ function App() {
       try {
         const user = await getUserInfo(token as string);
         setAvatarId(user.avatar?._id ?? null);
-
-        // const res = await fetch(`http://localhost:5001/api/avatar/${user.avatar?._id}`, {
-        //   headers: { Authorization: `Bearer ${token}` },
-        // });
-
-        // const freshAvatar = await res.json();
-
-        // console.log(freshAvatar);
         setBattleId(user.avatar?.currentBattle?.toString() ?? null);
       } catch (err) {
         setToken(null); 
@@ -67,14 +51,12 @@ function App() {
 
         const battleData: Battle = await res.json();
 
-        // If the battle has ended, clear currentBattle and battleId
         if (battleData.endedAt) {
           setCurrentBattle(null);
           setBattleId(null);
 
-          // Also clear currentBattle on avatar
           try {
-            const token = localStorage.getItem("token"); // or however you store your token
+            const token = localStorage.getItem("token");
             if (token) {
               await axios.put(
                 `http://localhost:5001/api/avatar/${avatarId}`,
@@ -107,7 +89,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC PAGES */}
         <Route
           path="/login"
           element={token ? <Navigate to="/" /> : <LoginPage setToken={setToken} setAvatarId={setAvatarId} />}
@@ -117,7 +98,6 @@ function App() {
           element={token ? <Navigate to="/" /> : <SignupPage setToken={setToken} setAvatarId={setAvatarId} />}
         />
 
-        {/* PROFILE CREATION (ONLY IF LOGGED IN AND AVATAR NOT SET) */}
         <Route
           path="/profile"
           element={
@@ -174,11 +154,10 @@ function App() {
           }
         />
 
-
         <Route
           path="/spectating/:battleId"
           element={
-            spectatingBattle ? (
+            avatarData && spectatingBattle ? (
               <SpectatorPage
                 spectatingBattle={spectatingBattle}
                 setSpectatingBattle={setSpectatingBattle}
@@ -189,7 +168,6 @@ function App() {
           }
         />
 
-        {/* HOME PAGE (REQUIRES LOGIN AND AVATAR) */}
         <Route
           path="/"
           element={
@@ -201,22 +179,24 @@ function App() {
           }
         />
 
-
         <Route
           path="/event"
           element={
+            token && avatarData? 
                 <EventPage avatarData={avatarData ?? null}/>
+            : <Navigate to="/profile" />
           }
         />
 
         <Route
           path="/aiBattle"
           element={
+            token && avatarData?
               <AIPages/>
+              : <Navigate to="/profile" />
           }
         />
 
-        {/* FALLBACK FOR UNKNOWN ROUTES */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

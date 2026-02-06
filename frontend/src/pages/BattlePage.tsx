@@ -13,7 +13,7 @@ import { Battle, BattlePokemon } from "../types/battleTypes";
 import { AvatarData } from "../types/avatarTypes";
 
 interface BattlePageProps {
-  avatarData: AvatarData | null;
+  avatarData: AvatarData | null | undefined;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
 }
