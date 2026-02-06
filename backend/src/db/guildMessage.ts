@@ -1,9 +1,9 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IGuildMessage extends Document {
-  guild: Types.ObjectId;       // Guild reference
-  sender: Types.ObjectId;      // Avatar reference
-  senderName: string;          // Denormalized for easy display
+  guild: Types.ObjectId;
+  sender: Types.ObjectId;
+  senderName: string;
   text: string;
   createdAt: Date;
 }

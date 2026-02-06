@@ -87,8 +87,7 @@ export default function TeamSelectPage({ avatarData: propAvatarData }: TeamSelec
       readySentRef.current = true;
 
       emitEvent("playerReady", {
-        battleId,
-        playerId: avatarData._id,
+        currentBattleId: battleId,
         selectedPokemon: selected.map((p) => p._id),
       });
 

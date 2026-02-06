@@ -8,7 +8,7 @@ import { MapPokemon } from "../types/pokemonTypes";
 type PokemonApiResponse = MapPokemon[] | { pokemons: MapPokemon[] };
 
 //CONSTANTS
-const BACKEND_URL = "http://localhost:25001";
+const BACKEND_URL = "http://localhost:5001";
 
 //MAIN HOOK
 export function usePokemonSpawner() {

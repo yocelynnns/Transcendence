@@ -39,6 +39,14 @@ function App() {
       try {
         const user = await getUserInfo(token as string);
         setAvatarId(user.avatar?._id ?? null);
+
+        // const res = await fetch(`http://localhost:5001/api/avatar/${user.avatar?._id}`, {
+        //   headers: { Authorization: `Bearer ${token}` },
+        // });
+
+        // const freshAvatar = await res.json();
+
+        // console.log(freshAvatar);
         setBattleId(user.avatar?.currentBattle?.toString() ?? null);
       } catch (err) {
         setToken(null); 
@@ -54,7 +62,7 @@ function App() {
 
     async function fetchBattle() {
       try {
-        const res = await fetch(`http://localhost:25001/api/battle/${battleId}`);
+        const res = await fetch(`http://localhost:5001/api/battle/${battleId}`);
         if (!res.ok) throw new Error("Failed to fetch battle");
 
         const battleData: Battle = await res.json();
@@ -69,7 +77,7 @@ function App() {
             const token = localStorage.getItem("token"); // or however you store your token
             if (token) {
               await axios.put(
-                `http://localhost:25001/api/avatar/${avatarId}`,
+                `http://localhost:5001/api/avatar/${avatarId}`,
                 { currentBattle: null },
                 { headers: { Authorization: `Bearer ${token}` } }
               );

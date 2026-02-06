@@ -97,7 +97,6 @@ export default function TeamSelectPage({
       playerReadyMatch(
         currentBattle,
         selectedBattlePokemon,
-        avatarData._id
       );
       setSaving(true);
     },

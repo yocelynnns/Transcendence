@@ -75,7 +75,7 @@ export default function Matching({
 
     if (joinRef.current == false)
     {
-      joinMatching(currentId);
+      joinMatching();
       joinRef.current = true;
     }
     

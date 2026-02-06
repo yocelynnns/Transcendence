@@ -67,7 +67,7 @@ export default function GuildProfile({
     try {
       setLeaving(true);
       const res = await fetch(
-        `http://localhost:25001/api/guild/${guild._id}/leave`,
+        `http://localhost:5001/api/guild/${guild._id}/leave`,
         {
           method: "POST",
           headers: {
@@ -83,7 +83,6 @@ export default function GuildProfile({
 
       emitEvent("guildUpdate", {
         guildId: data.guild._id,
-        token: token,
         action: "update",
       });
     } catch (err) {
@@ -110,7 +109,7 @@ export default function GuildProfile({
     try {
       setDisbanding(true);
       const res = await fetch(
-        `http://localhost:25001/api/guild/${guild._id}`,
+        `http://localhost:5001/api/guild/${guild._id}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -121,7 +120,6 @@ export default function GuildProfile({
 
       emitEvent("guildUpdate", {
         guildId: guild._id,
-        token: token,
         action: "delete",
       });
       setGuild(null);
@@ -141,7 +139,7 @@ export default function GuildProfile({
     try {
       setUpdating(true);
       const res = await fetch(
-        `http://localhost:25001/api/guild/${guild._id}`,
+        `http://localhost:5001/api/guild/${guild._id}`,
         {
           method: "PUT",
           headers: {
@@ -162,7 +160,6 @@ export default function GuildProfile({
 
       emitEvent("guildUpdate", {
         guildId: data.guild._id,
-        token: token,
         action: "update",
       });
     } catch (err) {
@@ -179,7 +176,7 @@ export default function GuildProfile({
 
     try {
       const res = await fetch(
-        `http://localhost:25001/api/guild/${guild._id}/kick/${targetAvatarId}`,
+        `http://localhost:5001/api/guild/${guild._id}/kick/${targetAvatarId}`,
         {
           method: "POST",
           headers: {
@@ -195,7 +192,6 @@ export default function GuildProfile({
 
       emitEvent("guildUpdate", {
         guildId: guild._id,
-        token: token,
         targetAvatarId: targetAvatarId,
         action: "kick",
       });

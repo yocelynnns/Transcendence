@@ -115,7 +115,7 @@ export default function HomePage({
             <Guild avatarData={avatarData} token={token} />
             <MatchingButton avatarData={avatarData} />
             <SpectatingButton
-              avatarId={"6975a8950c28628314e61f6f"}
+              avatarId={"6985698f183c87855c7a8d33"}
               setSpectatingBattle={setSpectatingBattle}
             />
             <HistoryMain avatarData={avatarData} />

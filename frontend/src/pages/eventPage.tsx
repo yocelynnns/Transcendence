@@ -100,7 +100,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
           console.log("🚀 Event started!");
 
           if (avatarId) {
-            emitEvent("joinCatchEvent", { avatarId, playerName });
+            emitEvent("joinCatchEvent", { playerName });
           }
         }, delay);
 
@@ -118,7 +118,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
       setFinalScores(data.scores);
     });
 
-    if (avatarId) emitEvent("joinCatchEvent", { avatarId, playerName });
+    if (avatarId) emitEvent("joinCatchEvent", { playerName });
 
     return () => {
       unsubState();
@@ -164,7 +164,6 @@ export default function EventPage({ avatarData }: EventPageProps) {
           emitEvent("attemptCatch", {
             eventId: "catch_event",
             pokemonId: p._id,
-            avatarId,
           });
         }
       });

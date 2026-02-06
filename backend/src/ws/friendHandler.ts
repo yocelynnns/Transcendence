@@ -1,0 +1,65 @@
+import { Server, Socket } from "socket.io";
+
+export const setupFriendHandler = (io: Server, socket: Socket, onlineUsers: Map<string, string>, socketToAvatar: Map<string, string>) => {
+  
+  // Avatar comes online
+  socket.on("userOnline", (avatarId: string) => {
+    onlineUsers.set(avatarId, socket.id);
+    socketToAvatar.set(socket.id, avatarId);
+    io.emit("userStatusChange", { avatarId, online: true });
+    console.log(`👤 Avatar ${avatarId} is now online`);
+  });
+
+  // Request online status for friends
+  socket.on("requestFriendsStatus", (friendAvatarIds: string[]) => {
+    const statuses = friendAvatarIds.map(avatarId => ({
+      avatarId,
+      online: onlineUsers.has(avatarId),
+    }));
+    socket.emit("friendsStatusUpdate", statuses);
+  });
+
+  // Broadcast avatar update to all friend
+  socket.on("avatarUpdated", (data: { avatarId: string; avatarImage: string; userName?: string }) => {
+    socket.broadcast.emit("friendAvatarUpdated", {
+      avatarId: data.avatarId,
+      avatarImage: data.avatarImage,
+      userName: data.userName,
+    });
+  });
+
+  // Friend request / accept / auto-accept
+  socket.on("friendRequestSent", (data: { targetAvatarId: string; requesterInfo: any }) => {
+    const targetSocketId = onlineUsers.get(data.targetAvatarId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("friendRequestReceived", data.requesterInfo);
+    }
+  });
+
+  socket.on("friendRequestAccepted", (data: { targetAvatarId: string; accepterInfo: any }) => {
+    const targetSocketId = onlineUsers.get(data.targetAvatarId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("friendRequestAcceptedByOther", {
+        ...data.accepterInfo,
+        message: "accepted your friend request",
+      });
+    }
+  });
+
+  socket.on("notifyAutoAccept", (data: { targetAvatarId: string; accepterInfo: any }) => {
+    const targetSocketId = onlineUsers.get(data.targetAvatarId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("friendRequestAutoAccepted", data.accepterInfo);
+    }
+  });
+
+  // Friend removed
+  socket.on("friendRemoved", (data: { targetAvatarId: string }) => {
+    const targetSocketId = onlineUsers.get(data.targetAvatarId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("removedByFriend", {
+        removerAvatarId: socket.data.avatarId.toString(),
+      });
+    }
+  });
+};

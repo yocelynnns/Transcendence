@@ -1,232 +1,114 @@
 import { Router } from "express";
-import Guild from "../db/guild";
-import User from "../db/user";
-import { IAvatar } from "../db/avatar";
 import { authMiddleware, AuthRequest } from "./auth";
+
+import * as GuildService from "../services/guild.service";
 
 const router = Router();
 
-// CREATE GUILD
+// Create Guild
 router.post("/", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { name, description, image } = req.body;
-    const user = await User.findById(req.userId).populate<{ avatar: IAvatar }>("avatar");
-    if (!user || !user.avatar)
-      return res.status(400).json({ message: "User must have an avatar to create a guild" });
-
-    const avatar = user.avatar;
-
-    const newGuild = await Guild.create({
+    const newGuild = await GuildService.createGuild({
+      userId: req.userId!,
       name,
-      description: description || "",
-      image: image || "",
-      members: [{ avatar: avatar._id, role: "leader" }],
+      description,
+      image,
     });
-
-    avatar.guild = newGuild._id;
-    await avatar.save();
-
     return res.status(201).json(newGuild);
   } catch (err: any) {
     console.error("[POST /guild]", err);
-    return res.status(500).json({ message: err.message || "Failed to create guild" });
+    return res.status(400).json({ message: err.message || "Failed to create guild" });
   }
 });
 
-// UPDATE GUILD
+// Update Guild
 router.put("/:guildId", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { name, description, image } = req.body;
 
-    const user = await User.findById(req.userId).populate<{ avatar: IAvatar }>("avatar");
-    if (!user || !user.avatar) {
-      return res.status(400).json({ message: "User must have an avatar to update a guild" });
-    }
+    const guildId = Array.isArray(req.params.guildId)
+      ? req.params.guildId[0]
+      : req.params.guildId;
 
-    const avatar = user.avatar;
-    const guild = await Guild.findById(req.params.guildId);
-    if (!guild) {
-      return res.status(404).json({ message: "Guild not found" });
-    }
-
-    const member = guild.members.find((m) => m.avatar.equals(avatar._id));
-    if (!member || member.role !== "leader") {
-      return res.status(403).json({ message: "Only the guild leader can update the guild" });
-    }
-
-    if (name) guild.name = name;
-    if (description) guild.description = description;
-    if (image) guild.image = image;
-
-    await guild.save();
+    const guild = await GuildService.updateGuild({
+      userId: req.userId!,
+      guildId: guildId,
+      name,
+      description,
+      image,
+    });
 
     return res.json({ message: "Guild updated successfully", guild });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("[PUT /guild/:guildId]", err);
-    if (err instanceof Error) return res.status(500).json({ message: err.message });
-    return res.status(500).json({ message: "Failed to update guild" });
+    return res.status(400).json({ message: err.message || "Failed to update guild" });
   }
 });
 
-// JOIN GUILD
+// Join Guild
 router.post("/:guildId/join", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const user = await User.findById(req.userId).populate<{ avatar: IAvatar }>("avatar");
-    if (!user || !user.avatar)
-      return res.status(400).json({ message: "User must have an avatar to join a guild" });
+    const guildId = Array.isArray(req.params.guildId)
+      ? req.params.guildId[0]
+      : req.params.guildId;
 
-    const avatar = user.avatar;
-    const guild = await Guild.findById(req.params.guildId);
-    if (!guild) return res.status(404).json({ message: "Guild not found" });
-
-    if (guild.members.some((m) => m.avatar.equals(avatar._id)))
-      return res.status(400).json({ message: "Already a member of this guild" });
-
-    guild.members.push({ avatar: avatar._id, role: "member" });
-    await guild.save();
-
-    avatar.guild = guild._id;
-    await avatar.save();
+    const guild = await GuildService.joinGuild({
+      userId: req.userId!,
+      guildId,
+    });
 
     return res.json({ message: "Joined guild", guild });
   } catch (err: any) {
     console.error("[POST /guild/:guildId/join]", err);
-    return res.status(500).json({ message: err.message || "Failed to join guild" });
+    return res.status(400).json({ message: err.message || "Failed to join guild" });
   }
 });
 
-// LEAVE GUILD
+// leave Guild
 router.post("/:guildId/leave", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const user = await User.findById(req.userId).populate<{ avatar: IAvatar }>("avatar");
-    if (!user || !user.avatar || !user.avatar.guild) {
-      return res.status(400).json({ message: "You are not in any guild" });
-    }
+    const guildId = Array.isArray(req.params.guildId)
+      ? req.params.guildId[0]
+      : req.params.guildId;
 
-    const avatar = user.avatar;
-    const guild = await Guild.findById(req.params.guildId);
-    if (!guild) {
-      return res.status(404).json({ message: "Guild not found" });
-    }
-
-    if (guild._id.toString() !== avatar.guild?.toString()) {
-      return res.status(400).json({ message: "You are not a member of this guild" });
-    }
-
-    const member = guild.members.find((m) => m.avatar.equals(avatar._id));
-    if (!member) {
-      return res.status(400).json({ message: "Member not found in guild" });
-    }
-
-    if (member.role === "leader") {
-      return res.status(403).json({ message: "Guild leader cannot leave the guild" });
-    }
-
-    guild.members = guild.members.filter((m) => !m.avatar.equals(avatar._id));
-    await guild.save();
-
-    avatar.guild = undefined;
-    await avatar.save();
+    const guild = await GuildService.leaveGuild({
+      userId: req.userId!,
+      guildId,
+    });
 
     return res.json({ message: "Left guild successfully", guild });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("[POST /guild/:guildId/leave]", err);
-
-    if (err instanceof Error) {
-      return res.status(500).json({ message: err.message });
-    }
-
-    return res.status(500).json({ message: "Failed to leave guild" });
+    return res.status(400).json({ message: err.message || "Failed to leave guild" });
   }
 });
 
-// KICK MEMBER
-router.post(
-  "/:guildId/kick/:targetAvatarId",
-  authMiddleware,
-  async (req: AuthRequest, res) => {
-    try {
-      const { guildId } = req.params;
+// Kick Member
+router.post("/:guildId/kick/:targetAvatarId", authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const guildId = Array.isArray(req.params.guildId) ? req.params.guildId[0] : req.params.guildId;
+    const targetAvatarId = Array.isArray(req.params.targetAvatarId)
+      ? req.params.targetAvatarId[0]
+      : req.params.targetAvatarId;
 
-      const targetAvatarId = String(req.params.targetAvatarId);
+    const kickedAvatarId = await GuildService.kickMember({
+      userId: req.userId!,
+      guildId,
+      targetAvatarId,
+    });
 
-      const user = await User.findById(req.userId).populate<{ avatar: IAvatar }>("avatar");
-      if (!user || !user.avatar) {
-        return res.status(400).json({ message: "User must have an avatar" });
-      }
-
-      const leaderAvatar = user.avatar;
-
-      const guild = await Guild.findById(guildId);
-      if (!guild) {
-        return res.status(404).json({ message: "Guild not found" });
-      }
-
-      const leaderMember = guild.members.find((m) =>
-        m.avatar.equals(leaderAvatar._id)
-      );
-
-      if (!leaderMember || leaderMember.role !== "leader") {
-        return res.status(403).json({ message: "Only leader can kick members" });
-      }
-
-      if (leaderAvatar._id.equals(targetAvatarId)) {
-        return res.status(400).json({ message: "Leader cannot kick themselves" });
-      }
-
-      const targetMember = guild.members.find((m) =>
-        m.avatar.equals(targetAvatarId)
-      );
-
-      if (!targetMember) {
-        return res.status(404).json({ message: "Target is not in this guild" });
-      }
-
-      if (targetMember.role === "leader") {
-        return res.status(403).json({ message: "Cannot kick another leader" });
-      }
-
-      guild.members = guild.members.filter(
-        (m) => !m.avatar.equals(targetAvatarId)
-      );
-      await guild.save();
-
-      const targetAvatar = await (await import("../db/avatar")).default.findById(
-        targetAvatarId
-      );
-
-      if (targetAvatar) {
-        targetAvatar.guild = undefined;
-        await targetAvatar.save();
-      }
-
-      return res.json({
-        message: "Member kicked successfully",
-        kickedAvatarId: targetAvatarId,
-      });
-    } catch (err: unknown) {
-      console.error("[POST /guild/:guildId/kick/:targetAvatarId]", err);
-
-      if (err instanceof Error) {
-        return res.status(500).json({ message: err.message });
-      }
-
-      return res.status(500).json({ message: "Failed to kick member" });
-    }
+    return res.json({ message: "Member kicked successfully", kickedAvatarId });
+  } catch (err: any) {
+    console.error("[POST /guild/:guildId/kick/:targetAvatarId]", err);
+    return res.status(400).json({ message: err.message || "Failed to kick member" });
   }
-);
+});
 
-// SEARCH ALL GUILD
+// Search All Guild
 router.get("/", async (_req, res) => {
   try {
-    const guilds = await Guild.find({})
-      .select("name description image members")
-      .populate({
-        path: "members.avatar",
-        select: "userName",
-      })
-      .lean();
-
+    const guilds = await GuildService.getAllGuilds();
     return res.json(guilds);
   } catch (err: any) {
     console.error("[GET /guild]", err);
@@ -236,49 +118,37 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// GET SINGLE GUILD
+// Get Single Guild
 router.get("/:guildId", async (req, res) => {
   try {
-    const guild = await Guild.findById(req.params.guildId).populate({
-      path: "members.avatar",
-      select: "userName avatar characterOption",
-    });
+    const guildId = Array.isArray(req.params.guildId)
+      ? req.params.guildId[0]
+      : req.params.guildId;
 
-    if (!guild) return res.status(404).json({ message: "Guild not found" });
-
+    const guild = await GuildService.getGuildById(guildId);
     return res.json(guild);
   } catch (err: any) {
     console.error("[GET /guild/:guildId]", err);
-    return res.status(500).json({ message: err.message || "Failed to get guild" });
+    return res.status(400).json({ message: err.message || "Failed to get guild" });
   }
 });
 
-// DELETE GUILD
+// Delete Guild
 router.delete("/:guildId", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const user = await User.findById(req.userId).populate<{ avatar: IAvatar }>("avatar");
-    if (!user || !user.avatar) {
-      return res.status(400).json({ message: "User must have an avatar to delete a guild" });
-    }
+    const guildId = Array.isArray(req.params.guildId)
+      ? req.params.guildId[0]
+      : req.params.guildId;
 
-    const avatar = user.avatar;
-    const guild = await Guild.findById(req.params.guildId);
-    if (!guild) {
-      return res.status(404).json({ message: "Guild not found" });
-    }
-
-    const member = guild.members.find((m) => m.avatar.equals(avatar._id));
-    if (!member || member.role !== "leader") {
-      return res.status(403).json({ message: "Only the guild leader can delete the guild" });
-    }
-
-    await Guild.findByIdAndDelete(guild._id);
+    await GuildService.deleteGuild({
+      userId: req.userId!,
+      guildId,
+    });
 
     return res.json({ message: "Guild deleted successfully" });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("[DELETE /guild/:guildId]", err);
-    if (err instanceof Error) return res.status(500).json({ message: err.message });
-    return res.status(500).json({ message: "Failed to delete guild" });
+    return res.status(400).json({ message: err.message || "Failed to delete guild" });
   }
 });
 

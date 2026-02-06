@@ -5,6 +5,8 @@ import { IGuild } from "./guild"; // Reference to guild schema
 
 // INTERFACE
 export interface IAvatar extends Document {
+  user: Types.ObjectId;
+  
   userName: string;                    // CHARACTER NAME
   avatar: string;                      // IMAGE URL / BASE64
   characterOption: number;             // SELECTED CHARACTER OPTION
@@ -28,6 +30,8 @@ export interface IAvatar extends Document {
 
 // SCHEMA
 const AvatarSchema: Schema = new Schema({
+  user: { type: Types.ObjectId, ref: "User", required: true }, 
+
   userName: { type: String, required: true },                 // NAME
   avatar: { type: String, default: "" },                      // AVATAR IMAGE
   characterOption: { type: Number, default: 1 },              // CHARACTER CHOICE

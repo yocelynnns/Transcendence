@@ -137,7 +137,7 @@ export default function ChatWindow({
     
     try {
       const res = await fetch(
-        `http://localhost:25001/api/chat/${friendId}?page=${pageNum}&limit=50`,
+        `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -170,13 +170,13 @@ export default function ChatWindow({
     console.log("🔵 ChatWindow mounted for:", friendId);
     
     // Join room
-    emitEvent("joinChat", { friendAvatarId: friendId, myAvatarId });
+    emitEvent("joinChat", { friendAvatarId: friendId });
     
     // Fetch messages
     fetchMessages(1);
     
     // Mark as read
-    emitEvent("markAsRead", { senderId: friendId, receiverId: myAvatarId });
+    emitEvent("markAsRead", { senderId: friendId });
 
     // Setup listeners
     const cleanupReceive = subscribeEvent<any>("receiveMessage", (msg) => {
@@ -220,7 +220,7 @@ export default function ChatWindow({
       cleanupReceive();
       cleanupTyping();
       cleanupRead();
-      emitEvent("leaveChat", { friendAvatarId: friendId, myAvatarId });
+      emitEvent("leaveChat", { friendAvatarId: friendId });
       
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -253,7 +253,6 @@ export default function ChatWindow({
     // Send
     console.log("📤 Sending:", content.substring(0, 20));
     emitEvent("sendPrivateMessage", {
-      senderId: myAvatarId,
       receiverId: friendId,
       content,
     });
@@ -262,11 +261,11 @@ export default function ChatWindow({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
     
-    emitEvent("typing", { senderId: myAvatarId, receiverId: friendId, isTyping: true });
+    emitEvent("typing", {receiverId: friendId, isTyping: true });
     
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      emitEvent("typing", { senderId: myAvatarId, receiverId: friendId, isTyping: false });
+      emitEvent("typing", {receiverId: friendId, isTyping: false });
     }, 2000);
   };
 

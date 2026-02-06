@@ -44,7 +44,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
     async function fetchBattle() {
       try {
-        const res = await fetch(`http://localhost:25001/api/battle/${battleId}`);
+        const res = await fetch(`http://localhost:5001/api/battle/${battleId}`);
         if (!res.ok) throw new Error("Failed to fetch battle");
         const fetchedBattle: Battle = await res.json();
 

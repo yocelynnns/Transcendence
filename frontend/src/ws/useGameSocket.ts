@@ -1,14 +1,18 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io, type Socket } from "socket.io-client";
-import { getUserInfo } from "../services/authService";
 import { PlayerState } from "../types/avatarTypes";
 import { Battle, BattlePokemon } from "../types/battleTypes";
 
 let socket: Socket | null = null;
 
-export function connectSocket(): Socket {
+export function connectSocket(token: string): Socket {
   if (!socket) {
-    socket = io("http://localhost:25001", { autoConnect: true });
+    socket = io("http://localhost:5001", {
+      autoConnect: true,
+      auth: {
+        token,
+      },
+    });
   }
   return socket;
 }
@@ -17,7 +21,10 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
   const socketRef = useRef<Socket | null>(null);
   const onPlayersUpdateRef = useRef(onPlayersUpdate);
   const latestPlayerRef = useRef<PlayerState | null>(null);
-
+  const token = sessionStorage.getItem("token");
+  if (!token) {
+    throw new Error("No token found");
+  }
   // keep latest callback reference
   useEffect(() => {
     onPlayersUpdateRef.current = onPlayersUpdate;
@@ -26,7 +33,7 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
   // initialize socket and subscribe to players
   useEffect(() => {
     if (!socketRef.current) {
-      socketRef.current = connectSocket();
+      socketRef.current = connectSocket(token);
     }
 
     const s = socketRef.current;
@@ -42,7 +49,7 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
     return () => {
       s.off("playersUpdate", handlePlayersUpdate);
     };
-  }, []);
+  }, [token]);
 
   // send player movement
   const sendPlayerMove = useCallback(
@@ -56,16 +63,10 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
   // register player with server
   const registerPlayer = useCallback(
     async (player: PlayerState) => {
-      const token = sessionStorage.getItem("token");
-      if (!token) return;
-
       try {
-        const userData = await getUserInfo(token);
-        const avatarId = userData.avatar?._id;
-        if (!avatarId) return;
 
         // send avatarId as string (matches server)
-        socketRef.current?.emit("registerPlayer", {avatarId, token:token});
+        socketRef.current?.emit("registerPlayer");
 
         // immediately send current player position
         sendPlayerMove(player.x, player.y, player.direction, player.frame, player.charIndex);
@@ -109,24 +110,18 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
   }, []);
 
 
-  const joinMatching = useCallback((avatarId: string) => {
-    socketRef.current?.emit("registerPlayer", {
-      avatarId: avatarId,
-      token: sessionStorage.getItem("token") // or however you store it
-    });
+  const joinMatching = useCallback(() => {
+    socketRef.current?.emit("registerPlayer", {});
     socketRef.current?.emit("joinMatching", {
-      avatarId: avatarId,
-      token: sessionStorage.getItem("token") // or however you store it
     });
   }, []);
 
   const playerReadyMatch = useCallback(
-    (currentBattle: Battle, selectedBattlePokemon: BattlePokemon[], avatarId: string) => {
+    (currentBattle: Battle, selectedBattlePokemon: BattlePokemon[]) => {
       if (!socketRef.current) return;
 
       socketRef.current.emit("playerReady", {
         currentBattleId: currentBattle._id,  // string
-        playerId: avatarId,                  // string
         selectedPokemon: selectedBattlePokemon,
       });
     },

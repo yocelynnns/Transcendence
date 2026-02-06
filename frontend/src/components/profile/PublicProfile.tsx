@@ -145,7 +145,7 @@ export default function PublicProfile({
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:25001/api/social/profile/${avatarId}`, {
+      const res = await fetch(`http://localhost:5001/api/social/profile/${avatarId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       

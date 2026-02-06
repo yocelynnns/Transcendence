@@ -4,12 +4,12 @@ import { GuildMessage } from "../../types/guildTypes";
 
 interface GuildChatProps {
   guildId: string | undefined;
-  token: string | null;
+  token: string | null;// CAN DELETE
   messages: GuildMessage[];
   onBack: () => void;
 }
 
-export default function GuildChat({ guildId, token, messages, onBack}: GuildChatProps) {
+export default function GuildChat({ guildId, messages, onBack}: GuildChatProps) {
   const [text, setText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -21,7 +21,6 @@ export default function GuildChat({ guildId, token, messages, onBack}: GuildChat
     emitEvent("sendGuildMessage", {
       guildId,
       message: { text },
-      token,
     });
 
     setText("");
