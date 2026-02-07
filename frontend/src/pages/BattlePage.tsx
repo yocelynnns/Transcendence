@@ -16,11 +16,12 @@ interface BattlePageProps {
   avatarData: AvatarData | null | undefined;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
+  refetchBattle: () => Promise<Battle | undefined>;
 }
 
-const MOVE_TIMEOUT = 60_000; // 60 seconds
+const MOVE_TIMEOUT = 30_000;
 
-export default function BattlePage({ avatarData, currentBattle, setCurrentBattle }: BattlePageProps) {
+export default function BattlePage({ avatarData, currentBattle, setCurrentBattle, refetchBattle }: BattlePageProps) {
   const navigate = useNavigate();
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
   const myAvatarId = avatarData?._id || sessionStorage.getItem("avatarId");
@@ -38,7 +39,14 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
         : null
       : null;
 
-  // Fetch battle data
+  useEffect(() => {
+    const fetchAndCheck = async () => {
+     const updatedBattle = await refetchBattle();
+      if (updatedBattle?.endedAt) navigate(`/matching`);
+    };
+    fetchAndCheck();
+  }, [refetchBattle, navigate]);
+
   useEffect(() => {
     if (!battleId) return;
 
@@ -74,7 +82,6 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
     fetchBattle();
   }, [battleId]);
 
-  // Subscribe to updates and battle errors
   useEffect(() => {
     if (!subscribeEvent || !battleId) return;
 
@@ -112,7 +119,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       (err) => {
         alert(err.message);
         setCurrentBattle(null);
-        navigate("/"); // navigate home on error
+        navigate("/");
       }
     );
 
@@ -122,7 +129,6 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
     };
   }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent]);
 
-  // Move timer (accurate even if disconnected)
   useEffect(() => {
     if (!battleData || !myRole || battleData.endedAt) return;
 
@@ -138,14 +144,6 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
       const timeLeft = MOVE_TIMEOUT - (now - lastTurnTime);
       setMoveTimeLeft(timeLeft > 0 ? timeLeft : 0);
-
-      if (timeLeft <= 0 && battleData.currentTurn === myRole) {
-        emitEvent("playerAction", {
-          battleId,
-          action: { type: "timeout" },
-          isPlayer1: myRole === "player1",
-        });
-      }
     }, 250);
 
     return () => clearInterval(interval);

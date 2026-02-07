@@ -13,11 +13,12 @@ export async function connectDB() {
 
     const TARGET_COUNT = 30;
     const currentCount = await Pokemon.countDocuments();
+    const existing = (await Pokemon.find()).map(p => ({ x: p.x, y: p.y }));
 
     if (currentCount < TARGET_COUNT) {
       const remaining = TARGET_COUNT - currentCount;
       console.log(`Seeding ${remaining} more Pokemon to reach ${TARGET_COUNT}...`);
-      await seedPokemons(remaining);
+      await seedPokemons(remaining, existing);
       console.log("Seeding complete");
     } else {
       console.log(`DB already has ${currentCount} Pokemon, skipping seed`);

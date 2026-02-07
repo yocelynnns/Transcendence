@@ -65,6 +65,12 @@ export function useBattleLogic() {
     };
   }, []);
 
+  const resetBattle = () => {
+    setPlayerTeam(getRandomTeam());
+    setEnemyTeam(getRandomTeam());
+    setTurn("p1");
+    setBattleResult(null);
+  };
 
   const checkBattleEnd = (
     playerTeam: AiPokemon[],
@@ -199,5 +205,7 @@ export function useBattleLogic() {
     battleData,
 
     activePlayerIsDead,
+
+    resetBattle,
   };
 }

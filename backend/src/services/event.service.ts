@@ -28,7 +28,7 @@ export async function joinCatchEvent({ eventId, avatarId, playerName }: JoinCatc
     };
   }
 
-  const alreadyJoined = eventDoc.players.some((p) => p.playerId === avatarId);
+  const alreadyJoined = eventDoc.players.some((p) => p.playerId === avatarId.toString());
   if (!alreadyJoined) {
     eventDoc.players.push({ playerId: avatarId, playerName, catchCount: 0 });
     await eventDoc.save();
@@ -62,10 +62,13 @@ export async function attemptCatch({ eventId, pokemonId, avatarId }: AttemptCatc
   poke.caught = true;
   player.catchCount++;
 
-  let eventFinished: { winnerId: string; scores: any[] } | null = null;
+  let eventFinished: { winnerId: string; scores: any[]; lastCheckedAt: Date } | null = null;
+
   if (event.pokemon.every((p) => p.caught)) {
     event.status = "finished";
+
     const winner = [...event.players].sort((a, b) => b.catchCount - a.catchCount)[0];
+
     eventFinished = {
       winnerId: winner.playerName,
       scores: event.players.map((p) => ({
@@ -73,6 +76,7 @@ export async function attemptCatch({ eventId, pokemonId, avatarId }: AttemptCatc
         playerName: p.playerName,
         catchCount: p.catchCount,
       })),
+      lastCheckedAt: event.lastCheckedAt,
     };
   }
 

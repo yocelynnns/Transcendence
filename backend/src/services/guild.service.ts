@@ -261,3 +261,94 @@ export async function isMember({
 
   return guild.members.some((m) => m.avatar.equals(avatar._id));
 }
+
+// Promote Member -> Co-leader
+export async function promoteToCoLeader({
+  userId,
+  guildId,
+  targetAvatarId,
+}: {
+  userId: string;
+  guildId: string;
+  targetAvatarId: string;
+}) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) throw new Error("Invalid user ID");
+  if (!mongoose.Types.ObjectId.isValid(guildId)) throw new Error("Invalid guild ID");
+
+  if (!mongoose.Types.ObjectId.isValid(targetAvatarId)) throw new Error("Invalid target avatar ID");
+
+  const user = await User.findById(userId).populate<{ avatar: IAvatar }>("avatar");
+
+  if (!user || !user.avatar) throw new Error("User must have an avatar to delete a guild");
+
+  const avatarId = user.avatar._id.toString();
+
+  if (avatarId === targetAvatarId) {
+    throw new Error("Cannot promote yourself");
+  }
+
+  const guild = await Guild.findById(guildId);
+  if (!guild) throw new Error("Guild not found");
+
+  const actor = guild.members.find(m => m.avatar.toString() === avatarId);
+  if (!actor || actor.role !== "leader") {
+    throw new Error("Only leader can promote members");
+  }
+
+  const target = guild.members.find(m => m.avatar.toString() === targetAvatarId);
+  if (!target) throw new Error("Target member not found");
+
+  if (target.role !== "member") {
+    throw new Error("Only members can be promoted");
+  }
+
+  target.role = "co-leader";
+  await guild.save();
+
+  return guild;
+}
+
+// Demote Co-leader -> Member
+export async function demoteCoLeader({
+  userId,
+  guildId,
+  targetAvatarId,
+}: {
+  userId: string;
+  guildId: string;
+  targetAvatarId: string;
+}) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) throw new Error("Invalid user ID");
+  if (!mongoose.Types.ObjectId.isValid(guildId)) throw new Error("Invalid guild ID");
+  if (!mongoose.Types.ObjectId.isValid(targetAvatarId)) throw new Error("Invalid target avatar ID");
+
+  const user = await User.findById(userId).populate<{ avatar: IAvatar }>("avatar");
+
+  if (!user || !user.avatar) throw new Error("User must have an avatar to delete a guild");
+
+  const avatarId = user.avatar._id.toString();
+
+  if (avatarId === targetAvatarId) {
+    throw new Error("Cannot promote yourself");
+  }
+
+  const guild = await Guild.findById(guildId);
+  if (!guild) throw new Error("Guild not found");
+
+  const actor = guild.members.find(m => m.avatar.toString() === avatarId);
+  if (!actor || actor.role !== "leader") {
+    throw new Error("Only leader can demote co-leaders");
+  }
+
+  const target = guild.members.find(m => m.avatar.toString() === targetAvatarId);
+  if (!target) throw new Error("Target member not found");
+
+  if (target.role !== "co-leader") {
+    throw new Error("Only co-leaders can be demoted");
+  }
+
+  target.role = "member";
+  await guild.save();
+
+  return guild;
+}

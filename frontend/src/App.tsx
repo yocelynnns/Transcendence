@@ -1,6 +1,6 @@
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState,useEffect } from 'react';
+import { useState,useEffect, useCallback } from 'react';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
@@ -12,9 +12,10 @@ import { useAvatar } from "./hooks/useAvatar";
 import {getUserInfo} from "./services/authService"
 import { Battle } from './types/battleTypes';
 import SpectatorPage from './pages/SpectatorPage';
-import axios from 'axios';
 import AIPages from './pages/AiPages';
 import EventPage from './pages/eventPage';
+import SocketManager from "./SocketManager";
+
 function App() {
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('token'));
 
@@ -23,30 +24,28 @@ function App() {
   const [currentBattle, setCurrentBattle] = useState<Battle | null>(null); 
   const [spectatingBattle, setSpectatingBattle] = useState<Battle | null>(null); 
 
-  useEffect(() => {
+  // --- stable refetchUser ---
+  const refetchUser = useCallback(async () => {
     if (!token) return;
-    if (currentBattle) return ;
-
-    async function fetchUser() {
-      try {
-        const user = await getUserInfo(token as string);
-        setAvatarId(user.avatar?._id ?? null);
-        setBattleId(user.avatar?.currentBattle?.toString() ?? null);
-      } catch (err) {
-        setToken(null); 
-        console.error("Failed to fetch user info:", err);
-      }
+    try {
+      const user = await getUserInfo(token);
+      setAvatarId(user.avatar?._id ?? null);
+      setBattleId(user.avatar?.currentBattle?.toString() ?? null);
+    } catch (err) {
+      setToken(null);
+      console.error("Failed to fetch user info:", err);
     }
+  }, [token]);
 
-    fetchUser();
-  }, [token, currentBattle]);
+  // --- stable refetchBattle ---
+  const refetchBattle = useCallback(
+    async (avatarIdParam?: string, battleIdParam?: string) => {
+      const _avatarId = avatarIdParam ?? avatarId;
+      const _battleId = battleIdParam ?? battleId;
+      if (!_avatarId || !_battleId) return;
 
-  useEffect(() => {
-    if (!battleId || !avatarId) return;
-
-    async function fetchBattle() {
       try {
-        const res = await fetch(`http://localhost:5001/api/battle/${battleId}`);
+        const res = await fetch(`http://localhost:5001/api/battle/${_battleId}`);
         if (!res.ok) throw new Error("Failed to fetch battle");
 
         const battleData: Battle = await res.json();
@@ -54,40 +53,39 @@ function App() {
         if (battleData.endedAt) {
           setCurrentBattle(null);
           setBattleId(null);
-
-          try {
-            const token = localStorage.getItem("token");
-            if (token) {
-              await axios.put(
-                `http://localhost:5001/api/avatar/${avatarId}`,
-                { currentBattle: null },
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-            }
-          } catch (err) {
-            console.error("Failed to clear avatar currentBattle:", err);
-          }
-
-          return;
+          return battleData;
         }
 
         setCurrentBattle(battleData);
+        return battleData;
       } catch (err) {
         console.error("Failed to fetch battle:", err);
         setCurrentBattle(null);
         setBattleId(null);
       }
-    }
+    },
+    [avatarId, battleId]
+  );
 
-    fetchBattle();
-  }, [battleId, avatarId]);
+  // ---- auto fetch on mount or currentBattle change ----
+  useEffect(() => {
+    if (!token) return;
+    if (!currentBattle) {
+      refetchUser();
+    }
+  }, [token, currentBattle, refetchUser]);
+
+  // ---- auto fetch battle when avatarId or battleId changes ----
+  useEffect(() => {
+    refetchBattle();
+  }, [battleId, avatarId, refetchBattle]);
 
   const { avatarData } = useAvatar(avatarId);
-
-  console.log("RENDER: APP");
   
   return (
     <BrowserRouter>
+      {token && avatarId && <SocketManager avatarId={avatarId} />}
+
       <Routes>
         <Route
           path="/login"
@@ -132,6 +130,7 @@ function App() {
                 avatarData={avatarData}
                 currentBattle={currentBattle}
                 setCurrentBattle={setCurrentBattle}
+                refetchBattle={refetchBattle}
               />
             ) : (
               <Navigate to="/profile" />
@@ -147,6 +146,7 @@ function App() {
                 setCurrentBattle={setCurrentBattle}
                 avatarData={avatarData}
                 currentBattle={currentBattle}
+                refetchBattle={refetchBattle}
               />
             ) : (
               <Navigate to="/login" />

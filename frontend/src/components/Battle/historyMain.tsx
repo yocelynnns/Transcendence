@@ -90,9 +90,6 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
         <div
           onClick={() => setPanelOpen(!panelOpen)}
           style={{
-            // position: "absolute",
-            // top: 190,
-            // right: 20,
             cursor: "pointer",
             zIndex: 100,
             width: 48,

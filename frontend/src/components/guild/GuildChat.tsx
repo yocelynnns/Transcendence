@@ -4,7 +4,6 @@ import { GuildMessage } from "../../types/guildTypes";
 
 interface GuildChatProps {
   guildId: string | undefined;
-  token: string | null;// CAN DELETE
   messages: GuildMessage[];
   onBack: () => void;
 }

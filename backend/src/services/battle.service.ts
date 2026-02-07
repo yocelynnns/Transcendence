@@ -66,12 +66,17 @@ export async function markPlayerReady(
 
   const isPlayer1 = battle.player1.toString() === avatarId;
 
+  const currentPokemon = isPlayer1 ? battle.pokemon1 : battle.pokemon2;
+  if (currentPokemon && currentPokemon.length > 0) {
+    return battle;
+  }
+
   const updatedBattle = await Battle.findByIdAndUpdate(
     battleId,
     {
       $set: isPlayer1
-        ? { pokemon1: selectedPokemon }
-        : { pokemon2: selectedPokemon },
+        ? { pokemon1: selectedPokemon , lastPlayer1Turn: new Date() }
+        : { pokemon2: selectedPokemon  , lastPlayer2Turn: new Date()},
     },
     { new: true }
   );
@@ -104,6 +109,19 @@ export async function resolveBattleTimeout(battleId: string) {
   }
 
   await battle.save();
+
+  const playerIds = [battle.player1, battle.player2].map(p =>
+    typeof p === "object" ? p._id : p
+  );
+
+  await Avatar.updateMany(
+    { _id: { $in: playerIds } },
+    {
+      $set: { currentBattle: null },
+      $push: { battleHistory: battle._id },
+    }
+  );
+
   return battle;
 }
 
@@ -131,7 +149,7 @@ export function startBattleTimeout(battleId: string, io: any) {
 }
 
 // Battle logic
-const MOVE_TIMEOUT = 60_000; // 60 seconds per move
+const MOVE_TIMEOUT = 31_000; // 31 seconds per move
 const moveTimers: Record<string, NodeJS.Timeout> = {};
 
 // Check move timeout for a battle
@@ -209,6 +227,30 @@ export async function playerAction(
 
   if (!battle || battle.endedAt) throw new Error("Battle not found or already ended");
 
+  const now = new Date();
+  const battleDurationMs = now.getTime() - battle.createdAt.getTime();
+  const TEN_MINUTES_MS = 10 * 60 * 1000;
+
+  if (battleDurationMs >= TEN_MINUTES_MS && !battle.winner) {
+    battle.endedAt = now;
+    battle.winner = "draw";
+    battle.winnerReason = "Time limit exceeded";
+
+    const updatePlayers = async (player: IAvatar) => {
+      player.currentBattle = undefined;
+      if (!player.battleHistory) player.battleHistory = [];
+      player.battleHistory.push(battle._id);
+      await player.save();
+    };
+    await Promise.all([
+      updatePlayers(battle.player1 as IAvatar),
+      updatePlayers(battle.player2 as IAvatar),
+    ]);
+
+    await battle.save();
+    return battle;
+  }
+
   let isPlayer1: boolean;
   if (battle.player1?._id.toString() === avatarId) isPlayer1 = true;
   else if (battle.player2?._id.toString() === avatarId) isPlayer1 = false;
@@ -218,8 +260,8 @@ export async function playerAction(
   const defenderTeam = isPlayer1 ? battle.pokemon2 : battle.pokemon1;
   const attackerIndexField = isPlayer1 ? "active1" : "active2";
 
-  if (isPlayer1) battle.lastPlayer1Turn = new Date();
-  else battle.lastPlayer2Turn = new Date();
+  battle.lastPlayer1Turn = new Date();
+  battle.lastPlayer2Turn = new Date();
 
   if (action.type === "switch") {
     battle[attackerIndexField] = action.payload.newIndex;

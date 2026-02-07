@@ -13,6 +13,7 @@ export interface ICatchEvent extends Document {
   players: EventPlayer[];
   status: "waiting" | "running" | "finished";
   createdAt: Date;
+  lastCheckedAt: Date;
 }
 
 const EventPlayerSchema = new Schema<EventPlayer>({
@@ -30,6 +31,9 @@ const CatchEventSchema = new Schema<ICatchEvent>({
     type: Date,
     default: Date.now,
   },
+  lastCheckedAt: {
+    type: Date,
+  }
 }, { timestamps: true });
 
 export const CatchEventModel = model<ICatchEvent>("CatchEvent", CatchEventSchema);

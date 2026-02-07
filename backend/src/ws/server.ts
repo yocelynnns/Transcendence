@@ -23,6 +23,9 @@ export interface PlayerData {
 // avatarId -> PlayerData
 export const players: Record<string, PlayerData> = {};
 
+// event players
+export const eventPlayers: Record<string, PlayerData> = {};
+
 // avatarId -> socket.id
 export const avatarSockets: Record<string, string> = {};
 

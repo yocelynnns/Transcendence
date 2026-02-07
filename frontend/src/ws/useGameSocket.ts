@@ -62,19 +62,15 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
 
   // register player with server
   const registerPlayer = useCallback(
-    async (player: PlayerState) => {
+    async () => {
       try {
-
-        // send avatarId as string (matches server)
         socketRef.current?.emit("registerPlayer");
 
-        // immediately send current player position
-        sendPlayerMove(player.x, player.y, player.direction, player.frame, player.charIndex);
       } catch (err) {
         console.error("REGISTER PLAYER FAILED:", err);
       }
     },
-    [sendPlayerMove]
+    []
   );
 
   // handle reconnects automatically
@@ -83,9 +79,7 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
     if (!s) return;
 
     const handleReconnect = async () => {
-      if (latestPlayerRef.current) {
-        await registerPlayer(latestPlayerRef.current);
-      }
+        await registerPlayer();
     };
 
     s.on("connect", handleReconnect);
@@ -121,7 +115,7 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
       if (!socketRef.current) return;
 
       socketRef.current.emit("playerReady", {
-        currentBattleId: currentBattle._id,  // string
+        currentBattleId: currentBattle._id,
         selectedPokemon: selectedBattlePokemon,
       });
     },

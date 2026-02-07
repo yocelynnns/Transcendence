@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { cleanupPlayer } from "./playerCleanup";
-import { matchingPool, players, avatarSockets, onlineUsers, socketToAvatar, PlayerData } from "./server";
+import { matchingPool, players, avatarSockets, onlineUsers, socketToAvatar, PlayerData, eventPlayers } from "./server";
 import * as PokemonService from "../services/pokemon.service";
 import * as AvatarService from "../services/avatar.service";
 
@@ -77,17 +77,23 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
     }
   });
 
-  // Join Battle Room
-  socket.on("joinBattleRoom", async ({ battleId }: { battleId: string }) => {
-    if (!battleId) return;
-    const roomName = `battle_${battleId}`;
-    socket.join(roomName);
-    console.log(`Socket ${socket.id} joined room ${roomName}`);
+  // leave matching
+  socket.on("leaveMatching", (avatarId: string) => {
+    const poolIndex = matchingPool.findIndex((p) => p.avatarId === avatarId);
+    if (poolIndex !== -1) {
+      matchingPool.splice(poolIndex, 1);
+      console.log("Player left matching:", avatarId);
+    }
   });
 
   // Request player
   socket.on("requestPlayers", () => {
     socket.emit("playersUpdate", Object.values(players));
+  });
+
+  // Request player
+  socket.on("requestEventPlayers", () => {
+    socket.emit("eventPlayersUpdate", Object.values(eventPlayers));
   });
 
   // Player movement
@@ -96,6 +102,14 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
     if (!avatarId) return;
     players[avatarId] = { id: avatarId, ...data };
     io.emit("playersUpdate", Object.values(players));
+  });
+
+  // Event player movement
+  socket.on("eventPlayerMove", (data: Omit<PlayerData, "id">) => {
+    const avatarId = socket.data.avatarId.toString();
+    if (!avatarId) return;
+    eventPlayers[avatarId] = { id: avatarId, ...data };
+    io.emit("eventPlayersUpdate", Object.values(eventPlayers));
   });
 
   // Player signout

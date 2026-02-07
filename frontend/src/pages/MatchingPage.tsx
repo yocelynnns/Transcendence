@@ -18,7 +18,7 @@ export default function Matching({
 }: MatchMakingProps) {
   const navigate = useNavigate();
   const defaultAvatar = ASSETS.AVATAR.CLEFFA;
-  const { joinMatching, subscribeEvent } = useGameSocket(() => {});
+  const { joinMatching, subscribeEvent, emitEvent } = useGameSocket(() => {});
   const currentId = avatarData?._id;
 
   const [countdown, setCountdown] = useState(5);
@@ -26,7 +26,6 @@ export default function Matching({
 
   useEffect(() => {
     if (!avatarData) return;
-
     const inventory = avatarData.pokemonInventory ?? [];
     if (inventory.length < 3) {
       alert("You need at least 3 Pokemon to enter matchmaking.");
@@ -36,7 +35,6 @@ export default function Matching({
 
   const opponentAvatar = useMemo(() => {
     if (!currentBattle || !currentId) return null;
-
     return currentBattle.player1._id === currentId
       ? currentBattle.player2
       : currentBattle.player1;
@@ -73,12 +71,11 @@ export default function Matching({
   useEffect(() => {
     if (!currentId || currentBattle) return;
 
-    if (joinRef.current == false)
-    {
+    if (!joinRef.current) {
       joinMatching();
       joinRef.current = true;
     }
-    
+
     const cleanupFound = subscribeEvent(
       "opponentFound",
       ({ battle }: { battle: Battle }) => {
@@ -99,6 +96,13 @@ export default function Matching({
       cleanupError();
     };
   }, [currentId, currentBattle, joinMatching, subscribeEvent, setCurrentBattle]);
+
+  const handleReturn = () => {
+    if (currentId) {
+      emitEvent("leaveMatching", currentId);
+    }
+    navigate("/", { replace: true });
+  };
 
   if (!avatarData) {
     return (
@@ -172,6 +176,22 @@ export default function Matching({
           loading={waiting}
         />
       </div>
+
+      <button
+        onClick={handleReturn}
+        style={{
+          marginTop: 40,
+          padding: "10px 20px",
+          borderRadius: 10,
+          border: "2px solid black",
+          background: "white",
+          cursor: "pointer",
+          fontWeight: 600,
+          color: "black",
+        }}
+      >
+        Return
+      </button>
     </div>
   );
 }

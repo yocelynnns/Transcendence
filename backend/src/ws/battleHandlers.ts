@@ -36,6 +36,7 @@ export function setupBattleHandlers(
         s2?.join(room);
 
         io.to(room).emit("opponentFound", { battle });
+        BattleService.startBattleTimeout(battle._id.toString(), io);
       } catch (err) {
         matchingPool.unshift(player2, player1);
 
@@ -86,10 +87,9 @@ export function setupBattleHandlers(
         await battle.save();
 
         io.to(roomName).emit("battleReady", { battleId: battle._id });
+        BattleService.startMoveTimeout(battle._id.toString(), io);
         return;
       }
-
-      BattleService.startBattleTimeout(currentBattleId, io);
     } catch (err) {
       console.error("Error processing playerReady:", err);
     }

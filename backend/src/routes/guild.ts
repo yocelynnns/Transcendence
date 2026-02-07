@@ -152,4 +152,60 @@ router.delete("/:guildId", authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Promote Member -> Co-leader
+router.post(
+  "/:guildId/promote/:targetAvatarId",
+  authMiddleware,
+  async (req: AuthRequest, res) => {
+    try {
+      const guildId = Array.isArray(req.params.guildId)
+        ? req.params.guildId[0]
+        : req.params.guildId;
+
+      const targetAvatarId = Array.isArray(req.params.targetAvatarId)
+        ? req.params.targetAvatarId[0]
+        : req.params.targetAvatarId;
+
+      const guild = await GuildService.promoteToCoLeader({
+        userId: req.userId!,
+        guildId,
+        targetAvatarId,
+      });
+
+      return res.json({ message: "Member promoted to co-leader", guild });
+    } catch (err: any) {
+      console.error("[POST /guild/:guildId/promote/:targetAvatarId]", err);
+      return res.status(400).json({ message: err.message || "Failed to promote member" });
+    }
+  }
+);
+
+// Demote Co-leader -> Member
+router.post(
+  "/:guildId/demote/:targetAvatarId",
+  authMiddleware,
+  async (req: AuthRequest, res) => {
+    try {
+      const guildId = Array.isArray(req.params.guildId)
+        ? req.params.guildId[0]
+        : req.params.guildId;
+
+      const targetAvatarId = Array.isArray(req.params.targetAvatarId)
+        ? req.params.targetAvatarId[0]
+        : req.params.targetAvatarId;
+
+      const guild = await GuildService.demoteCoLeader({
+        userId: req.userId!,
+        guildId,
+        targetAvatarId,
+      });
+
+      return res.json({ message: "Co-leader demoted to member", guild });
+    } catch (err: any) {
+      console.error("[POST /guild/:guildId/demote/:targetAvatarId]", err);
+      return res.status(400).json({ message: err.message || "Failed to demote co-leader" });
+    }
+  }
+);
+
 export default router;

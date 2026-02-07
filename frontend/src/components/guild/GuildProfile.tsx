@@ -62,6 +62,15 @@ export default function GuildProfile({
     return false;
   });
 
+  const isCoLeader = guild?.members.some((m) => {
+    if (!avatarData._id) return false;
+    if (typeof m.avatar === "object" && "_id" in m.avatar) {
+      return m.avatar._id === avatarData._id && m.role === "co-leader";
+    }
+    return false;
+  });
+
+
   const handleLeaveGuild = async () => {
     if (!guild || !token) return;
     try {
@@ -192,11 +201,69 @@ export default function GuildProfile({
 
       emitEvent("guildUpdate", {
         guildId: guild._id,
-        targetAvatarId: targetAvatarId,
+        targetAvatarId,
         action: "kick",
       });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to kick member");
+    }
+  };
+
+  const handlePromoteMember = async (targetAvatarId: string) => {
+    if (!guild || !token) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:5001/api/guild/${guild._id}/promote/${targetAvatarId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to promote member");
+      }
+
+      emitEvent("guildUpdate", {
+        guildId: guild._id,
+        action: "promote",
+      });
+
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to promote member");
+    }
+  };
+
+  const handleDemoteMember = async (targetAvatarId: string) => {
+    if (!guild || !token) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:5001/api/guild/${guild._id}/demote/${targetAvatarId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to demote co-leader");
+      }
+
+      emitEvent("guildUpdate", {
+        guildId: guild._id,
+        action: "update",
+      });
+
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to demote co-leader");
     }
   };
 
@@ -267,13 +334,24 @@ export default function GuildProfile({
 
       {guild.members.map((m, index) => {
         const avatarId = getAvatarId(m.avatar);
+
         const memberName =
           typeof m.avatar === "object" && m.avatar && "userName" in m.avatar
             ? m.avatar.userName
             : "Unknown";
 
+        const isSelf = avatarId === avatarData._id;
+
         const canKick =
-          isLeader && m.role !== "leader" && avatarId !== avatarData._id;
+        !isSelf &&
+        (
+          (isLeader && m.role !== "leader") ||
+          (isCoLeader && m.role === "member")
+        );
+
+        const canPromote = isLeader && !isSelf && m.role === "member";
+
+        const canDemote = isLeader && !isSelf && m.role === "co-leader";
 
         return (
           <li
@@ -291,22 +369,58 @@ export default function GuildProfile({
               {memberName} <strong>({m.role})</strong>
             </span>
 
-            {canKick && avatarId && (
-              <button
-                onClick={() => handleKickMember(avatarId)}
-                style={{
-                  padding: "4px 8px",
-                  borderRadius: 6,
-                  border: "1px solid #d33",
-                  background: "#ffe5e5",
-                  color: "#a00",
-                  fontSize: 12,
-                  cursor: "pointer",
-                }}
-              >
-                Kick
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 6 }}>
+              {canPromote && avatarId && (
+                <button
+                  onClick={() => handlePromoteMember(avatarId)}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #2d7",
+                    background: "#e6fff5",
+                    color: "#060",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  Promote
+                </button>
+              )}
+
+              {canDemote && avatarId && (
+                <button
+                  onClick={() => handleDemoteMember(avatarId)}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #e6a700",
+                    background: "#fff6d6",
+                    color: "#805a00",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  Demote
+                </button>
+              )}
+
+              {canKick && avatarId && (
+                <button
+                  onClick={() => handleKickMember(avatarId)}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #d33",
+                    background: "#ffe5e5",
+                    color: "#a00",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  Kick
+                </button>
+              )}
+            </div>
           </li>
         );
       })}

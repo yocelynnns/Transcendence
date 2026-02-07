@@ -69,6 +69,7 @@ export async function createCatchEvent(io: any) {
   if (existingEvent) {
     if (existingEvent.status === "waiting") {
       existingEvent.status = "running";
+      existingEvent.lastCheckedAt = new Date();
       await existingEvent.save();
       console.log("Event Started!!!", existingEvent._id);
       return;
@@ -76,8 +77,9 @@ export async function createCatchEvent(io: any) {
       else if  (existingEvent.status === "finished") {
       await CatchEventModel.findByIdAndDelete(existingEvent._id);
       console.log("Old finished event deleted:", existingEvent._id);
-      return;
     } else {
+      existingEvent.lastCheckedAt = new Date();
+      await existingEvent.save();
       console.log("Event still running, skipping creation");
       return;
     }
@@ -88,6 +90,7 @@ export async function createCatchEvent(io: any) {
     players: [],
     pokemon: generatePokemons(TOTAL_POKEMON),
     status: "waiting",
+    lastCheckedAt:  new Date(),
   });
 
   console.log("New catch event created:", newEvent._id);
