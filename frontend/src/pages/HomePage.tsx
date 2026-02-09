@@ -11,6 +11,7 @@ import HistoryMain from "../components/Battle/historyMain";
 import AiButton from "../components/ai/aiButton";
 import EventButton from "../components/event/eventButton";
 import FriendsList from "../components/friendlist/FriendsList";
+import RaceButton from "../components/race/RaceButton";
 
 interface HomePageProps {
   setToken: (token: string | null) => void;
@@ -125,6 +126,7 @@ export default function HomePage({
             <HistoryMain avatarData={avatarData} />
             <AiButton />
             <EventButton />
+            <RaceButton avatarData={avatarData} />
           </div>
         )}
       </div>

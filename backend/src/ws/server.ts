@@ -11,6 +11,7 @@ import { setupPokemonHandlers } from "./pokemonHandler";
 import { setupUserHandlers } from "./userHandler";
 import { setSocketIo } from "../services/battle.service";
 import { setSocketIo as setFriendSocketIo } from "../services/friend.service";
+import { setupRaceHandlers } from "./raceHandler";
 
 export interface PlayerData {
   id: string;
@@ -78,11 +79,14 @@ export function setupSocket(server: any) {
     }
   });
 
+  // ⭐ SET UP RACE NAMESPACE FIRST (before regular connection handler)
+  setupRaceHandlers(io);
+
   // Recurring events
   createCatchEvent(io);
   setInterval(() => createCatchEvent(io), 5 * 60 * 1000);
 
-  // Socket connection
+  // Socket connection (main namespace)
   io.on("connection", async (socket) => {
     const { avatarId, sessionId } = socket.data;
     const avatarIdString = avatarId?.toString();
