@@ -87,7 +87,7 @@ export function setupBattleHandlers(
 
   socket.on("joinMatching", async () => {
     const userId = socket.data.userId;
-    const avatarId = socket.data.avatarId.toString();
+    const avatarId = socket.data.avatarId?.toString();
 
     if (!userId || !avatarId) return;
 
@@ -105,7 +105,7 @@ export function setupBattleHandlers(
   // Player ready on team select
   socket.on("playerReady", async ({ currentBattleId, selectedPokemon }: { currentBattleId: string; selectedPokemon: IBattlePokemon[] }) => {
     try {
-      const avatarId = socket.data.avatarId.toString();
+      const avatarId = socket.data.avatarId?.toString();
       if (!avatarId) return;
 
       const battle = await BattleService.markPlayerReady(currentBattleId, avatarId, selectedPokemon);
@@ -152,7 +152,7 @@ export function setupBattleHandlers(
   // Player action on battle
   socket.on("playerAction", async (data: any) => {
     try {
-      const avatarId = socket.data.avatarId.toString();
+      const avatarId = socket.data.avatarId?.toString();
       if (!avatarId) return;
 
       const battle = await BattleService.playerAction(

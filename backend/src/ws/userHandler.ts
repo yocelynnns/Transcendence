@@ -15,7 +15,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
       return;
     }
 
-    const avatarId = socket.data.avatarId.toString();
+    const avatarId = socket.data.avatarId?.toString();
     if (!avatarId) return;
 
     // Disconnect old socket if avatar already connected

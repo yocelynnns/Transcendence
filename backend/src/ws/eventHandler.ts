@@ -4,7 +4,7 @@ import * as EventService from "../services/event.service";
 export function setupEventHandlers(io: Server, socket: Socket) {
   // Player join the event
   socket.on("joinCatchEvent", async ({ playerName }: { playerName: string }) => {
-    const avatarId = socket.data.avatarId.toString();
+    const avatarId = socket.data.avatarId?.toString();
     if (!avatarId || !playerName) return;
 
     const eventId = "catch_event";
@@ -52,7 +52,7 @@ export function setupEventHandlers(io: Server, socket: Socket) {
   socket.on(
     "attemptCatch",
     async ({ eventId, pokemonId }: { eventId: string; pokemonId: string }) => {
-      const avatarId = socket.data.avatarId.toString();
+      const avatarId = socket.data.avatarId?.toString();
       if (!avatarId) return;
 
       try {

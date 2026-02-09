@@ -12,7 +12,7 @@ export function cleanupPlayer(
   players: PlayerMap,
   avatarSockets: PlayerMap
 ) {
-  const avatarId = socket.data.avatarId.toString();
+  const avatarId = socket.data.avatarId?.toString();
 
   if (!avatarId) return;
 
