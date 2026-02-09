@@ -173,7 +173,7 @@ function App() {
           element={
             token
               ? avatarId
-                ? <HomePage setToken={setToken} avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle}/>
+                ? <HomePage setToken={setToken} avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle} setCurrentBattle={setCurrentBattle}/>
                 : <Navigate to="/profile" />
               : <Navigate to="/login" />
           }

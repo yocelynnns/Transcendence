@@ -4,6 +4,30 @@ import { IAvatar } from "../db/avatar";
 import MatchInvite from "../db/matchInvite";
 import Avatar from "../db/avatar";
 
+/// to enable commuication about end of battle
+let ioInstance: any = null;
+
+export function setSocketIo(io: any) {
+  ioInstance = io;
+}
+
+/// Helper function to emit battle ended to friends
+function emitBattleEnded(battle: any) {
+  if (!ioInstance) return;
+  
+  // Extract player IDs safely
+  const player1Id = battle.player1?._id?.toString?.() || battle.player1?.toString?.();
+  const player2Id = battle.player2?._id?.toString?.() || battle.player2?.toString?.();
+  
+  if (player1Id) {
+    ioInstance.emit("battleEnded", { avatarId: player1Id, battleId: battle._id });
+  }
+  if (player2Id) {
+    ioInstance.emit("battleEnded", { avatarId: player2Id, battleId: battle._id });
+  }
+}
+///
+
 // Get a specific battle
 export interface GetBattleInput {
   battleId: string;
@@ -111,7 +135,7 @@ export async function resolveBattleTimeout(battleId: string) {
   await battle.save();
 
   const playerIds = [battle.player1, battle.player2].map(p =>
-    typeof p === "object" ? p._id : p
+    typeof p === "object" && p !== null ? p._id : p
   );
 
   await Avatar.updateMany(
@@ -121,6 +145,9 @@ export async function resolveBattleTimeout(battleId: string) {
       $push: { battleHistory: battle._id },
     }
   );
+
+  // Emit battle ended event
+  emitBattleEnded(battle);
 
   return battle;
 }
@@ -191,6 +218,9 @@ export async function checkMoveTimeout(battleId: string): Promise<{ battle?: any
       updatePlayers(battle.player2 as IAvatar),
     ]);
 
+    // Emit battle ended event (MOVED BEFORE RETURN)
+    emitBattleEnded(battle);
+
     return { battle, timedOut: true, loser };
   }
 
@@ -248,6 +278,10 @@ export async function playerAction(
     ]);
 
     await battle.save();
+    
+    // Emit battle ended event
+    emitBattleEnded(battle);
+    
     return battle;
   }
 
@@ -281,6 +315,10 @@ export async function playerAction(
     ]);
 
     await battle.save();
+    
+    // Emit battle ended event
+    emitBattleEnded(battle);
+    
     return battle;
   }
 
@@ -288,7 +326,6 @@ export async function playerAction(
     battle[attackerIndexField] = action.payload.newIndex;
     battle.currentTurn = isPlayer1 ? "player2" : "player1";
   }
-
 
   if (action.type === "forcedswitch") {
     battle[attackerIndexField] = action.payload.newIndex;
@@ -328,6 +365,9 @@ export async function playerAction(
         updatePlayers(battle.player1 as IAvatar),
         updatePlayers(battle.player2 as IAvatar),
       ]);
+      
+      // Emit battle ended event
+      emitBattleEnded(battle);
     } else {
       battle.currentTurn = isPlayer1 ? "player2" : "player1";
     }

@@ -9,6 +9,8 @@ import { setupChatHandlers } from "./chatHandlers";
 import { setupFriendHandler } from "./friendHandler";
 import { setupPokemonHandlers } from "./pokemonHandler";
 import { setupUserHandlers } from "./userHandler";
+import { setSocketIo } from "../services/battle.service";
+import { setSocketIo as setFriendSocketIo } from "../services/friend.service";
 
 export interface PlayerData {
   id: string;
@@ -43,6 +45,10 @@ export function setupSocket(server: any) {
   const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] },
   });
+
+  // Set socket io instance for battle service
+  setSocketIo(io);
+  setFriendSocketIo(io);  // THIS for friend service
 
   // AUTH middleware
   io.use(async (socket, next) => {

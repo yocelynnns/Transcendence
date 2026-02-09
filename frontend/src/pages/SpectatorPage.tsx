@@ -1,5 +1,5 @@
 import { useEffect, useState, Dispatch } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useGameSocket } from "../ws/useGameSocket";
 import StatusPanel from "../components/Battle/StatusPanel";
 import { getAliveCount } from "../utils/battleUtils";
@@ -16,16 +16,35 @@ export default function SpectatorPage({
   setSpectatingBattle,
 }: SpectatorPageProps) {
   const navigate = useNavigate();
+  const { battleId } = useParams(); // Get battleId from URL
   const { subscribeEvent } = useGameSocket(() => {});
 
   const [battleData, setBattleData] = useState<Battle | null>(spectatingBattle);
-  const [povPlayer1, setPovPlayer1] = useState(true); // true = P1 POV, false = P2 POV
+  const [povPlayer1, setPovPlayer1] = useState(true);
+  const [loading, setLoading] = useState(!spectatingBattle);
+
+  // Fetch battle data if not provided
+  useEffect(() => {
+    if (!battleData && battleId) {
+      fetch(`http://localhost:5001/api/battle/${battleId}`)
+        .then(res => res.json())
+        .then((data: Battle) => {
+          setBattleData(data);
+          setSpectatingBattle(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch battle:", err);
+          navigate("/");
+        });
+    }
+  }, [battleId, battleData, setSpectatingBattle, navigate]);
 
   useEffect(() => {
-    if (!subscribeEvent || !spectatingBattle?._id) return;
+    if (!subscribeEvent || !battleId) return;
 
     const unsubUpdateState = subscribeEvent<Battle>("updateBattleState", (updatedBattle) => {
-      if (updatedBattle._id !== spectatingBattle._id) return;
+      if (updatedBattle._id !== battleId) return;
 
       const safeTeam = (team: BattlePokemon[] = []) =>
         team.map((p) => ({ ...p, isDead: !!p.isDead }));
@@ -46,12 +65,11 @@ export default function SpectatorPage({
     const unsubBattleError = subscribeEvent<{ battleId: string; message: string }>(
       "battleError",
       (err) => {
-        if (err.battleId !== spectatingBattle._id) return;
+        if (err.battleId !== battleId) return;
 
         alert(`Battle ended due to error: ${err.message}`);
-
-       setSpectatingBattle(null);
-        navigate("/"); // go home
+        setSpectatingBattle(null);
+        navigate("/");
       }
     );
 
@@ -59,9 +77,9 @@ export default function SpectatorPage({
       unsubUpdateState?.();
       unsubBattleError?.();
     };
-  }, [subscribeEvent, spectatingBattle?._id, navigate, setSpectatingBattle]);
+  }, [subscribeEvent, battleId, navigate, setSpectatingBattle]);
 
-  if (!battleData) {
+  if (loading || !battleData) {
     return <p style={{ color: "#fff", textAlign: "center" }}>Loading battle…</p>;
   }
 

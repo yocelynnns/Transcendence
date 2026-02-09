@@ -7,6 +7,14 @@ import * as AvatarService from "../services/avatar.service";
 export const setupUserHandlers = (io: Server, socket: Socket) => {
   // Player registration
   socket.on("registerPlayer", async () => {
+
+    const rawAvatarId = socket.data?.avatarId;
+    if (!rawAvatarId) {
+      console.log("⚠️ registerPlayer called without avatarId, socket not authenticated yet");
+      socket.emit("registerError", { message: "Not authenticated" });
+      return;
+    }
+
     const avatarId = socket.data.avatarId.toString();
     if (!avatarId) return;
 
@@ -98,23 +106,27 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
 
   // Player movement
   socket.on("playerMove", (data: Omit<PlayerData, "id">) => {
-    const avatarId = socket.data.avatarId.toString();
-    if (!avatarId) return;
+    const rawAvatarId = socket.data?.avatarId;
+    if (!rawAvatarId) return;
+    const avatarId = rawAvatarId.toString();
     players[avatarId] = { id: avatarId, ...data };
     io.emit("playersUpdate", Object.values(players));
   });
 
   // Event player movement
   socket.on("eventPlayerMove", (data: Omit<PlayerData, "id">) => {
-    const avatarId = socket.data.avatarId.toString();
-    if (!avatarId) return;
+    const rawAvatarId = socket.data?.avatarId;
+    if (!rawAvatarId) return;
+    const avatarId = rawAvatarId.toString();
     eventPlayers[avatarId] = { id: avatarId, ...data };
     io.emit("eventPlayersUpdate", Object.values(eventPlayers));
   });
 
   // Player signout
   socket.on("signout", () => {
-    const avatarId = socket.data.avatarId.toString() || socketToAvatar.get(socket.id);
+    const rawAvatarId = socket.data?.avatarId || socketToAvatar.get(socket.id);
+    const avatarId = rawAvatarId?.toString?.();
+    
     if (avatarId) {
       onlineUsers.delete(avatarId);
       socketToAvatar.delete(socket.id);
@@ -129,7 +141,9 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
   socket.on("disconnect", async (reason) => {
     console.log(`🔴 DISCONNECT STARTED: ${socket.id}, REASON: ${reason}`);
 
-    const avatarId = socket.data.avatarId.toString() || socketToAvatar.get(socket.id);
+    // FIX: Safely get avatarId with null check
+    const rawAvatarId = socket.data?.avatarId || socketToAvatar.get(socket.id);
+    const avatarId = rawAvatarId?.toString?.();
 
     if (avatarId) {
       onlineUsers.delete(avatarId);
@@ -144,7 +158,6 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
           data: {
             online: false,
             currentSocket: null,
-            // currentBattle: null,
           },
         });
         console.log(`✅ Avatar ${avatarId} marked offline in DB`);
@@ -156,7 +169,6 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
     }
 
     cleanupPlayer(io, socket, matchingPool, players, avatarSockets);
-
     console.log(`🔴 DISCONNECT COMPLETED: ${socket.id}`);
   });
 };
