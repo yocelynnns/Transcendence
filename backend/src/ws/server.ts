@@ -11,6 +11,7 @@ import { setupPokemonHandlers } from "./pokemonHandler";
 import { setupUserHandlers } from "./userHandler";
 import { setSocketIo } from "../services/battle.service";
 import { setSocketIo as setFriendSocketIo } from "../services/friend.service";
+import { setupRaceHandlers } from "./raceHandler";
 
 export interface PlayerData {
   id: string;
@@ -121,5 +122,7 @@ export function setupSocket(server: any) {
     setupEventHandlers(io, socket);
 
     setupChatHandlers(io, socket, onlineUsers);
+
+    setupRaceHandlers(io, socket);
   });
 }
