@@ -17,6 +17,7 @@ interface HomePageProps {
   avatarData: AvatarData | null | undefined;
   token: string;
   setSpectatingBattle: Dispatch<React.SetStateAction<Battle | null>>;
+  setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;  // <-- ADD THIS
 }
 
 export default function HomePage({
@@ -24,6 +25,7 @@ export default function HomePage({
   avatarData,
   token,
   setSpectatingBattle,
+  setCurrentBattle,
 }: HomePageProps) {
   const { updateAvatar } = useAvatar(avatarData?._id ?? null);
 
@@ -69,7 +71,9 @@ export default function HomePage({
         <FriendsList 
           token={token} 
           myAvatarId={avatarData._id} 
-          myAvatarData={avatarData}  // Add this
+          myAvatarData={avatarData}
+          setSpectatingBattle={setSpectatingBattle}
+          setCurrentBattle={setCurrentBattle} 
         />
 
         {/* Toggle Menu Button */}

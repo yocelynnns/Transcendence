@@ -3,6 +3,14 @@ import User from "../db/user";
 import Avatar from "../db/avatar";
 import { Types } from "mongoose";
 
+// Add socket io instance
+let ioInstance: any = null;
+
+export function setSocketIo(io: any) {
+  ioInstance = io;
+}
+///
+
 // Send friend request
 interface SendFriendRequestInput {
   userId: string;
@@ -28,6 +36,7 @@ export const sendFriendRequest = async ({ userId, friendEmail }: SendFriendReque
         throw new Error("ALREADY_FRIENDS");
       case "pending":
         if (existingFriendship.userId.toString() === friendUser._id.toString()) {
+          // B is accepting A's request by sending a request back
           existingFriendship.status = "accepted";
           await existingFriendship.save();
 
@@ -39,6 +48,19 @@ export const sendFriendRequest = async ({ userId, friendEmail }: SendFriendReque
 
           const currentUser = await User.findById(userId).populate("avatar");
           const accepterAvatar = await Avatar.findById(friendUser.avatar);
+          
+          // Get requester (A) info to find their socket
+          const requesterUser = await User.findById(friendUser._id).populate("avatar");
+          const requesterAvatar = await Avatar.findById(requesterUser?.avatar);
+
+          // NEW: Emit to requester (A) that their request was auto-accepted
+          if (ioInstance && requesterAvatar?.currentSocket) {
+            ioInstance.to(requesterAvatar.currentSocket).emit("friendRequestAutoAccepted", {
+              avatarId: friendUser.avatar?.toString(),
+              userName: accepterAvatar?.userName || "Unknown",
+              avatarImage: accepterAvatar?.avatar || "",
+            });
+          }
 
           return {
             message: "Friend request accepted",
@@ -81,6 +103,7 @@ export const sendFriendRequest = async ({ userId, friendEmail }: SendFriendReque
     },
   };
 };
+
 
 // Accept friend request
 interface AcceptFriendRequestInput {
@@ -206,6 +229,7 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
         userName: avatar?.userName || "Unknown",
         avatarImage: avatar?.avatar || "",
         characterOption: avatar?.characterOption || 0,
+        currentBattle: avatar?.currentBattle?.toString() || null, // For spectating!
       };
     })
   );

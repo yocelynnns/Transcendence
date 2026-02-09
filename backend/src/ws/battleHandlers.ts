@@ -1,5 +1,9 @@
 import { Server, Socket } from "socket.io";
 import { IBattlePokemon } from "../db/battle";
+import User from "../db/user";
+import Friend from "../db/friend";
+import { onlineUsers } from "./server";
+import Avatar from "../db/avatar";
 
 import * as AvatarService from "../services/avatar.service";
 import * as BattleService from "../services/battle.service";
@@ -9,6 +13,38 @@ export function setupBattleHandlers(
   socket: Socket,
   matchingPool: { socketId: string; avatarId: string; userId:string }[]
 ) {
+
+  // Helper to notify friends about battle status
+  async function notifyFriendsBattleStarted(io: Server, avatarId: string, battleId: string) {
+    try {
+      const userRecord = await User.findOne({ avatar: avatarId }).populate("avatar");
+      if (!userRecord) return;
+      
+      const friendships = await Friend.find({
+        $or: [{ userId: userRecord._id }, { friendId: userRecord._id }],
+        status: "accepted"
+      });
+      
+      const friendUserIds = friendships.map((f: any) => 
+        f.userId.toString() === userRecord._id.toString() ? f.friendId : f.userId
+      );
+      
+      const friendUsers = await User.find({ _id: { $in: friendUserIds } });
+      const friendAvatarIds = friendUsers.map((u: any) => u.avatar?.toString()).filter(Boolean);
+      
+      friendAvatarIds.forEach((friendAvatarId: string) => {
+        const friendSocketId = onlineUsers.get(friendAvatarId);
+        if (friendSocketId) {
+          io.to(friendSocketId).emit("friendBattleStarted", {
+            avatarId,
+            battleId
+          });
+        }
+      });
+    } catch (err) {
+      console.error("Error notifying friends battle started:", err);
+    }
+  }
 
   // Join matching
   async function tryMatch() {
@@ -36,6 +72,8 @@ export function setupBattleHandlers(
         s2?.join(room);
 
         io.to(room).emit("opponentFound", { battle });
+        await notifyFriendsBattleStarted(io, player1.avatarId, battle._id.toString());
+        await notifyFriendsBattleStarted(io, player2.avatarId, battle._id.toString());
         BattleService.startBattleTimeout(battle._id.toString(), io);
       } catch (err) {
         matchingPool.unshift(player2, player1);
@@ -49,7 +87,7 @@ export function setupBattleHandlers(
 
   socket.on("joinMatching", async () => {
     const userId = socket.data.userId;
-    const avatarId = socket.data.avatarId.toString();
+    const avatarId = socket.data.avatarId?.toString();
 
     if (!userId || !avatarId) return;
 
@@ -67,7 +105,7 @@ export function setupBattleHandlers(
   // Player ready on team select
   socket.on("playerReady", async ({ currentBattleId, selectedPokemon }: { currentBattleId: string; selectedPokemon: IBattlePokemon[] }) => {
     try {
-      const avatarId = socket.data.avatarId.toString();
+      const avatarId = socket.data.avatarId?.toString();
       if (!avatarId) return;
 
       const battle = await BattleService.markPlayerReady(currentBattleId, avatarId, selectedPokemon);
@@ -87,6 +125,22 @@ export function setupBattleHandlers(
         await battle.save();
 
         io.to(roomName).emit("battleReady", { battleId: battle._id });
+        
+        // NEW: Emit initial battle state to room (including spectators)
+        io.to(roomName).emit("updateBattleState", {
+          _id: battle._id,
+          pokemon1: battle.pokemon1,
+          pokemon2: battle.pokemon2,
+          active1: battle.active1,
+          active2: battle.active2,
+          currentTurn: battle.currentTurn,
+          lastPlayer1Turn: battle.lastPlayer1Turn,
+          lastPlayer2Turn: battle.lastPlayer2Turn,
+          endedAt: battle.endedAt,
+          winner: battle.winner,
+          winnerReason: battle.winnerReason,
+        });
+        
         BattleService.startMoveTimeout(battle._id.toString(), io);
         return;
       }
@@ -98,7 +152,7 @@ export function setupBattleHandlers(
   // Player action on battle
   socket.on("playerAction", async (data: any) => {
     try {
-      const avatarId = socket.data.avatarId.toString();
+      const avatarId = socket.data.avatarId?.toString();
       if (!avatarId) return;
 
       const battle = await BattleService.playerAction(
@@ -149,13 +203,27 @@ export function setupBattleHandlers(
   // Send match invite
   socket.on("sendMatchInvite", async (data: { receiverId: string }) => {
     try {
-      const senderId = socket.data.avatarId.toString();
+      const senderId = socket.data.avatarId?.toString(); 
       if (!senderId) {
         socket.emit("matchInviteError", { error: "Unauthorized" });
         return;
       }
 
+      // NEW: Check sender has at least 3 Pokemon
+      const senderAvatar = await Avatar.findById(senderId).populate("pokemonInventory");
+      if (!senderAvatar || (senderAvatar.pokemonInventory?.length || 0) < 3) {
+        socket.emit("matchInviteError", { error: "You need at least 3 Pokemon to battle" });
+        return;
+      }
+
       const receiverId = data.receiverId;
+
+      // NEW: Check receiver has at least 3 Pokemon
+      const receiverAvatar = await Avatar.findById(receiverId).populate("pokemonInventory");
+      if (!receiverAvatar || (receiverAvatar.pokemonInventory?.length || 0) < 3) {
+        socket.emit("matchInviteError", { error: "Opponent needs at least 3 Pokemon to battle" });
+        return;
+      }
 
       let receiverSocketId: string | null = null;
       for (const [sid, s] of io.sockets.sockets) {
@@ -202,6 +270,15 @@ export function setupBattleHandlers(
 
         const { inviteId, accept } = data;
 
+        // NEW: If accepting, check both players still have 3 Pokemon
+        if (accept) {
+          const receiverAvatar = await Avatar.findById(receiverId).populate("pokemonInventory");
+          if (!receiverAvatar || (receiverAvatar.pokemonInventory?.length || 0) < 3) {
+            socket.emit("matchInviteError", { error: "You need at least 3 Pokemon to battle" });
+            return;
+          }
+        }
+
         const result = await BattleService.respondToMatchInvite({
           inviteId,
           receiverId,
@@ -233,6 +310,12 @@ export function setupBattleHandlers(
         }
 
         io.to(roomName).emit("directMatchReady", { battle });
+        
+        // Notify friends
+        BattleService.startBattleTimeout(battle._id.toString(), io);
+        await notifyFriendsBattleStarted(io, battle.player1.toString(), battle._id.toString());
+        await notifyFriendsBattleStarted(io, battle.player2.toString(), battle._id.toString());
+        
       } catch (err) {
         console.error("Error responding to match invite:", err);
         const message = err instanceof Error ? err.message : "Unknown error";

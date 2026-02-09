@@ -1,4 +1,5 @@
 import { Server, Socket } from "socket.io";
+import Avatar from "../db/avatar";
 
 export const setupFriendHandler = (io: Server, socket: Socket, onlineUsers: Map<string, string>, socketToAvatar: Map<string, string>) => {
   
@@ -10,14 +11,26 @@ export const setupFriendHandler = (io: Server, socket: Socket, onlineUsers: Map<
     console.log(`👤 Avatar ${avatarId} is now online`);
   });
 
-  // Request online status for friends
-  socket.on("requestFriendsStatus", (friendAvatarIds: string[]) => {
-    const statuses = friendAvatarIds.map(avatarId => ({
-      avatarId,
-      online: onlineUsers.has(avatarId),
-    }));
-    socket.emit("friendsStatusUpdate", statuses);
-  });
+// Request online status for friends
+socket.on("requestFriendsStatus", async (friendAvatarIds: string[]) => {
+  const statuses = friendAvatarIds.map(avatarId => ({
+    avatarId,
+    online: onlineUsers.has(avatarId),
+  }));
+  socket.emit("friendsStatusUpdate", statuses);
+  
+  // NEW: Also send battle status for friends
+  const battleStatuses = await Promise.all(
+    friendAvatarIds.map(async (avatarId) => {
+      const avatar = await Avatar.findById(avatarId).select("currentBattle");
+      return {
+        avatarId,
+        currentBattle: avatar?.currentBattle?.toString() || null,
+      };
+    })
+  );
+  socket.emit("friendsBattleStatusUpdate", battleStatuses);
+});
 
   // Broadcast avatar update to all friend
   socket.on("avatarUpdated", (data: { avatarId: string; avatarImage: string; userName?: string }) => {
