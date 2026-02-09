@@ -263,6 +263,27 @@ export async function playerAction(
   battle.lastPlayer1Turn = new Date();
   battle.lastPlayer2Turn = new Date();
 
+  if (action.type === "surrender") {
+    battle.endedAt = new Date();
+    battle.winner = isPlayer1 ? "player2" : "player1";
+    battle.winnerReason = "Surrender";
+
+    const updatePlayers = async (player: IAvatar) => {
+      player.currentBattle = undefined;
+      if (!player.battleHistory) player.battleHistory = [];
+      player.battleHistory.push(battle._id);
+      await player.save();
+    };
+
+    await Promise.all([
+      updatePlayers(battle.player1 as IAvatar),
+      updatePlayers(battle.player2 as IAvatar),
+    ]);
+
+    await battle.save();
+    return battle;
+  }
+
   if (action.type === "switch") {
     battle[attackerIndexField] = action.payload.newIndex;
     battle.currentTurn = isPlayer1 ? "player2" : "player1";

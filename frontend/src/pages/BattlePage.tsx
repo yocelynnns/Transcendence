@@ -197,6 +197,17 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
     });
   };
 
+  const handleSurrender = () => {
+    if (!isMyTurn) return;
+    emitEvent("playerAction", {
+      battleId,
+      action: { type: "surrender" },
+      isPlayer1: myRole === "player1",
+      attackerActiveIndex: activePlayerIndex,
+      defenderActiveIndex: activeEnemyIndex,
+    });
+  };
+
   return (
     <div className="battle" style={{ backgroundImage: `url(/assets/bg/background.png)` }}>
       {/* Enemy Pokemon */}
@@ -273,6 +284,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
           onClick: () => handleSwitchPlayerPokemon(playerPokemons.indexOf(otherPlayerPokemons[1]), false),
         }}
         onAttack={handleAttack}
+        onSurrender={handleSurrender}
         disabled={!isMyTurn || !!battleResult || activePlayerIsDead}
       />
 
