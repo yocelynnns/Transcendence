@@ -58,18 +58,17 @@ export default function Player({
 
   return (
     <div
+      className={`absolute overflow-hidden pointer-events-none`}
       style={{
-        position: "absolute",
         left: x,
         top: y,
         width: tileSize,
         height: tileSize,
-        overflow: "hidden",
-        pointerEvents: "none",
-        zIndex: zIndex,
+        zIndex,
       }}
     >
       <div
+        className="bg-no-repeat bg-auto"
         style={{
           width: spriteWidth,
           height: spriteHeight,

@@ -13,7 +13,7 @@ import type { AvatarData } from "../../types/avatarTypes";
 import { ASSETS } from "../../assets";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlayerState } from "../../types/avatarTypes";
-import GamePopup from "./GamePopup";
+import CatchDialog from "../elements/CatchDialog";
 
 //ASSETS
 const mapImage = ASSETS.MAP.DEFAULT;
@@ -23,18 +23,24 @@ const mapForeground = ASSETS.MAP.FOREGROUND;
 //MAP CONSTANTS
 const MAP_WIDTH = 20;
 const MAP_HEIGHT = 34;
-const TILE_SIZE = 64;
-const VIEW_WIDTH = 10;
-const VIEW_HEIGHT = 10;
+const TILE_SIZE = 84;
+// const VIEW_WIDTH = 10;
+// const VIEW_HEIGHT = 10;
+
+// DESIGN CONSTANTS
+const DESIGN_WIDTH = 1680 / 2;
+const MIN_SCALE = 0.8;
+const MAX_SCALE = 1;
 
 //TYPES
 interface GameMapProps {
   avatarData: AvatarData | null;
   avatarId: string | null;
+  freeze: boolean; /* ADD */
 }
 
 //MAIN COMPONENT
-export default function GameMap({ avatarData, avatarId }: GameMapProps) {
+export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) {
   //POKEMON HOOK
   const { pokemonList, setPokemonList } = usePokemonSpawner();
   const safePokemonList: MapPokemon[] = Array.isArray(pokemonList) ? pokemonList : [];
@@ -49,6 +55,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     collision: mapData.map,
     stopMovement,
     charPref: avatarData?.characterOption ?? 0,
+    freeze: freeze, /* ADD */
   });
 
   //ENCOUNTER HOOK
@@ -78,6 +85,8 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
       setShowPopUpTwo(true);
   }, [player.currentTiles]);
   
+  // DESIGN HOOK
+  const [uiScale, setUiScale] = useState(1);
 
   //FETCH INITIAL POKEMON
   useEffect(() => {
@@ -152,7 +161,19 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     );
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, window.innerWidth / DESIGN_WIDTH));
+      setUiScale(scale);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   //CAMERA
+  const VIEW_WIDTH = window.innerWidth / TILE_SIZE;
+  const VIEW_HEIGHT = window.innerHeight / TILE_SIZE;
   const viewPixelWidth = VIEW_WIDTH * TILE_SIZE;
   const viewPixelHeight = VIEW_HEIGHT * TILE_SIZE;
 
@@ -164,19 +185,11 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
 
   //RENDER
   return (
-    <div style={{ width: viewPixelWidth, height: viewPixelHeight, overflow: "hidden", position: "relative" }}>
+    <div className="relative overflow-hidden" style={{ width: viewPixelWidth, height: viewPixelHeight }}>
       {/* MAP */}
-      <img
-        src={mapImage}
-        alt="map"
-        style={{
-          position: "absolute",
-          left: -offsetX,
-          top: -offsetY,
-          width: MAP_WIDTH * TILE_SIZE,
-          height: MAP_HEIGHT * TILE_SIZE,
-          zIndex: 0,
-        }}
+      <div
+        className="absolute z-0 bg-cover bg-no-repeat"
+        style={{ left: -offsetX, top: -offsetY, width: MAP_WIDTH * TILE_SIZE, height: MAP_HEIGHT * TILE_SIZE, backgroundImage: `url(${mapImage})` }}
       />
 
       {/* POKEMON */}
@@ -186,45 +199,14 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
 
       {/* OTHER PLAYERS */}
       {otherPlayers.map((p) => (
-        <Player
-          key={p.id}
-          x={p.x - offsetX}
-          y={p.y - offsetY}
-          direction={p.direction as Direction}
-          frame={p.frame}
-          charIndex={p.charIndex}
-          tileSize={TILE_SIZE}
-          spriteSheet={playerSprite}
-          zIndex={4}
-        />
+        <Player key={p.id} x={p.x - offsetX} y={p.y - offsetY} direction={p.direction as Direction} frame={p.frame} charIndex={p.charIndex} tileSize={TILE_SIZE} spriteSheet={playerSprite} zIndex={4} />
       ))}
 
       {/* LOCAL PLAYER */}
-      <Player
-        x={player.x - offsetX}
-        y={player.y - offsetY}
-        direction={player.direction as Direction}
-        frame={player.frame}
-        charIndex={player.charIndex}
-        tileSize={TILE_SIZE}
-        spriteSheet={playerSprite}
-        zIndex={5}
-      />
+      <Player x={player.x - offsetX} y={player.y - offsetY} direction={player.direction as Direction} frame={player.frame} charIndex={player.charIndex} tileSize={TILE_SIZE} spriteSheet={playerSprite} zIndex={5} />
 
       {/* FOREGROUND */}
-      <img
-        src={mapForeground}
-        alt="foreground"
-        style={{
-          position: "absolute",
-          left: -offsetX,
-          top: -offsetY,
-          width: MAP_WIDTH * TILE_SIZE,
-          height: MAP_HEIGHT * TILE_SIZE,
-          zIndex: 10,
-          pointerEvents: "none",
-        }}
-      />
+      <div className="absolute pointer-events-none z-10 bg-cover bg-no-repeat" style={{ left: -offsetX, top: -offsetY, width: MAP_WIDTH * TILE_SIZE, height: MAP_HEIGHT * TILE_SIZE, backgroundImage: `url(${mapForeground})` }} />
 
       {showPopupOne && (
       <GamePopup
@@ -259,25 +241,11 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
 
       {/* ENCOUNTER DIALOG */}
       {showDialog && encounterPokemon && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#fff",
-            border: "4px solid #000",
-            padding: 12,
-            zIndex: 20,
-            fontFamily: "monospace",
-          }}
-        >
-          <div style={{ marginBottom: 8 }}>Catch this Pokemon?</div>
-          <button onClick={() => handleCatchPokemon(encounterPokemon)}>Yes</button>
-          <button onClick={handleCatchNo} style={{ marginLeft: 8 }}>
-            No
-          </button>
-        </div>
+        <CatchDialog
+          scale={uiScale}       // scale passed here
+          onYes={() => handleCatchPokemon(encounterPokemon)}
+          onNo={handleCatchNo}
+        />
       )}
     </div>
   );
