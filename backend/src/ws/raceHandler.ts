@@ -8,6 +8,7 @@ interface Player {
   avatarId: string;
   name: string;
   position: number;
+  sprite: string; // Add sprite field
 }
 
 interface Race {
@@ -77,15 +78,22 @@ export const setupRaceHandlers = (io: Server) => {
         socket.join(roomId);
         console.log(`${avatar.userName} joined room ${roomId}`);
 
+        // Assign random sprite to player
+        const SPRITE_COUNT = 8;
+        const randomSpriteIndex = Math.floor(Math.random() * SPRITE_COUNT) + 1;
+        const sprite = `/assets/race/eevee-${randomSpriteIndex}.gif`;
+
         // Add player
         race.players.push({
           id: socket.id,
           avatarId: avatarId,
           name: avatar.userName,
           position: 0,
+          sprite: sprite, // Include sprite
         });
 
         console.log(`Room ${roomId} now has ${race.players.length} players`);
+        console.log(`${avatar.userName} assigned sprite: ${sprite}`);
 
         // Notify player which room they joined
         socket.emit("raceJoined", race.players, roomId);
