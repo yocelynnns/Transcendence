@@ -7,6 +7,7 @@ interface Player {
   avatarId: string;
   name: string;
   position: number;
+  sprite: string; // Sprite is now sent from server
 }
 
 interface MatchHistoryItem {
@@ -40,14 +41,12 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
         console.log("Avatar ID:", avatarId);
         
         // Fetch user's avatar info to get username
-        // Use your existing avatar API endpoint
         const avatarRes = await fetch(`http://localhost:5001/api/avatar/${avatarId}`);
         console.log("Avatar API response status:", avatarRes.status);
         
         if (avatarRes.ok) {
           const avatarData = await avatarRes.json();
           console.log("Avatar data received:", avatarData);
-          // Adjust this based on your avatar API response structure
           const username = avatarData.userName || avatarData.avatar?.userName;
           console.log("Setting username to:", username);
           setMyUserName(username);
@@ -90,24 +89,16 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   useEffect(() => {
     if (!socket) return;
 
+    // Server now sends players with sprites already assigned
     socket.on("raceJoined", (racePlayers: Player[]) => {
-        const playerWithSprites = racePlayers.map(p => ({
-            ...p,
-            sprite: characterSprites[Math.floor(Math.random() * characterSprites.length)]
-        }));
-        setPlayers(playerWithSprites);
+      console.log("Race joined, players:", racePlayers);
+      setPlayers(racePlayers);
     });
+    
     socket.on("raceUpdate", (racePlayers: Player[]) => {
-        setPlayers(prevPlayers =>
-                   racePlayers.map(p => {
-                       const existing = prevPlayers.find(pp => pp.id === p.id);
-                       return {
-                           ...p,
-                           sprite: existing?.sprite || characterSprites[Math.floor(Math.random() * characterSprites.length)]
-                       };
-                   })
-                  );
+      setPlayers(racePlayers);
     });
+    
     socket.on("raceStart", () => setStarted(true));
     socket.on("raceOver", (winnerName: string) => setWinner(winnerName));
     socket.on("raceError", (error: string) => alert(error));
@@ -139,14 +130,6 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
       onExit();
     }
   };
-
-  // Sprites for player 1 and player 2
-  const SPRITE_COUNT = 8;
-
-  const characterSprites = Array.from(
-      { length: SPRITE_COUNT },
-      (_, i) => `/assets/race/eevee-${i + 1}.gif`
-  );
 
   return (
     <div className="button-mash-container">
@@ -239,7 +222,7 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
           )}
 
           <div className="race-track-container">
-            {players.map((p, index) => (
+            {players.map((p) => (
               <div key={p.id} className="race-lane">
                 <div className="lane-background"></div>
                 {p.position < 100 && (
