@@ -1,14 +1,21 @@
 /* App.css */
 
-/* Make entire app full height and blue background */
+.pixelify-sans {
+  font-family: "Pixelify Sans", monospace;
+  font-optical-sizing: auto;
+  font-weight: 400; /* or 700 */
+  font-style: normal;
+}
+
+/* Make entire app full height and blue background 
 body, html, #root {
   height: 100%;
   margin: 0;
-  background: #b3e5fc; /* Pokemon blue */
-  font-family: monospace; /* retro pixel look */
+  background: #b3e5fc; /* Pokemon blue 
+  font-family: monospace; /* retro pixel look 
 }
 
-/* Center content for forms like login/signup */
+/* Center content for forms like login/signup 
 .centered {
   display: flex;
   flex-direction: column;
@@ -17,16 +24,16 @@ body, html, #root {
   min-height: 100vh;
 }
 
-/* Form container style */
+/* Form container style 
 .form-container {
-  background: #a2d5f2; /* lighter blue for forms */
-  border: 4px solid #000; /* pixel border */
+  background: #a2d5f2; /* lighter blue for forms 
+  border: 4px solid #000; /* pixel border 
   padding: 20px;
   border-radius: 8px;
   width: 300px;
 }
 
-/* Inputs in forms */
+/* Inputs in forms 
 .form-container input {
   font-family: monospace;
   font-size: 16px;
@@ -38,7 +45,7 @@ body, html, #root {
   width: 100%;
 }
 
-/* Buttons in forms */
+/* Buttons in forms 
 .form-container button {
   font-family: monospace;
   font-size: 16px;
@@ -49,21 +56,22 @@ body, html, #root {
   width: 100%;
 }
 
-/* Error messages */
+/* Error messages 
 .error-message {
   color: red;
   margin-top: 8px;
   text-align: center;
 }
 
-/* Links for login/signup switch */
+/* Links for login/signup switch 
 .form-container a {
   font-weight: bold;
   color: #0077cc;
   text-decoration: none;
 }
 
-/* Optional: Hover effect for buttons */
+/* Optional: Hover effect for buttons 
 .form-container button:hover {
   background: #ffd633;
 }
+*/

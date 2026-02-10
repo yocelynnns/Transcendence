@@ -6,6 +6,7 @@ import { useGameSocket } from "../../ws/useGameSocket";
 import { Dispatch, SetStateAction } from "react";
 import type { AvatarData } from "../../types/avatarTypes";
 import { useQueryClient } from "@tanstack/react-query";
+import PixelButton from "../elements/pixelButton";
 
 const logo = ASSETS.GUILD.LOGO;
 
@@ -30,6 +31,7 @@ export default function GuildList({
 }: GuildListProps) {
   const queryClient = useQueryClient();
   const [joining, setJoining] = useState<string | null>(null);
+  const [hoveredGuildId, setHoveredGuildId] = useState<string | null>(null);
   const { emitEvent } = useGameSocket(() => {});
 
   const handleJoinGuild = async (guildId: string) => {
@@ -70,106 +72,122 @@ export default function GuildList({
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+      <div className="flex gap-3 mb-5">
         {avatarData?.guild == null && (
-          <button onClick={onCreateGuild} style={bolderButtonStyle}>
-            + Create Guild
-          </button>
+          <div onClick={onCreateGuild} className="flex-1 cursor-pointer">
+            <PixelButton
+              colorA="#fff1ef"
+              colorB="#ab7b81"
+              colorText="#ab7b81"
+              textSize="1.3rem"
+              height={50}
+              width="100%"
+              cursorPointer={true}
+            >
+              + Create New Guild
+            </PixelButton>
+          </div>
         )}
         {avatarData?.guild && (
-          <button onClick={onGoToMyGuildChat} style={bolderButtonStyle}>
-            💬 Your Guild Chat
-          </button>
-        )}
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {guilds.map((guild) => {
-          const members = guild.members || [];
-          const isJoining = joining === guild._id;
-          const canJoin = avatarData?.guild == null && !isJoining;
-
-          return (
-            <div
-              key={guild._id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "2px solid #bbb",
-                borderRadius: 10,
-                padding: 12,
-                cursor: "pointer",
-                transition: "background 0.15s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+          <div onClick={onGoToMyGuildChat} className="flex-1 cursor-pointer">
+            <PixelButton
+              colorA="#fff1ef"
+              colorB="#ab7b81"
+              colorText="#ab7b81"
+              textSize="1.3rem"
+              height={50}
+              width="100%"
+              cursorPointer={true}
             >
-              <div style={{ marginRight: 12, flexShrink: 0 }}>
-                <Shield width={50} fillImage={guild.image || logo} />
-              </div>
-
-              <div style={{ flex: 1, overflow: "hidden" }} onClick={() => onSelectGuild(guild)}>
-                <div
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {guild.name}
-                </div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    marginTop: 4,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {guild.description || "No description"}
-                </div>
-                <div style={{ fontSize: 12, marginTop: 6, opacity: 0.7 }}>
-                  Members: {members.length}
-                </div>
-              </div>
-
-              <button
-                onClick={() => handleJoinGuild(guild._id)}
-                disabled={!canJoin}
-                style={{
-                  marginLeft: 12,
-                  padding: "6px 10px",
-                  borderRadius: 8,
-                  border: "2px solid #888",
-                  background: canJoin ? "#cce5ff" : "#ddd",
-                  color: canJoin ? "#0056b3" : "#888",
-                  cursor: canJoin ? "pointer" : "not-allowed",
-                  fontWeight: 600,
-                }}
-              >
-                {avatarData?.guild ? "Joined" : isJoining ? "Joining..." : "Join"}
-              </button>
-            </div>
-          );
-        })}
-
-        {guilds.length === 0 && !guilds && (
-          <div style={{ opacity: 0.6 }}>No guilds available.</div>
+              Guild Chat
+            </PixelButton>
+          </div>
         )}
       </div>
+
+      {guilds.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          {guilds.map((guild) => {
+            const members = guild.members || [];
+            const isJoining = joining === guild._id;
+            const isHovered = hoveredGuildId === guild._id; // hover check
+
+            return (
+              <div key={guild._id} className="relative w-full h-[100px] hover:scale-102 mb-3" 
+                onMouseEnter={() => setHoveredGuildId(guild._id)}
+                onMouseLeave={() => setHoveredGuildId(null)}
+              >
+                <PixelButton
+                  colorA={!isHovered ? "#fed4cf" : "#fff1ef"}
+                  colorB={!isHovered ? "#ab7b81" : "#ab7b81"}
+                  colorText={!isHovered ? "#ab7b81" : "#fed4cf"}
+                  textSize="1rem"
+                  height={110}
+                  width="100%"
+                  cursorPointer={false}
+                />
+
+                <div className="absolute inset-0 z-10 flex items-center w-full px-4 gap-3">
+                  <div className="shrink-0">
+                    <Shield width={50} fillImage={guild.image || logo} />
+                  </div>
+
+                  <div
+                    className="flex-1 overflow-hidden flex flex-col justify-center text-left"
+                    onClick={() => onSelectGuild(guild)}
+                  >
+                    <div className="text-[1.2rem] font-semibold truncate text-[#6f4f52]"
+                    //   className={`text-[1.2rem] font-semibold truncate ${
+                    //   !isHovered ? "text-[#ab7b81]" : "text-[#ab7b81]"
+                    // }`}
+                    >
+                      {guild.name}
+                    </div>
+
+                    <div className="text-[0.95rem] truncate text-[#6f4f52]"
+                      // className={`text-[0.95rem] truncate ${
+                      //   !isHovered ? "text-[#6f4f52]" : "text-[#6f4f52]"
+                      // }`}
+                    >
+                      {guild.description || "No description"}
+                    </div>
+
+                    <div className="text-[0.8rem] mt-[2px] text-[#7a5a5e]"
+                      // className={`text-[0.8rem] mt-[2px] ${
+                      //   !isHovered ? "text-[#7a5a5e]" : "text-[#7a5a5e]"
+                      // }`}
+                    >
+                      Members: {members.length}
+                    </div>
+                  </div>
+
+                  {!avatarData?.guild && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleJoinGuild(guild._id);
+                      }}
+                      disabled={isJoining}
+                      className={`px-3 py-1 rounded-md border-2 font-semibold transition hover:scale-110
+                        ${
+                          isJoining
+                            ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-[#fff1ef] border-[#ab7b81] text-[#ab7b81] hover:text-[#fff1ef] hover:bg-[#ab7b81]"
+                        }`}
+                    >
+                      {isJoining ? "Joining..." : "Join"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center text-[#ab7b81] text-[1.3rem]">
+          No Guild Available To Join
+        </div>
+      )}
     </div>
   );
 }
-
-const bolderButtonStyle: React.CSSProperties = {
-  flex: 1,
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "2px solid #bbb",
-  background: "#fafafa",
-  cursor: "pointer",
-  fontWeight: 600,
-};

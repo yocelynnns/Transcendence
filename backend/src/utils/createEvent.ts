@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 
 // Config
-const TILE_SIZE = 64;
+const TILE_SIZE = 84;
 const MAP_PATH = path.join(__dirname, "../assets/map/map.json");
 const TOTAL_POKEMON = 30;
 

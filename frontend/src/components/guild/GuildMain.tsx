@@ -4,42 +4,41 @@ import GuildCreate from "./GuildCreate";
 import GuildProfile from "./GuildProfile";
 import GuildChat from "./GuildChat";
 import { Guild, GuildMessage } from "../../types/guildTypes";
-import Shield from "./GuildShield";
-import { ASSETS } from "../../assets";
 import type { AvatarData } from "../../types/avatarTypes";
-import { useQueryClient } from "@tanstack/react-query";
 import { fetchAllGuilds } from "../../hooks/useGuildData";
 import { fetchGuildMessages } from "../../hooks/useGuildChat";
 import { useFullGuildUpdates, useGuildChatSocket } from "../../hooks/useGuildSubcribe";
-
-const logo = ASSETS.GUILD.LOGO;
+import PixelButton from "../elements/pixelButton";
+import { ASSETS } from "../../assets";
 
 type View = "list" | "create" | "profile" | "chat";
 
 interface GuildMainProps {
   avatarData: AvatarData;
   token: string | null;
+  onClosePanel: () => void;
+  scale: number;
 }
 
-export default function GuildMain({ avatarData, token }: GuildMainProps) {
-  const [panelOpen, setPanelOpen] = useState(false);
+export default function GuildMain({ avatarData, token, onClosePanel, scale }: GuildMainProps) {
   const [view, setView] = useState<View>("list");
   const [selectedGuild, setSelectedGuild] = useState<Guild | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string>(logo);
   const [guilds, setGuilds] = useState<Guild[]>([]);
-  const [loading, setLoading] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<GuildMessage[]>([]);
 
+  // Base dimensions (design at scale 1)
+  const BASE_WIDTH = 520;
+  const BASE_HEIGHT = 860;
+
+  // Update selected guild if it changes in guild list
   useEffect(() => {
     if (!selectedGuild) return;
-
-    const updated = guilds.find((g) => g._id === selectedGuild._id);
-    if (updated) {
-      setSelectedGuild(updated);
-    }
+    const updated = guilds.find(g => g._id === selectedGuild._id);
+    if (updated) setSelectedGuild(updated);
   }, [guilds, selectedGuild]);
 
-
+  // Load guild messages for your guild
   useEffect(() => {
     if (!avatarData.guild?._id) return;
     const loadMessages = async () => {
@@ -47,8 +46,6 @@ export default function GuildMain({ avatarData, token }: GuildMainProps) {
       try {
         const data = await fetchGuildMessages(avatarData.guild?._id, token);
         setMessages(data);
-      } catch {
-        //
       } finally {
         setLoading(false);
       }
@@ -56,14 +53,13 @@ export default function GuildMain({ avatarData, token }: GuildMainProps) {
     loadMessages();
   }, [avatarData.guild?._id, token]);
 
+  // Load all guilds
   useEffect(() => {
     const loadGuilds = async () => {
       setLoading(true);
       try {
         const data = await fetchAllGuilds();
         setGuilds(data);
-      } catch {
-        //
       } finally {
         setLoading(false);
       }
@@ -71,20 +67,9 @@ export default function GuildMain({ avatarData, token }: GuildMainProps) {
     loadGuilds();
   }, []);
 
-  useFullGuildUpdates({ setGuilds:setGuilds, avatarId:avatarData._id });
+  // Real-time updates
+  useFullGuildUpdates({ setGuilds, avatarId: avatarData._id });
   useGuildChatSocket({ guildId: avatarData.guild?._id, setMessages });
-
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (!avatarData) return;
-
-    queryClient.invalidateQueries({ queryKey: ["avatar", avatarData._id], exact: true });
-
-    Promise.resolve().then(() => {
-      setSelectedImage(avatarData.guild?.image || logo);
-    });
-  }, [avatarData, queryClient, panelOpen, setView]);
 
   const getTitle = () => {
     if (view === "create") return "Create Guild";
@@ -92,129 +77,137 @@ export default function GuildMain({ avatarData, token }: GuildMainProps) {
     if (view === "chat") return "Guild Chat";
     return "Guilds";
   };
-
   const showBack = view !== "list";
 
   return (
-    <>
-      { (
-        <div
-          onClick={() => setPanelOpen(!panelOpen)}
-          style={{
-            cursor: "pointer",
-            zIndex: 100,
-            width: 50,
-            height: 50,
-          }}
-        >
-          <Shield width={50} fillImage={selectedImage} />
-        </div>
-      )}
+    <div 
+      className="fixed top-0 right-0 z-50 h-screen"
+      style={{
+        width: BASE_WIDTH,              // original width
+        height: BASE_HEIGHT,
+        transform: `scale(${scale})`,   // scales width proportionally
+        transformOrigin: 'top right',
+      }}
+    >
+      <div className="flex flex-col h-full">
+        <div className="border-12 h-full" style={{ borderColor: "#ab7b81" }}>
+          {/* Inner border with background */}
+          <div className="border-12 flex flex-col h-full" style={{ borderColor: "#dea8a3", backgroundColor: "#ecc2be" }}>
+            {/* HEADER */}
+            <div className="relative top-6 w-7/8 left-1/16">
+              <PixelButton
+                colorA="#dea8a3"   
+                colorB="#c58882"  
+                colorText="#ab7b81"  
+                textSize="16px"
+                height={80}
+                width={413}
+                cursorPointer={false}
+              />
 
-      {panelOpen && (
-        <div
-          style={{
-            position: "absolute",
-            top: 20,
-            right:100,
-            width: 420,
-            minHeight: 520,
-            maxHeight: 600,
-            background: "white",
-            borderRadius: 16,
-            border: "2px solid #ddd",
-            boxShadow: "0 4px 18px rgba(0,0,0,0.35)",
-            zIndex: 100,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div
-            style={{
-              height: 56,
-              display: "flex",
-              alignItems: "center",
-              padding: "0 16px",
-              borderBottom: "2px solid #bbb",
-            }}
-          >
-            <div style={{ width: 60 }}>
-              {showBack && (
-                <button onClick={() => setView("list")} style={headerButton}>
-                  ← Back
-                </button>
-              )}
+              <div className="absolute inset-0 flex items-center px-4">
+                {/* Back button */}
+                {showBack && (
+                  <div>
+                    <button
+                      onClick={() => setView("list")}
+                      style={headerButton}
+                    >
+                      <img
+                        src={ASSETS.ICONS.BACK}
+                        alt="Back"
+                        className="w-8 h-8 object-contain image-rendering-pixelated hover:scale-110"
+                      />
+                    </button>
+                  </div>
+                )}
+
+                {view !== "create" && view !== "profile" && view !== "chat" && token && (
+                  <img
+                    src={ASSETS.ICONS.GUILD}
+                    alt="Guild"
+                    className="w-12 h-12 object-contain image-rendering-pixelated mb-1"
+                  />
+                )}
+                
+                {view === "list" ? (
+                  <div className="flex-1 text-left text-3xl text-[#fff1ef] p-3">
+                    {getTitle()}
+                  </div>
+                ) : (
+                    <div className="flex-1 text-center text-3xl right-30 text-[#fff1ef] p-3">
+                      {getTitle()}
+                    </div>
+                  )
+                }
+
+                {/* Close button */}
+                <div className="text-right">
+                  <button
+                    onClick={onClosePanel}
+                    style={headerButton}
+                  >
+                    <img
+                      src={ASSETS.ICONS.X}
+                      alt="X"
+                      className="w-10 h-10 object-contain image-rendering-pixelated hover:scale-110"
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div
-              style={{
-                flex: 1,
-                textAlign: "center",
-                fontSize: 18,
-                fontWeight: 600,
-              }}
-            >
-              {getTitle()}
-            </div>
+            {/* CONTENT */}
+            <div className="flex-1 overflow-visible">
+              <div className="relative h-18/20 w-7/8 left-1/16 top-[40px]">
+                {/* Content banner background */}
+                <PixelButton
+                  colorA="#dea8a3"   
+                  colorB="#c58882"  
+                  colorText="#ab7b81"  
+                  textSize="16px"
+                  height="100%"
+                  width="100%"
+                  cursorPointer={false}
+                />
+                
+                {/* Content overlay */}
+                <div className="absolute inset-0 p-4 overflow-y-auto overscroll-contain">
+                  {view === "list" && token && !loading && (
+                    <GuildList
+                      token={token}
+                      avatarData={avatarData}
+                      onCreateGuild={() => setView("create")}
+                      onSelectGuild={g => { setSelectedGuild(g); setView("profile"); }}
+                      onGoToMyGuildChat={() => setView("chat")}
+                      guilds={guilds}
+                      setGuilds={setGuilds}
+                    />
+                  )}
 
-            <div style={{ width: 60, textAlign: "right" }}>
-              <button
-                onClick={() => {
-                  setPanelOpen(false);
-                  setView("list");
-                }}
-                style={headerButton}
-              >
-                ✕
-              </button>
+                  {view === "create" && token && (
+                    <GuildCreate token={token} avatarData={avatarData} onBack={() => setView("list")} />
+                  )}
+
+                  {view === "profile" && selectedGuild && (
+                    <GuildProfile
+                      token={token}
+                      avatarData={avatarData}
+                      selectedGuild={selectedGuild}
+                      onBack={() => setView("list")}
+                    />
+                  )}
+
+                  {view === "chat" && avatarData.guild?._id && (
+                    <GuildChat guildId={avatarData.guild._id} messages={messages} onBack={() => setView("list")} />
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-
-          <div
-            style={{
-              padding: 20,
-              flex: 1,
-              overflowY: view === "list" ? "auto" : "visible",
-            }}
-          >
-            {view === "list" && token && !loading && (
-              <GuildList
-                token={token}
-                avatarData={avatarData}
-                onCreateGuild={() => setView("create")}
-                onSelectGuild={(g) => {
-                  setSelectedGuild(g);
-                  setView("profile");
-                }}
-                onGoToMyGuildChat={() => setView("chat")}
-                guilds={guilds}
-                setGuilds={setGuilds}
-              />
-            )}
-
-            {view === "create" && token && (
-              <GuildCreate
-                token={token}
-                avatarData={avatarData}
-                onBack={() => setView("list")}
-              />
-            )}
-
-            {view === "profile" && selectedGuild && (
-              <GuildProfile
-                token={token}
-                avatarData={avatarData}
-                selectedGuild={selectedGuild}
-                onOpenChat={() => setView("chat")}
-                onBack={() => setView("list")}
-              />
-            )}
-
-            {view === "chat" && <GuildChat guildId={avatarData.guild?._id} messages={messages} onBack={() => setView("list")}  />}
-          </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
 
