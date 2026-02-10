@@ -79,11 +79,14 @@ export function setupSocket(server: any) {
     }
   });
 
+  // ⭐ SET UP RACE NAMESPACE FIRST (before regular connection handler)
+  setupRaceHandlers(io);
+
   // Recurring events
   createCatchEvent(io);
   setInterval(() => createCatchEvent(io), 5 * 60 * 1000);
 
-  // Socket connection
+  // Socket connection (main namespace)
   io.on("connection", async (socket) => {
     const { avatarId, sessionId } = socket.data;
     const avatarIdString = avatarId?.toString();
@@ -122,7 +125,5 @@ export function setupSocket(server: any) {
     setupEventHandlers(io, socket);
 
     setupChatHandlers(io, socket, onlineUsers);
-
-    setupRaceHandlers(io, socket);
   });
 }
