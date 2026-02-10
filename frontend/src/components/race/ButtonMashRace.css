@@ -61,6 +61,140 @@
   font-weight: bold;
 }
 
+/* Achievements Section */
+.achievements-section {
+  margin-top: 20px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #FFD700;
+}
+
+.achievements-section h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.achievement-card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.achievement-card.unlocked {
+  border-color: #4CAF50;
+  background: linear-gradient(to right, #f1f8f4 0%, white 100%);
+}
+
+.achievement-card.locked {
+  opacity: 0.6;
+  filter: grayscale(50%);
+}
+
+.achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.achievement-icon {
+  font-size: 36px;
+  min-width: 50px;
+  text-align: center;
+}
+
+.achievement-card.locked .achievement-icon {
+  filter: grayscale(100%);
+  opacity: 0.5;
+}
+
+.achievement-info {
+  flex: 1;
+}
+
+.achievement-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.achievement-card.locked .achievement-title {
+  color: #999;
+}
+
+.achievement-description {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.achievement-card.locked .achievement-description {
+  color: #aaa;
+}
+
+.achievement-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-bar-container {
+  flex: 1;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #4CAF50, #66BB6A);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.achievement-card.locked .progress-bar-fill {
+  background: #ccc;
+}
+
+.progress-text {
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  min-width: 50px;
+  text-align: right;
+}
+
+.unlocked-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #4CAF50;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+/* End Achievements Section */
+
 .join-screen input {
   width: 100%;
   padding: 10px;
