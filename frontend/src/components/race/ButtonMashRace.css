@@ -93,6 +93,110 @@
   background: #45a049;
 }
 
+.match-history-section {
+  margin-top: 20px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #4CAF50;
+}
+
+.match-history-section h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.loading,
+.no-history {
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  padding: 20px;
+}
+
+.match-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.match-record {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.match-record:hover {
+  border-color: #4CAF50;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.match-players {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.player-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.player-side.me {
+  justify-content: flex-start;
+}
+
+.player-side.opponent {
+  justify-content: flex-end;
+}
+
+.player-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.player-name.winner {
+  color: #2E7D32;
+}
+
+.player-name.loser {
+  color: #666;
+  text-decoration: line-through;
+}
+
+.trophy {
+  font-size: 18px;
+}
+
+.vs {
+  font-size: 12px;
+  color: #999;
+  font-weight: bold;
+  padding: 0 10px;
+}
+
+.match-result {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.match-date {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+}
+
 .race-screen {
   width: 100%;
   max-width: 1400px;
@@ -241,7 +345,7 @@
   display: block;
 }
 
-.player-name {
+.race-player-name {
   position: absolute;
   left: 10px;
   top: 5px;
@@ -266,3 +370,4 @@
   border-radius: 5px;
   z-index: 5;
 }
+
