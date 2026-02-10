@@ -215,43 +215,72 @@ async function saveRaceResult(
   timeMs: number,
   disconnectedAvatarId?: string
 ) {
+  console.log("=== SAVING RACE RESULT ===");
+  
   const loser = race.players.find((p) => p.id !== winner.id);
-  if (!loser) return;
+  if (!loser) {
+    console.error("❌ No loser found - cannot save race");
+    return;
+  }
 
-  // Create race match document
-  const raceMatch = new RaceMatch({
-    players: [new Types.ObjectId(winner.avatarId), new Types.ObjectId(loser.avatarId)],
-    results: [
+  console.log("Winner:", winner.name, "(ID:", winner.avatarId, ")");
+  console.log("Loser:", loser.name, "(ID:", loser.avatarId, ")");
+  console.log("Time:", timeMs, "ms");
+  console.log("Disconnected:", disconnectedAvatarId || "none");
+
+  try {
+    // Create race match document
+    const raceMatch = new RaceMatch({
+      players: [new Types.ObjectId(winner.avatarId), new Types.ObjectId(loser.avatarId)],
+      results: [
+        {
+          avatar: new Types.ObjectId(winner.avatarId),
+          position: 1,
+          timeMs: timeMs,
+          disconnected: false,
+        },
+        {
+          avatar: new Types.ObjectId(loser.avatarId),
+          position: 2,
+          disconnected: disconnectedAvatarId === loser.avatarId,
+        },
+      ],
+      winner: new Types.ObjectId(winner.avatarId),
+      map: "grass_track",
+      ranked: true,
+    });
+
+    const savedMatch = await raceMatch.save();
+    console.log("✅ Race match saved to database:", savedMatch._id);
+
+    // Update winner's stats
+    const winnerUpdate = await Avatar.findByIdAndUpdate(
+      winner.avatarId,
       {
-        avatar: new Types.ObjectId(winner.avatarId),
-        position: 1,
-        timeMs: timeMs,
-        disconnected: false,
+        $inc: { raceWin: 1 },
+        currentSocket: null,
+        online: false,
       },
+      { new: true }
+    );
+    console.log("✅ Winner stats updated:", winnerUpdate?.userName, "- Wins:", winnerUpdate?.raceWin);
+
+    // Update loser's stats
+    const loserUpdate = await Avatar.findByIdAndUpdate(
+      loser.avatarId,
       {
-        avatar: new Types.ObjectId(loser.avatarId),
-        position: 2,
-        disconnected: disconnectedAvatarId === loser.avatarId,
+        $inc: { raceLoss: 1 },
+        currentSocket: null,
+        online: false,
       },
-    ],
-    winner: new Types.ObjectId(winner.avatarId),
-    map: "grass_track",
-    ranked: true,
-  });
-
-  await raceMatch.save();
-
-  // Update winner's stats
-  await Avatar.findByIdAndUpdate(winner.avatarId, {
-    $inc: { raceWin: 1 },
-    currentSocket: null,
-    online: false,
-  });
-
-  // Update loser's stats
-  await Avatar.findByIdAndUpdate(loser.avatarId, {
-    $inc: { raceLoss: 1 },
-    currentSocket: null,
-    online: false,
-  });
+      { new: true }
+    );
+    console.log("✅ Loser stats updated:", loserUpdate?.userName, "- Losses:", loserUpdate?.raceLoss);
+    
+    console.log("=== RACE RESULT SAVED SUCCESSFULLY ===");
+  } catch (error) {
+    console.error("❌ Error saving race result:", error);
+    throw error;
+  }
 }
+
