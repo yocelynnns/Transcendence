@@ -21,7 +21,7 @@ export default function RaceButton({ avatarData }: RaceButtonProps) {
           zIndex: 100,
           width: 60,
           height: 60,
-          background: "#4CAF50",
+          background: "rgba(255,255,255,0.9)",
           borderRadius: "8px",
           display: "flex",
           alignItems: "center",

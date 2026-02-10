@@ -18,6 +18,14 @@ interface MatchHistoryItem {
   date: string;
 }
 
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  requirement: number;
+  icon: string;
+}
+
 interface ButtonMashRaceProps {
   avatarId: string;
   onExit?: () => void;
@@ -32,6 +40,14 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   const [matchHistory, setMatchHistory] = useState<MatchHistoryItem[]>([]);
   const [myUserName, setMyUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [totalWins, setTotalWins] = useState(0);
+
+  // Define achievements
+  const achievements: Achievement[] = [
+    { id: "first_win", title: "First Victory", description: "Win your first race", requirement: 1, icon: "🏅" },
+    { id: "five_wins", title: "Speed Demon", description: "Win 5 races", requirement: 5, icon: "🔥" },
+    { id: "ten_wins", title: "Racing Legend", description: "Win 10 races", requirement: 10, icon: "👑" },
+  ];
 
   // Fetch match history and user info on mount
   useEffect(() => {
@@ -52,6 +68,19 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
           setMyUserName(username);
         } else {
           console.error("Failed to fetch avatar:", await avatarRes.text());
+        }
+
+        // Fetch race stats for achievements
+        console.log("Fetching race stats...");
+        const statsRes = await fetch(`http://localhost:5001/api/race/stats/${avatarId}`);
+        console.log("Stats API response status:", statsRes.status);
+        
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          console.log("Stats received:", stats);
+          setTotalWins(stats.wins);
+        } else {
+          console.error("Failed to fetch stats:", await statsRes.text());
         }
 
         // Fetch match history
@@ -135,7 +164,7 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
     <div className="button-mash-container">
       {!joined ? (
         <div className="join-screen">
-          <h2 className="join-title">🏁 Button Mash Race 🏁</h2>
+          <h2 className="join-title">🐱 Eevee Race 🐱</h2>
 
           <div className="join-instructions">
             <h3>How to Win:</h3>
@@ -146,6 +175,46 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
               </li>
               <li>First to reach the finish line wins! 🏆</li>
             </ol>
+          </div>
+
+          {/* Achievements Section */}
+          <div className="achievements-section">
+            <h3>🏆 Achievements</h3>
+            {loading ? (
+              <div className="loading">Loading achievements...</div>
+            ) : (
+              <div className="achievements-list">
+                {achievements.map((achievement) => {
+                  const isUnlocked = totalWins >= achievement.requirement;
+                  const progress = Math.min((totalWins / achievement.requirement) * 100, 100);
+                  
+                  return (
+                    <div 
+                      key={achievement.id} 
+                      className={`achievement-card ${isUnlocked ? "unlocked" : "locked"}`}
+                    >
+                      <div className="achievement-icon">{achievement.icon}</div>
+                      <div className="achievement-info">
+                        <div className="achievement-title">{achievement.title}</div>
+                        <div className="achievement-description">{achievement.description}</div>
+                        <div className="achievement-progress">
+                          <div className="progress-bar-container">
+                            <div 
+                              className="progress-bar-fill" 
+                              style={{ width: `${progress}%` }}
+                            ></div>
+                          </div>
+                          <div className="progress-text">
+                            {totalWins} / {achievement.requirement}
+                          </div>
+                        </div>
+                      </div>
+                      {isUnlocked && <div className="unlocked-badge">✓</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Match History Section */}
