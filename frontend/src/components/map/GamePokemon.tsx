@@ -13,22 +13,25 @@ type PokemonProps = {
 //POKEMON COMPONENT
 export default function Pokemon({ x, y, name, tileSize, zIndex = 1 }: PokemonProps) {
   //CONSTANTS
-  const POKEMON_SIZE = 40;
+  const POKEMON_SIZE = 60;
   const sprite = getPokemonFrontSprite(name);
 
   //RENDER
   return (
-    <img
-      src={sprite || ""}
-      alt={name}
+    <div
+      className="absolute pointer-events-none"
       style={{
-        position: "absolute",
         left: x + (tileSize - POKEMON_SIZE) / 2,
         top: y + (tileSize - POKEMON_SIZE) / 2,
         width: POKEMON_SIZE,
         height: POKEMON_SIZE,
         zIndex,
-        pointerEvents: "none",
+
+        backgroundImage: `url(${sprite})`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+        backgroundSize: "contain",
+
         imageRendering: "pixelated",
       }}
     />

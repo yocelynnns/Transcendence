@@ -1,5 +1,5 @@
 // TILE SIZE
-export const TILE_SIZE = 64;
+export const TILE_SIZE = 84;
 
 // PLAYER COLLISION BOX
 export const PLAYER_WIDTH = 32;

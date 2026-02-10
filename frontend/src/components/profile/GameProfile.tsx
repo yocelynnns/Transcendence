@@ -113,20 +113,38 @@ export default function AvatarProfile({
       {/* AVATAR BUTTON */}
       {!profileOpen && (
         <div
-          onClick={handleOpenProfile}
+        className="m-4"
           style={{
-            position: "absolute",
-            top: 20,
-            right: 20,
-            width: 50,
-            height: 50,
-            borderRadius: "50%",
-            cursor: "pointer",
-            border: "2px solid white",
-            background: `url(${avatarData.avatar || defaultAvatar}) center/cover`,
-            zIndex: 100,
+            transformOrigin: "top left",
+            width: "400px",
+            height: "160px",
           }}
-        />
+        >
+          <div
+            onClick={handleOpenProfile}
+            className="relative cursor-pointer w-100 h-40 z-50"
+          >
+            {/* NAME (on right of banner) */}
+            <div className="absolute left-52 top-1/4 -translate-y-1/5 text-[#a7767c] font-bold text-3xl drop-shadow-lg pointer-events-none z-30 pixelify-sans">
+              PROFILE
+            </div>
+
+            {/* BANNER */}
+            <div
+              className="absolute inset-0 bg-center bg-cover rounded-lg z-20"
+              style={{ backgroundImage: `url(${ASSETS.ELEMENTS.PROFILEBANNER})` }}
+            />
+
+            {/* AVATAR */}
+            <div
+              className="absolute left-5 top-1/2 -translate-y-1/2 w-30 h-30 border-2 border-white bg-center bg-cover shadow-md z-10"
+              style={{
+                backgroundImage: `url(${avatarData.avatar || defaultAvatar})`,
+              }}
+            />
+
+          </div>
+        </div>
       )}
 
       {/* PROFILE PANEL */}
