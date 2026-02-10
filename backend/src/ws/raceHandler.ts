@@ -1,4 +1,4 @@
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 import Avatar from "../db/avatar";
 import RaceMatch from "../db/raceMatch";
 import { Types } from "mongoose";
@@ -20,172 +20,191 @@ interface Race {
 // Global race state
 const races: Record<string, Race> = {};
 
-export const setupRaceHandlers = (io: Server, socket: Socket) => {
-  // Get race namespace
+// This function sets up the /minigame namespace
+export const setupRaceHandlers = (io: Server) => {
+  // Create the /minigame namespace
   const raceNamespace = io.of("/minigame");
 
-  // Join Race
-  socket.on("joinRace", async ({ avatarId }: { avatarId: string }) => {
-    try {
-      const userId = socket.data.userId;
-      if (!userId) {
-        socket.emit("raceError", "Unauthorized");
-        return;
-      }
+  // Handle connections to the /minigame namespace
+  raceNamespace.on("connection", (socket) => {
+    console.log("🏁 Player connected to race:", socket.id);
 
-      // Fetch player data from MongoDB
-      const avatar = await Avatar.findById(avatarId);
-      if (!avatar) {
-        socket.emit("raceError", "Avatar not found");
-        return;
-      }
+    // Join Race
+    socket.on("joinRace", async ({ avatarId }: { avatarId: string }) => {
+      try {
+        console.log("=== JOIN RACE DEBUG ===");
+        console.log("Join race request for avatarId:", avatarId);
+        console.log("AvatarId type:", typeof avatarId);
+        console.log("AvatarId length:", avatarId?.length);
+        console.log("Socket ID:", socket.id);
 
-      // Update avatar's current socket
-      avatar.currentSocket = socket.id;
-      avatar.online = true;
-      await avatar.save();
-
-      // Find first available room with less than 2 players
-      let roomId = null;
-      for (const [id, race] of Object.entries(races)) {
-        if (race.players.length < 2 && !race.started) {
-          roomId = id;
-          break;
-        }
-      }
-
-      // Create new room if no available room found
-      if (!roomId) {
-        roomId = `room_${Date.now()}`;
-        races[roomId] = { players: [], started: false, finished: false };
-      }
-
-      const race = races[roomId];
-
-      // Join room
-      socket.join(roomId);
-
-      // Add player
-      race.players.push({
-        id: socket.id,
-        avatarId: avatarId,
-        name: avatar.userName,
-        position: 0,
-      });
-
-      // Notify player which room they joined
-      socket.emit("raceJoined", race.players, roomId);
-
-      // Sync state
-      raceNamespace.to(roomId).emit("raceUpdate", race.players);
-
-      // Start race when 2 players are present
-      if (race.players.length === 2) {
-        race.started = true;
-        race.startTime = Date.now();
-        raceNamespace.to(roomId).emit("raceStart");
-      }
-
-      console.log(`Player ${avatar.userName} joined race room ${roomId}`);
-    } catch (error) {
-      console.error("Error joining race:", error);
-      socket.emit("raceError", "Failed to join race");
-    }
-  });
-
-  // Press Spacebar
-  socket.on("press", async () => {
-    try {
-      // Find which room this socket is in
-      const roomId = Array.from(socket.rooms).find((room) => room !== socket.id);
-      if (!roomId) return;
-
-      const race = races[roomId];
-      if (!race || !race.started || race.finished) return;
-
-      const player = race.players.find((p) => p.id === socket.id);
-      if (!player) return;
-
-      player.position += 5;
-
-      if (player.position >= 100) {
-        race.finished = true;
-        const timeMs = Date.now() - (race.startTime || 0);
-
-        // Save race result to database
-        try {
-          await saveRaceResult(race, player, timeMs);
-          console.log(`Race completed! Winner: ${player.name}`);
-        } catch (error) {
-          console.error("Error saving race result:", error);
+        // Fetch player data from MongoDB
+        const avatar = await Avatar.findById(avatarId);
+        
+        if (!avatar) {
+          console.error("❌ Avatar not found in database:", avatarId);
+          socket.emit("raceError", "Avatar not found");
+          return;
         }
 
-        raceNamespace.to(roomId).emit("raceOver", player.name);
-      }
+        console.log("✅ Avatar found:", avatar.userName);
 
-      raceNamespace.to(roomId).emit("raceUpdate", race.players);
-    } catch (error) {
-      console.error("Error processing press:", error);
-    }
-  });
+        // Update avatar's current socket
+        avatar.currentSocket = socket.id;
+        avatar.online = true;
+        await avatar.save();
 
-  // Disconnect
-  socket.on("disconnecting", async () => {
-    try {
-      for (const roomId of socket.rooms) {
-        if (roomId === socket.id) continue;
+        // Find first available room with less than 2 players
+        let roomId = null;
+        for (const [id, race] of Object.entries(races)) {
+          if (race.players.length < 2 && !race.started) {
+            roomId = id;
+            console.log("Found existing room:", roomId);
+            break;
+          }
+        }
+
+        // Create new room if no available room found
+        if (!roomId) {
+          roomId = `room_${Date.now()}`;
+          races[roomId] = { players: [], started: false, finished: false };
+          console.log("Created new room:", roomId);
+        }
 
         const race = races[roomId];
-        if (!race) continue;
 
-        const disconnectedPlayer = race.players.find((p) => p.id === socket.id);
+        // Join room
+        socket.join(roomId);
+        console.log(`${avatar.userName} joined room ${roomId}`);
 
-        // If race was active and someone disconnects, remaining player wins
-        if (race.started && !race.finished && race.players.length === 2) {
-          const remainingPlayer = race.players.find((p) => p.id !== socket.id);
-          if (remainingPlayer && disconnectedPlayer) {
-            race.finished = true;
-            const timeMs = Date.now() - (race.startTime || 0);
+        // Add player
+        race.players.push({
+          id: socket.id,
+          avatarId: avatarId,
+          name: avatar.userName,
+          position: 0,
+        });
 
-            // Save race result with disconnect info
-            try {
-              await saveRaceResult(race, remainingPlayer, timeMs, disconnectedPlayer.avatarId);
-              console.log(
-                `Player disconnected. Winner by default: ${remainingPlayer.name}`
-              );
-            } catch (error) {
-              console.error("Error saving race result:", error);
-            }
+        console.log(`Room ${roomId} now has ${race.players.length} players`);
 
-            raceNamespace.to(roomId).emit("raceOver", remainingPlayer.name);
-          }
-        }
+        // Notify player which room they joined
+        socket.emit("raceJoined", race.players, roomId);
 
-        // Update disconnected player's avatar
-        if (disconnectedPlayer) {
-          try {
-            await Avatar.findByIdAndUpdate(disconnectedPlayer.avatarId, {
-              currentSocket: null,
-              online: false,
-            });
-          } catch (error) {
-            console.error("Error updating disconnected avatar:", error);
-          }
-        }
-
-        race.players = race.players.filter((p) => p.id !== socket.id);
-        race.started = false;
-        race.finished = false;
-
+        // Sync state
         raceNamespace.to(roomId).emit("raceUpdate", race.players);
 
-        if (race.players.length === 0) {
-          delete races[roomId];
+        // Start race when 2 players are present
+        if (race.players.length === 2) {
+          race.started = true;
+          race.startTime = Date.now();
+          console.log(`🏁 Race starting in room ${roomId}!`);
+          raceNamespace.to(roomId).emit("raceStart");
         }
+      } catch (error) {
+        console.error("Error joining race:", error);
+        socket.emit("raceError", "Failed to join race");
       }
-    } catch (error) {
-      console.error("Error handling disconnect:", error);
-    }
+    });
+
+    // Press Spacebar
+    socket.on("press", async () => {
+      try {
+        // Find which room this socket is in
+        const roomId = Array.from(socket.rooms).find((room) => room !== socket.id);
+        if (!roomId) return;
+
+        const race = races[roomId];
+        if (!race || !race.started || race.finished) return;
+
+        const player = race.players.find((p) => p.id === socket.id);
+        if (!player) return;
+
+        player.position += 5;
+
+        if (player.position >= 100) {
+          race.finished = true;
+          const timeMs = Date.now() - (race.startTime || 0);
+
+          // Save race result to database
+          try {
+            await saveRaceResult(race, player, timeMs);
+            console.log(`🏆 Race completed! Winner: ${player.name}`);
+          } catch (error) {
+            console.error("Error saving race result:", error);
+          }
+
+          raceNamespace.to(roomId).emit("raceOver", player.name);
+        }
+
+        raceNamespace.to(roomId).emit("raceUpdate", race.players);
+      } catch (error) {
+        console.error("Error processing press:", error);
+      }
+    });
+
+    // Disconnect
+    socket.on("disconnecting", async () => {
+      try {
+        for (const roomId of socket.rooms) {
+          if (roomId === socket.id) continue;
+
+          const race = races[roomId];
+          if (!race) continue;
+
+          const disconnectedPlayer = race.players.find((p) => p.id === socket.id);
+
+          // If race was active and someone disconnects, remaining player wins
+          if (race.started && !race.finished && race.players.length === 2) {
+            const remainingPlayer = race.players.find((p) => p.id !== socket.id);
+            if (remainingPlayer && disconnectedPlayer) {
+              race.finished = true;
+              const timeMs = Date.now() - (race.startTime || 0);
+
+              // Save race result with disconnect info
+              try {
+                await saveRaceResult(race, remainingPlayer, timeMs, disconnectedPlayer.avatarId);
+                console.log(
+                  `Player disconnected. Winner by default: ${remainingPlayer.name}`
+                );
+              } catch (error) {
+                console.error("Error saving race result:", error);
+              }
+
+              raceNamespace.to(roomId).emit("raceOver", remainingPlayer.name);
+            }
+          }
+
+          // Update disconnected player's avatar
+          if (disconnectedPlayer) {
+            try {
+              await Avatar.findByIdAndUpdate(disconnectedPlayer.avatarId, {
+                currentSocket: null,
+                online: false,
+              });
+            } catch (error) {
+              console.error("Error updating disconnected avatar:", error);
+            }
+          }
+
+          race.players = race.players.filter((p) => p.id !== socket.id);
+          race.started = false;
+          race.finished = false;
+
+          raceNamespace.to(roomId).emit("raceUpdate", race.players);
+
+          if (race.players.length === 0) {
+            delete races[roomId];
+            console.log(`Room ${roomId} deleted (empty)`);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling disconnect:", error);
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔴 Player disconnected from race:", socket.id);
+    });
   });
 };
 
@@ -236,4 +255,3 @@ async function saveRaceResult(
     online: false,
   });
 }
-
