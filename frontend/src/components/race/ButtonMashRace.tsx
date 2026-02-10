@@ -90,8 +90,24 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("raceJoined", (racePlayers: Player[]) => setPlayers(racePlayers));
-    socket.on("raceUpdate", (racePlayers: Player[]) => setPlayers(racePlayers));
+    socket.on("raceJoined", (racePlayers: Player[]) => {
+        const playerWithSprites = racePlayers.map(p => ({
+            ...p,
+            sprite: characterSprites[Math.floor(Math.random() * characterSprites.length)]
+        }));
+        setPlayers(playerWithSprites);
+    });
+    socket.on("raceUpdate", (racePlayers: Player[]) => {
+        setPlayers(prevPlayers =>
+                   racePlayers.map(p => {
+                       const existing = prevPlayers.find(pp => pp.id === p.id);
+                       return {
+                           ...p,
+                           sprite: existing?.sprite || characterSprites[Math.floor(Math.random() * characterSprites.length)]
+                       };
+                   })
+                  );
+    });
     socket.on("raceStart", () => setStarted(true));
     socket.on("raceOver", (winnerName: string) => setWinner(winnerName));
     socket.on("raceError", (error: string) => alert(error));
@@ -125,7 +141,12 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   };
 
   // Sprites for player 1 and player 2
-  const characterSprites = ["/assets/race/player-1.png", "/assets/race/player-2.png"];
+  const SPRITE_COUNT = 8;
+
+  const characterSprites = Array.from(
+      { length: SPRITE_COUNT },
+      (_, i) => `/assets/race/eevee-${i + 1}.gif`
+  );
 
   return (
     <div className="button-mash-container">
@@ -234,7 +255,7 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
                 <div className="player-position">{Math.floor(p.position)}%</div>
                 <div className="player-character" style={{ left: `${p.position * 0.95}%` }}>
                   <img
-                    src={characterSprites[index % characterSprites.length]}
+                    src={p.sprite}
                     alt={`${p.name}'s character`}
                     className="character-sprite"
                   />
