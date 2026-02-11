@@ -3,7 +3,6 @@ import { cleanupPlayer } from "./playerCleanup";
 import { matchingPool, players, avatarSockets, onlineUsers, socketToAvatar, PlayerData, eventPlayers } from "./server";
 import * as PokemonService from "../services/pokemon.service";
 import * as AvatarService from "../services/avatar.service";
-import Battle from "../db/battle";
 
 export const setupUserHandlers = (io: Server, socket: Socket) => {
   // Player registration
@@ -16,7 +15,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
       return;
     }
 
-    const avatarId = rawAvatarId.toString();
+    const avatarId = socket.data.avatarId?.toString();
     if (!avatarId) return;
 
     // Disconnect old socket if avatar already connected
@@ -45,35 +44,15 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
 
     console.log("👤 REGISTERED:", avatarId);
 
-    // Rejoin battle room if needed - WITH VALIDATION
+    // Rejoin battle room if needed
     try {
       const avatar = await AvatarService.getAvatarById({ avatarId });
       
       if (avatar?.currentBattle) {
-        // VALIDATE BATTLE EXISTS AND IS ACTIVE
-        const battle = await Battle.findById(avatar.currentBattle);
-        
-        if (!battle) {
-          // Battle was deleted - clear stale status
-          await AvatarService.updateAvatar({
-            avatarId,
-            data: { currentBattle: null }
-          });
-          console.log(`🧹 Cleared deleted battle reference for ${avatarId}`);
-        } else if (battle.endedAt) {
-          // Battle has ended - clear stale status
-          await AvatarService.updateAvatar({
-            avatarId,
-            data: { currentBattle: null }
-          });
-          console.log(`🧹 Cleared ended battle reference for ${avatarId}`);
-        } else {
-          // Valid ongoing battle - rejoin room
-          const roomName = `battle_${avatar.currentBattle.toString()}`;
-          socket.join(roomName);
-          socket.emit("battleResync", { battle: avatar.currentBattle });
-          console.log(`🔁 ${avatarId} rejoined room ${roomName}`);
-        }
+        const roomName = `battle_${avatar.currentBattle._id.toString()}`;
+        socket.join(roomName);// SEE THIS
+        socket.emit("battleResync", { battle: avatar.currentBattle });
+        console.log(`🔁 ${avatarId} rejoined room ${roomName}`);
       }
     } catch (err) {
       console.error("Failed to rejoin battle room:", err);
@@ -167,42 +146,23 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
     const avatarId = rawAvatarId?.toString?.();
 
     if (avatarId) {
-      // CHECK IF PLAYER IS IN AN ACTIVE BATTLE
-      let isInBattle = false;
-      try {
-        const avatar = await AvatarService.getAvatarById({ avatarId });
-        if (avatar?.currentBattle) {
-          const battle = await Battle.findById(avatar.currentBattle);
-          // Only consider in battle if battle exists and hasn't ended
-          isInBattle = !!(battle && !battle.endedAt);
-        }
-      } catch (err) {
-        console.error(`Failed to check battle status for ${avatarId}:`, err);
-      }
-
-      if (!isInBattle) {
-        // Only mark offline if NOT in an active battle
-        onlineUsers.delete(avatarId);
-        io.emit("userStatusChange", { avatarId, online: false });
-        console.log(`👤 Avatar ${avatarId} marked offline (reason: ${reason})`);
-      } else {
-        console.log(`👤 Avatar ${avatarId} disconnected but IN ACTIVE BATTLE - keeping online status`);
-      }
-      
+      onlineUsers.delete(avatarId);
       socketToAvatar.delete(socket.id);
 
-      // Update DB: only set online=false if not in battle
+      io.emit("userStatusChange", { avatarId, online: false });
+      console.log(`👤 Avatar ${avatarId} marked offline (reason: ${reason})`);
+
       try {
         await AvatarService.updateAvatar({
           avatarId,
           data: {
-            online: !isInBattle,
+            online: false,
             currentSocket: null,
           },
         });
-        console.log(`✅ Avatar ${avatarId} DB updated (online: ${!isInBattle})`);
+        console.log(`✅ Avatar ${avatarId} marked offline in DB`);
       } catch (err) {
-        console.error(`Failed to update avatar status in DB:`, err);
+        console.error(`Failed to mark avatar offline in DB:`, err);
       }
     } else {
       console.log(`⚠️ No avatarId found for socket ${socket.id} on disconnect`);

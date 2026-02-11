@@ -17,7 +17,7 @@ export default function SpectatorPage({
 }: SpectatorPageProps) {
   const navigate = useNavigate();
   const { battleId } = useParams(); // Get battleId from URL
-  const { subscribeEvent, emitEvent } = useGameSocket(() => {});
+  const { subscribeEvent } = useGameSocket(() => {});
 
   const [battleData, setBattleData] = useState<Battle | null>(spectatingBattle);
   const [povPlayer1, setPovPlayer1] = useState(true);
@@ -106,17 +106,6 @@ export default function SpectatorPage({
       : "Lose"
     : null;
 
-  // NEW: Handle going home with acknowledgment
-  const handleGoHome = () => {
-    // If battle ended, acknowledge it before leaving
-    if (battleData.endedAt && battleId) {
-      emitEvent("acknowledgeBattleEnd", { battleId });
-    }
-    
-    setSpectatingBattle(null);
-    navigate("/");
-  };
-
   return (
     <div className="battle" style={{ backgroundImage: `url(/assets/bg/background.png)` }}>
       {/* Swap POV */}
@@ -181,8 +170,12 @@ export default function SpectatorPage({
         <div className="battle-result-overlay">
           <h1>{battleResult}</h1>
           <p>{battleData.winnerReason ?? ""}</p>
-          {/* UPDATED: Use handleGoHome instead of inline */}
-          <button onClick={handleGoHome}>
+          <button
+            onClick={() => {
+              setSpectatingBattle(null);
+              navigate("/");
+            }}
+          >
             Home
           </button>
         </div>

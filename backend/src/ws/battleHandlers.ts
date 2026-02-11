@@ -46,39 +46,6 @@ export function setupBattleHandlers(
     }
   }
 
-  // NEW: Helper to notify friends battle ended
-  async function notifyFriendsBattleEnded(io: Server, avatarId: string, battleId: string) {
-    try {
-      const userRecord = await User.findOne({ avatar: avatarId }).populate("avatar");
-      if (!userRecord) return;
-      
-      const friendships = await Friend.find({
-        $or: [{ userId: userRecord._id }, { friendId: userRecord._id }],
-        status: "accepted"
-      });
-      
-      const friendUserIds = friendships.map((f: any) => 
-        f.userId.toString() === userRecord._id.toString() ? f.friendId : f.userId
-      );
-      
-      const friendUsers = await User.find({ _id: { $in: friendUserIds } });
-      const friendAvatarIds = friendUsers.map((u: any) => u.avatar?.toString()).filter(Boolean);
-      
-      friendAvatarIds.forEach((friendAvatarId: string) => {
-        const friendSocketId = onlineUsers.get(friendAvatarId);
-        if (friendSocketId) {
-          io.to(friendSocketId).emit("friendBattleEnded", {
-            avatarId,
-            battleId,
-            acknowledged: true
-          });
-        }
-      });
-    } catch (err) {
-      console.error("Error notifying friends battle ended:", err);
-    }
-  }
-
   // Join matching
   async function tryMatch() {
     while (matchingPool.length >= 2) {
@@ -124,22 +91,7 @@ export function setupBattleHandlers(
 
     if (!userId || !avatarId) return;
 
-    // NEW: Check if already in battle
-    const avatar = await AvatarService.getAvatarById({ avatarId });
-    if (avatar?.currentBattle) {
-      socket.emit("matchError", { message: "Already in a battle" });
-      return;
-    }
-
-    // Check if already in pool
     if (matchingPool.some(p => p.avatarId === avatarId)) return;
-
-    // NEW: Check if has pending invites (can't queue and invite simultaneously)
-    const { getSentInvites, getReceivedInvites } = await import("../services/matchInvite.service");
-    if (getSentInvites(avatarId).length > 0 || getReceivedInvites(avatarId).size > 0) {
-      socket.emit("matchError", { message: "Resolve pending invites first" });
-      return;
-    }
 
     matchingPool.push({
       socketId: socket.id,
@@ -246,31 +198,6 @@ export function setupBattleHandlers(
     socket.join(roomName);
 
     console.log(`Spectator joined room ${roomName}`);
-  });
-
-  // NEW: Battle acknowledgment - player clicked "go home"
-  socket.on("acknowledgeBattleEnd", async ({ battleId }: { battleId: string }) => {
-    try {
-      const avatarId = socket.data.avatarId?.toString();
-      if (!avatarId) return;
-
-      // Clear currentBattle from avatar
-      await AvatarService.updateAvatar({
-        avatarId,
-        data: { currentBattle: null }
-      });
-
-      // Notify friends that battle ended AND player is back online/available
-      await notifyFriendsBattleEnded(io, avatarId, battleId);
-      
-      // Leave battle room
-      const roomName = `battle_${battleId}`;
-      socket.leave(roomName);
-
-      console.log(`✅ Avatar ${avatarId} acknowledged battle end, now available`);
-    } catch (err) {
-      console.error("Error acknowledging battle end:", err);
-    }
   });
 
   // Send match invite
