@@ -26,6 +26,14 @@ interface Achievement {
   icon: string;
 }
 
+interface LeaderboardEntry {
+  rank: number;
+  userName: string;
+  wins: number;
+  losses: number;
+  totalRaces: number;
+}
+
 interface ButtonMashRaceProps {
   avatarId: string;
   onExit?: () => void;
@@ -41,12 +49,13 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   const [myUserName, setMyUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [totalWins, setTotalWins] = useState(0);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   // Define achievements
   const achievements: Achievement[] = [
-    { id: "first_win", title: "First Victory", description: "Win your first race", requirement: 1, icon: "🏅" },
-    { id: "five_wins", title: "Speed Demon", description: "Win 5 races", requirement: 5, icon: "🔥" },
-    { id: "ten_wins", title: "Racing Legend", description: "Win 10 races", requirement: 10, icon: "👑" },
+    { id: "first_win", title: "Level 1: First Victory", description: "Win your first race", requirement: 1, icon: "🏅" },
+    { id: "five_wins", title: "Level 2: Speed Demon", description: "Win 5 races", requirement: 5, icon: "🔥" },
+    { id: "ten_wins", title: "Level 3: Racing Legend", description: "Win 10 races", requirement: 10, icon: "👑" },
   ];
 
   // Fetch match history and user info on mount
@@ -94,6 +103,19 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
           setMatchHistory(history);
         } else {
           console.error("Failed to fetch history:", await historyRes.text());
+        }
+
+        // Fetch leaderboard
+        console.log("Fetching leaderboard...");
+        const leaderboardRes = await fetch(`http://localhost:5001/api/race/leaderboard`);
+        console.log("Leaderboard API response status:", leaderboardRes.status);
+        
+        if (leaderboardRes.ok) {
+          const leaderboardData = await leaderboardRes.json();
+          console.log("Leaderboard received:", leaderboardData);
+          setLeaderboard(leaderboardData);
+        } else {
+          console.error("Failed to fetch leaderboard:", await leaderboardRes.text());
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -210,6 +232,42 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
                         </div>
                       </div>
                       {isUnlocked && <div className="unlocked-badge">✓</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Leaderboard Section */}
+          <div className="leaderboard-section">
+            <h3>👑 Top Racers</h3>
+            {loading ? (
+              <div className="loading">Loading leaderboard...</div>
+            ) : leaderboard.length === 0 ? (
+              <div className="no-leaderboard">No racers yet. Be the first to compete!</div>
+            ) : (
+              <div className="leaderboard-list">
+                {leaderboard.map((entry) => {
+                  const isCurrentUser = entry.userName === myUserName;
+                  const medalEmoji = entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : "🥉";
+                  
+                  return (
+                    <div 
+                      key={entry.rank} 
+                      className={`leaderboard-entry ${isCurrentUser ? "current-user" : ""}`}
+                    >
+                      <div className="leaderboard-rank">{medalEmoji}</div>
+                      <div className="leaderboard-info">
+                        <div className="leaderboard-name">
+                          {entry.userName}
+                          {isCurrentUser && <span className="you-badge"> (You)</span>}
+                        </div>
+                        <div className="leaderboard-stats">
+                          {entry.wins}W - {entry.losses}L
+                        </div>
+                      </div>
+                      <div className="leaderboard-wins">{entry.wins}</div>
                     </div>
                   );
                 })}
