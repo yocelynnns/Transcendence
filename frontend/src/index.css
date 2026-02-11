@@ -1,4 +1,33 @@
 @import "tailwindcss";
+
+/* =========================
+   Pokemon Pixel Fonts
+   ========================= */
+@font-face {
+  font-family: "PokemonGB";
+  src: url("/fonts/Pixeled.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Minecraftia";
+  src: url("/fonts/Minecraftia-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.pixelify-sans {
+  font-family: "Pixelify Sans", sans-serif;
+}
+
+.mono-font {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+
 /* 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

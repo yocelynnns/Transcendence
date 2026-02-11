@@ -1,9 +1,10 @@
+// src/pages/matchingpage.tsx
 import { useEffect, useState, useMemo, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { AvatarData } from "../types/avatarTypes";
+import type { AvatarData } from "../types/avatarTypes";
 import { ASSETS } from "../assets";
 import { useGameSocket } from "../ws/useGameSocket";
-import { Battle } from "../types/battleTypes";
+import type { Battle } from "../types/battleTypes";
 
 interface MatchMakingProps {
   avatarData: AvatarData | null | undefined;
@@ -24,6 +25,7 @@ export default function Matching({
   const [countdown, setCountdown] = useState(5);
   const joinRef = useRef<boolean>(false);
 
+  // inventory guard
   useEffect(() => {
     if (!avatarData) return;
     const inventory = avatarData.pokemonInventory ?? [];
@@ -33,6 +35,7 @@ export default function Matching({
     }
   }, [avatarData, navigate]);
 
+  // opponent logic
   const opponentAvatar = useMemo(() => {
     if (!currentBattle || !currentId) return null;
     return currentBattle.player1._id === currentId
@@ -43,6 +46,7 @@ export default function Matching({
   const matchStarted = Boolean(currentBattle && opponentAvatar);
   const waiting = !matchStarted;
 
+  // countdown -> team select
   useEffect(() => {
     if (!currentBattle || !opponentAvatar) return;
 
@@ -68,6 +72,7 @@ export default function Matching({
     return () => clearInterval(timer);
   }, [currentBattle, opponentAvatar, navigate]);
 
+  // join + events
   useEffect(() => {
     if (!currentId || currentBattle) return;
 
@@ -98,97 +103,54 @@ export default function Matching({
   }, [currentId, currentBattle, joinMatching, subscribeEvent, setCurrentBattle]);
 
   const handleReturn = () => {
-    if (currentId) {
-      emitEvent("leaveMatching", currentId);
-    }
+    if (currentId) emitEvent("leaveMatching", currentId);
     navigate("/", { replace: true });
   };
 
   if (!avatarData) {
     return (
-      <div className="fullscreen-center" style={{ color: "#fff" }}>
+      <div className="w-screen h-screen grid place-items-center bg-[#1e1e2f] text-white font-mono text-lg">
         Loading player data...
       </div>
     );
   }
 
+  const title = matchStarted ? "Match Found!" : "Waiting for Opponent...";
+
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #1e1e2f 0%, #2a2a3f 100%)",
-        fontFamily: "monospace",
-        color: "#999",
-        textAlign: "center",
-      }}
-    >
-      <h1
-        style={{
-          fontSize: 32,
-          marginBottom: 12,
-          color: "#fff",
-          textShadow: "0 0 10px #888",
-        }}
-      >
-        {matchStarted ? "Match Found!" : "Waiting for Opponent..."}
+    <div className="w-screen h-screen flex flex-col items-center justify-center bg-linear-to-br from-[#1e1e2f] to-[#2a2a3f] text-center font-mono text-[#999] px-4">
+      <h1 className="text-[28px] sm:text-[32px] mb-3 text-white drop-shadow-[0_0_10px_#888]">
+        {title}
       </h1>
 
       {matchStarted && (
-        <div
-          style={{
-            fontSize: 18,
-            marginBottom: 30,
-            color: "#a2d5f2",
-            textShadow: "0 0 6px #000",
-          }}
-        >
+        <div className="text-[16px] sm:text-[18px] mb-7 text-[#a2d5f2] drop-shadow-[0_0_6px_#000]">
           Match starts in {countdown} second{countdown !== 1 ? "s" : ""}
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
+      <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
         <AvatarCard
           avatar={avatarData.avatar || defaultAvatar}
           name={avatarData.userName}
-          color="#a2d5f2"
+          color="border-[#a2d5f2] shadow-[0_0_15px_#a2d5f2]"
         />
 
-        <div
-          style={{
-            fontSize: 36,
-            fontWeight: "bold",
-            color: "#888",
-            textShadow: "0 0 15px #666",
-          }}
-        >
+        <div className="hidden sm:block text-[34px] font-bold text-[#888] drop-shadow-[0_0_15px_#666]">
           VS
         </div>
 
         <AvatarCard
           avatar={opponentAvatar?.avatar}
           name={waiting ? "Searching..." : opponentAvatar?.userName || ""}
-          color="#ff5555"
+          color="border-[#ff5555] shadow-[0_0_15px_#ff5555]"
           loading={waiting}
         />
       </div>
 
       <button
         onClick={handleReturn}
-        style={{
-          marginTop: 40,
-          padding: "10px 20px",
-          borderRadius: 10,
-          border: "2px solid black",
-          background: "white",
-          cursor: "pointer",
-          fontWeight: 600,
-          color: "black",
-        }}
+        className="mt-10 px-5 py-3 rounded-[10px] border-2 border-black bg-white text-black font-semibold hover:brightness-105 active:scale-[0.99]"
       >
         Return
       </button>
@@ -208,29 +170,30 @@ function AvatarCard({
   loading?: boolean;
 }) {
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="text-center">
       <div
+        className={[
+          "w-32.5 h-32.5 sm:w-37.5 sm:h-37.5",
+          "rounded-2xl border-4 bg-[#444] overflow-hidden",
+          "grid place-items-center",
+          color,
+        ].join(" ")}
         style={{
-          width: 150,
-          height: 150,
-          borderRadius: 16,
-          border: `4px solid ${color}`,
-          boxShadow: `0 0 15px ${color}`,
-          background: avatar ? `url(${avatar}) center/cover` : "#444",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          backgroundImage: !loading && avatar ? `url(${avatar})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
         {loading && (
           <img
             src="/assets/matching/loading.gif"
             alt="Searching..."
-            style={{ width: "100%", height: "100%" }}
+            className="w-full h-full object-cover"
           />
         )}
       </div>
-      <div style={{ marginTop: 12, color: "#fff" }}>{name}</div>
+
+      <div className="mt-3 text-white">{name}</div>
     </div>
   );
 }

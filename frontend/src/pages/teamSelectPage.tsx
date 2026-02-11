@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState, useCallback, Dispatch } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TeamSelectLayout from "../components/teamSelect/teamSelectLayout";
-import { AvatarData } from "../types/avatarTypes";
+import type { AvatarData } from "../types/avatarTypes";
 import { useGameSocket } from "../ws/useGameSocket";
-import { Battle, BattlePokemon } from "../types/battleTypes";
-import { PlayerPokemon } from "../types/pokemonTypes";
-import { useLocation } from "react-router-dom";
-import "./../styles/teamSelect.css";
+import type { Battle, BattlePokemon } from "../types/battleTypes";
+import type { PlayerPokemon } from "../types/pokemonTypes";
 
 interface TeamSelectPageProps {
   avatarData?: AvatarData | null;
@@ -16,19 +14,7 @@ interface TeamSelectPageProps {
 }
 
 const TEAM_SIZE = 3;
-
-type PlayerRef =
-  | string
-  | {
-      _id: string | { toString(): string };
-    };
-
-// Helper to get player ID from either string or populated object
-const getPlayerId = (player: PlayerRef): string => {
-  if (typeof player === 'string') return player;
-  if (player?._id) return player._id.toString();
-  return '';
-};
+const PICK_WINDOW_MS = 35_000;
 
 export default function TeamSelectPage({
   avatarData,
@@ -68,6 +54,10 @@ export default function TeamSelectPage({
   );
   const [activeSlot, setActiveSlot] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
+
+  const [msg, setMsg] = useState<string | null>(null);
+  const [waitingForEnemy, setWaitingForEnemy] = useState(false);
+
   const [battleReady, setBattleReady] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -266,7 +256,7 @@ export default function TeamSelectPage({
 
   // Check activeBattle data and initialize slots if needed
   useEffect(() => {
-    if (!activeBattle || !avatarId) return;
+    if (!currentBattle || !avatarId) return;
 
     console.log(`Processing activeBattle ${activeBattle._id}, endedAt: ${activeBattle.endedAt}`);
 
@@ -321,30 +311,37 @@ export default function TeamSelectPage({
     }
   }, [activeBattle, avatarId, navigate, battleEnded]);
 
+      setTimeout(() => {
+        setTimeLeft(Math.max(Math.ceil((endTime - now) / 1000), 0));
+      }, 0);
+    }
+  }, [currentBattle, avatarId, navigate, startWaiting, stopWaiting]);
+
+  // --- Convert current slots -> BattlePokemon[] and send ready ---
   const handleReady = useCallback(
     (currentSlots = slots) => {
       if (!currentSlots.every(Boolean)) return;
-      if (!activeBattle || !avatarData) return;
+      if (!currentBattle || !avatarData) return;
+      if (readySentRef.current) return;
 
-      const selectedBattlePokemon: BattlePokemon[] =
-        currentSlots.map((p) => ({
-          pokemonId: p!._id,
-          name: p!.name,
-          type: p!.type as "grass" | "water" | "fire" | "normal",
-          attack: p!.attack,
-          maxHp: p!.hp,
-          currentHp: p!.hp,
-          isDead: false,
-          is_shiny: p!.is_shiny ?? false,
-        }));
+      const selectedBattlePokemon: BattlePokemon[] = currentSlots.map((p) => ({
+        pokemonId: (p as PlayerPokemon)._id,
+        name: (p as PlayerPokemon).name,
+        type: (p as PlayerPokemon).type as "grass" | "water" | "fire" | "normal",
+        attack: (p as PlayerPokemon).attack,
+        maxHp: (p as PlayerPokemon).hp,
+        currentHp: (p as PlayerPokemon).hp,
+        isDead: false,
+        is_shiny: (p as PlayerPokemon).is_shiny ?? false,
+      }));
 
-      playerReadyMatch(
-        activeBattle,
-        selectedBattlePokemon,
-      );
+      readySentRef.current = true;
+      playerReadyMatch(currentBattle, selectedBattlePokemon);
+
       setSaving(true);
+      startWaiting();
     },
-    [avatarData, slots, playerReadyMatch, activeBattle]
+    [avatarData, slots, playerReadyMatch, currentBattle, startWaiting]
   );
 
   // Countdown timer
@@ -362,21 +359,20 @@ export default function TeamSelectPage({
             );
 
           const nextSlots = [...slots];
-
           for (let i = 0; i < nextSlots.length; i++) {
             if (!nextSlots[i] && available.length > 0) {
-              const idx = Math.floor(
-                Math.random() * available.length
-              );
+              const idx = Math.floor(Math.random() * available.length);
               nextSlots[i] = available.splice(idx, 1)[0];
             }
           }
+
           setSlots(nextSlots);
 
           if (nextSlots.every(Boolean)) {
             handleReady(nextSlots);
           }
         }
+
         return 0;
       });
     }, 1000);
@@ -384,6 +380,7 @@ export default function TeamSelectPage({
     return () => window.clearInterval(timer);
   }, [avatarData, slots, handleReady, battleEnded]);
 
+  // --- Pick/remove handlers ---
   const pickPokemon = (p: PlayerPokemon) => {
     if (saving || battleEnded) return;
     if (timeLeft === 0) return;
@@ -392,8 +389,10 @@ export default function TeamSelectPage({
     setSlots((prev) => {
       const next = [...prev];
       next[activeSlot] = p;
+
       const nextEmpty = next.findIndex((x) => x === null);
       if (nextEmpty !== -1) setActiveSlot(nextEmpty);
+
       return next;
     });
   };
@@ -405,37 +404,36 @@ export default function TeamSelectPage({
       next[idx] = null;
       return next;
     });
+
     setActiveSlot(idx);
+    readySentRef.current = false;
+
+    stopWaiting();
   };
 
   // Listen for battleReady and errors
   useEffect(() => {
     if (!battleId) return;
 
-    const offBattleReady = subscribeEvent(
-      "battleReady",
-      (data: { battleId: string }) => {
-        if (data.battleId === battleId) {
-          setBattleReady(true);
-        }
+    const offBattleReady = subscribeEvent("battleReady", (data: { battleId: string }) => {
+      if (data.battleId === battleId) {
+        setBattleReady(true);
+        stopWaiting();
       }
-    );
+    });
 
-    const offBattleError = subscribeEvent(
-      "TeamUpError",
-      (data: { message: string }) => {
-        console.log("Battle error:", data.message);
-        alert(`enemy has disconnected from the battle!`);
-        setCurrentBattle(null);
-        navigate("/", { replace: true });
-      }
-    );
+    const offBattleError = subscribeEvent("TeamUpError", (data: { message: string }) => {
+      console.error("Battle error:", data.message);
+      alert("Enemy has disconnected from the battle!");
+      setCurrentBattle(null);
+      navigate("/", { replace: true });
+    });
 
     return () => {
       offBattleReady();
       offBattleError();
     };
-  }, [battleId, subscribeEvent, navigate, setCurrentBattle]);
+  }, [battleId, subscribeEvent, navigate, setCurrentBattle, stopWaiting]);
 
   // Navigate when battle is ready
   useEffect(() => {
@@ -525,8 +523,9 @@ export default function TeamSelectPage({
       avatarSrc={avatarData.avatar}
       canReady={slots.every(Boolean) && timeLeft > 0 && !battleEnded}
       onReady={() => handleReady()}
-      msg={null}
+      msg={msg}
       saving={saving}
+      waitingForEnemy={waitingForEnemy}
     />
   );
 }
