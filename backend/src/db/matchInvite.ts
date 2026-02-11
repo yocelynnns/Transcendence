@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IMatchInvite extends Document {
   senderId: string;
   receiverId: string;
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  status: 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled';
   createdAt: Date;
   expiresAt: Date;
 }
@@ -13,7 +13,7 @@ const MatchInviteSchema: Schema = new Schema({
   receiverId: { type: String, required: true, index: true },
   status: { 
     type: String, 
-    enum: ['pending', 'accepted', 'declined', 'expired'],
+    enum: ['pending', 'accepted', 'declined', 'expired', 'cancelled'],
     default: 'pending'
   },
   createdAt: { type: Date, default: Date.now },

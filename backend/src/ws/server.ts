@@ -11,6 +11,7 @@ import { setupPokemonHandlers } from "./pokemonHandler";
 import { setupUserHandlers } from "./userHandler";
 import { setSocketIo } from "../services/battle.service";
 import { setSocketIo as setFriendSocketIo } from "../services/friend.service";
+import { initializeInviteTracking } from "../services/matchInvite.service";
 
 export interface PlayerData {
   id: string;
@@ -49,6 +50,9 @@ export function setupSocket(server: any) {
   // Set socket io instance for battle service
   setSocketIo(io);
   setFriendSocketIo(io);  // THIS for friend service
+
+  // Initialize invite tracking from DB
+  initializeInviteTracking().catch(console.error);
 
   // AUTH middleware
   io.use(async (socket, next) => {
