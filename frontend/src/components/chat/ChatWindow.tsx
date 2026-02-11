@@ -14,6 +14,8 @@ interface Message {
   senderName?: string;
   senderAvatar?: string;
   isOptimistic?: boolean;
+  rejected?: boolean;
+  rejectedReason?: string;
 }
 
 interface Friend {
@@ -77,16 +79,25 @@ const styles = {
     flex: 1, overflowY: "auto" as const, padding: 16,
     background: "#f5f5f5", display: "flex", flexDirection: "column" as const, gap: 12,
   },
-  messageRow: (isMe: boolean) => ({
+  messageRow: (isMe: boolean, isRejected?: boolean) => ({
     display: "flex", justifyContent: isMe ? "flex-end" : "flex-start",
     alignItems: "flex-end", gap: 8,
+    opacity: isRejected ? 0.7 : 1,
   }),
-  messageBubble: (isMe: boolean) => ({
+  messageBubble: (isMe: boolean, isRejected?: boolean) => ({
     maxWidth: "70%", padding: "10px 14px",
     borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-    background: isMe ? "#4CAF50" : "white", color: isMe ? "white" : "#333",
-    border: "2px solid #333", fontSize: 14, lineHeight: 1.4, wordBreak: "break-word" as const,
+    background: isRejected ? "#ff5555" : isMe ? "#4CAF50" : "white", 
+    color: isRejected ? "white" : isMe ? "white" : "#333",
+    border: `2px solid ${isRejected ? "#cc0000" : "#333"}`, 
+    fontSize: 14, lineHeight: 1.4, wordBreak: "break-word" as const,
   }),
+  rejectedText: {
+    fontSize: 11, 
+    marginTop: 4, 
+    fontStyle: "italic" as const,
+    opacity: 0.9,
+  },
   messageAvatar: {
     width: 32, height: 32, borderRadius: "50%",
     border: "2px solid #333", backgroundSize: "cover", backgroundPosition: "center", flexShrink: 0,
@@ -106,6 +117,14 @@ const styles = {
   dateDivider: { textAlign: "center" as const, fontSize: 11, color: "#999", margin: "8px 0" },
   loadingIndicator: { textAlign: "center" as const, padding: 10, color: "#666", fontSize: 12 },
   loadMoreBtn: { textAlign: "center", padding: 10, cursor: "pointer", color: "#666", fontSize: 12 },
+  errorBanner: {
+    background: "#ff5555",
+    color: "white",
+    padding: "8px 12px",
+    fontSize: 12,
+    textAlign: "center" as const,
+    borderBottom: "2px solid #cc0000",
+  },
 };
 
 // Generate stable room ID
@@ -120,6 +139,7 @@ export default function ChatWindow({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -142,7 +162,7 @@ export default function ChatWindow({
       );
       
       if (!res.ok) {
-        console.log("Failed to fetch messages:", res.status);
+        console.error("Failed to fetch messages:", res.status);
         setLoading(false);
         return;
       }
@@ -159,7 +179,7 @@ export default function ChatWindow({
       setHasMore(data.pagination.hasMore);
       setPage(pageNum);
     } catch (err) {
-      console.log("Failed to fetch messages:", err);
+      console.error("Failed to fetch messages:", err);
     } finally {
       setLoading(false);
     }
@@ -214,12 +234,45 @@ export default function ChatWindow({
       }
     });
 
+    // Handle message rejection (when blocked)
+    const cleanupRejected = subscribeEvent<any>("messageRejected", (data) => {
+      console.log("❌ Message rejected:", data);
+      
+      // Only handle if it's for this chat window
+      if (data.receiverId === friendId) {
+        // Find and mark the optimistic message as rejected
+        setMessages(prev => {
+          // Find the most recent optimistic message from current user to this friend
+          const lastOptimisticIndex = [...prev].reverse().findIndex(m => 
+            m.isOptimistic && m.senderId === myAvatarId && !m.rejected
+          );
+          
+          if (lastOptimisticIndex !== -1) {
+            const actualIndex = prev.length - 1 - lastOptimisticIndex;
+            const newMessages = [...prev];
+            newMessages[actualIndex] = {
+              ...newMessages[actualIndex],
+              rejected: true,
+              rejectedReason: data.reason || "Message blocked"
+            };
+            return newMessages;
+          }
+          return prev;
+        });
+        
+        // Show error banner
+        setErrorMessage(data.reason || "Message could not be delivered");
+        setTimeout(() => setErrorMessage(null), 5000);
+      }
+    });
+
     // Cleanup
     return () => {
       console.log("🔴 ChatWindow unmounting for:", friendId);
       cleanupReceive();
       cleanupTyping();
       cleanupRead();
+      cleanupRejected();
       emitEvent("leaveChat", { friendAvatarId: friendId });
       
       if (typingTimeoutRef.current) {
@@ -300,6 +353,13 @@ export default function ChatWindow({
   return (
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.chatContainer} onClick={e => e.stopPropagation()}>
+        {/* Error Banner */}
+        {errorMessage && (
+          <div style={styles.errorBanner}>
+            ❌ {errorMessage}
+          </div>
+        )}
+        
         <div style={styles.header}>
           <div style={{...styles.avatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}}>
             <div style={styles.onlineIndicator(!!friend.online)} />
@@ -331,17 +391,28 @@ export default function ChatWindow({
                   const showAvatar = !isMe && (idx === msgs.length - 1 || msgs[idx + 1]?.senderId !== msg.senderId);
                   
                   return (
-                    <div key={msg._id} style={styles.messageRow(isMe)}>
+                    <div key={msg._id} style={styles.messageRow(isMe, msg.rejected)}>
                       {!isMe && showAvatar && (
                         <div style={{...styles.messageAvatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}} />
                       )}
                       {!isMe && !showAvatar && <div style={{width: 32}} />}
                       
                       <div>
-                        <div style={styles.messageBubble(isMe)}>{msg.content}</div>
+                        <div style={styles.messageBubble(isMe, msg.rejected)}>
+                          {msg.content}
+                          {msg.rejected && (
+                            <div style={styles.rejectedText}>
+                              Blocked: {msg.rejectedReason || "Message could not be delivered"}
+                            </div>
+                          )}
+                        </div>
                         <div style={styles.timestamp}>
                           {formatTime(msg.createdAt)}
-                          {isMe && <span style={{marginLeft: 4}}>{msg.read ? "✓✓" : msg.isOptimistic ? "⏳" : "✓"}</span>}
+                          {isMe && (
+                            <span style={{marginLeft: 4}}>
+                              {msg.rejected ? "❌" : msg.read ? "✓✓" : msg.isOptimistic ? "⏳" : "✓"}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

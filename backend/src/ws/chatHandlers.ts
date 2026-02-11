@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { markMessagesRead, sendMessage } from "../services/chat.service";
 import { getAvatarById } from "../services/avatar.service";
+import { checkMessageBlock } from "../services/messageBlock.service";
 
 const chatRooms = new Map<string, Set<string>>();
 
@@ -9,7 +10,6 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
   // Join private chat room
   socket.on("joinChat", (data: { friendAvatarId: string}) => {
     const myAvatarId = socket.data.avatarId.toString();
-
     const { friendAvatarId } = data;
     
     if (!friendAvatarId || !myAvatarId) {
@@ -37,7 +37,6 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
   // Leave private chat room
   socket.on("leaveChat", (data: { friendAvatarId: string }) => {
     const myAvatarId = socket.data.avatarId.toString();
-
     const { friendAvatarId } = data;
     
     if (!friendAvatarId || !myAvatarId) return;
@@ -50,7 +49,7 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
     console.log(`💬 ${myAvatarId} left chat room ${roomName}`);
   });
 
-  // Send private message
+  // Send private message - UPDATED with block handling
   socket.on("sendPrivateMessage", async (data: { 
     receiverId: string; 
     content: string;
@@ -60,11 +59,34 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
     if (!content || content.trim().length === 0) return;
     const userId = socket.data.userId.toString();
     const senderId = socket.data.avatarId.toString();
+    
     if (!senderId || !receiverId) {
       socket.emit("messageError", { error: "Missing sender or receiver" });
       return;
     }
+
     try {
+      // Check block status before attempting to send
+      const blockStatus = await checkMessageBlock(senderId, receiverId);
+      
+      if (blockStatus.isBlocked) {
+        const roomName = [senderId, receiverId].sort().join("_");
+        const reason = blockStatus.blockedBy === "receiver" 
+          ? "This friend has blocked messages from you" 
+          : "You have blocked messages from this friend";
+        
+        // Emit rejection to the sender's room so they see it in chat
+        io.to(roomName).emit("messageRejected", {
+          receiverId,
+          reason,
+          blockedBy: blockStatus.blockedBy,
+          timestamp: new Date().toISOString(),
+        });
+        
+        console.log(`❌ Message blocked: ${senderId} -> ${receiverId} (${blockStatus.blockedBy})`);
+        return;
+      }
+
       const message = await sendMessage({
         userId: userId,
         friendAvatarId: receiverId,
@@ -101,8 +123,23 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
       }
 
       console.log(`💬 Message saved & sent: ${senderId} -> ${receiverId}`);
-    } catch (err) {
-      console.log("Failed to send message:", err);
+    } catch (err: any) {
+      console.error("Failed to send message:", err);
+      
+      // Handle specific block error from service layer
+      if (err.message === "MESSAGES_BLOCKED") {
+        const roomName = [senderId, receiverId].sort().join("_");
+        io.to(roomName).emit("messageRejected", {
+          receiverId,
+          reason: err.blockedBy === "receiver" 
+            ? "This friend has blocked messages from you" 
+            : "You have blocked messages from this friend",
+          blockedBy: err.blockedBy,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
       socket.emit("messageError", { error: "Failed to send message" });
     }
   });
@@ -113,7 +150,6 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
     isTyping: boolean 
   }) => {
     const senderId = socket.data.avatarId.toString();
-
     const { receiverId, isTyping } = data;
     
     if (!receiverId || !senderId) return;
@@ -128,10 +164,10 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
 
   // Mark messages as read
   socket.on("markAsRead", async (data: { 
-    senderId: string  // ✅ Changed from receiverId to senderId
+    senderId: string
   }) => {
-    const { senderId } = data;  // ✅ Use senderId
-    const receiverId = socket.data.avatarId.toString();  // Current user is the receiver
+    const { senderId } = data;
+    const receiverId = socket.data.avatarId.toString();
     
     if (!senderId || !receiverId) return;
     
@@ -144,7 +180,7 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
         io.to(senderSocketId).emit("messagesRead", { byAvatarId: receiverId });
       }
     } catch (err) {
-      console.log("Failed to mark messages as read:", err);
+      console.error("Failed to mark messages as read:", err);
     }
   });
-  }
+}
