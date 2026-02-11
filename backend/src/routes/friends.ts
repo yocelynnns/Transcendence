@@ -1,7 +1,8 @@
 import { Router } from "express";
 import Friend from "../db/friend";
-import { authMiddleware, AuthRequest } from "../routes/auth";
-
+import User from "../db/user";
+import Avatar from "../db/avatar";
+import { authMiddleware, AuthRequest } from "./auth";
 import * as FriendService from "../services/friend.service"
 
 const router = Router();
@@ -141,6 +142,60 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
   } catch (err: any) {
     console.log("[GET /friends]", err);
     return res.status(500).json({ message: "Failed to get friends" });
+  }
+});
+
+// Get public profile
+router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const targetAvatarId = Array.isArray(req.params.avatarId)
+      ? req.params.avatarId[0]
+      : req.params.avatarId;
+
+    const currentUser = await User.findById(req.userId);
+    const myAvatarId = currentUser?.avatar?.toString();
+
+    // Get target avatar
+    const profile = await Avatar.findById(targetAvatarId)
+      .select("userName avatar characterOption battleWin battleLoss raceWin raceLoss online")
+      .lean();
+
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    // Check friendship status
+    const targetUser = await User.findOne({ avatar: targetAvatarId });
+    let friendshipStatus = "none";
+    if (targetUser && myAvatarId !== targetAvatarId) {
+      const friendRecord = await Friend.findOne({
+        $or: [
+          { userId: req.userId, friendId: targetUser._id },
+          { userId: targetUser._id, friendId: req.userId },
+        ],
+        status: "accepted",
+      });
+      if (friendRecord) friendshipStatus = "friend";
+    }
+
+    return res.status(200).json({
+      avatarId: (profile as any)._id.toString(),
+      userName: profile.userName,
+      avatarImage: profile.avatar || "",
+      characterOption: profile.characterOption || 0,
+      battleWin: profile.battleWin || 0,
+      battleLoss: profile.battleLoss || 0,
+      raceWin: profile.raceWin || 0,
+      raceLoss: profile.raceLoss || 0,
+      online: profile.online || false,
+      friendshipStatus,
+      isMe: myAvatarId === targetAvatarId,
+    });
+  } catch (err) {
+    console.error("[GET /friends/profile/:avatarId]", err);
+    return res.status(500).json({ message: "Failed to fetch profile" });
   }
 });
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { ASSETS } from "../../assets";
+import PublicProfilePopup from "../profile/PublicProfilePopup";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 
@@ -34,6 +35,7 @@ interface ChatWindowProps {
   myAvatarImage: string;
   friend: Friend;
   onClose: () => void;
+  onChallenge?: (avatarId: string) => void; 
 }
 
 const styles = {
@@ -59,6 +61,7 @@ const styles = {
     width: 48, height: 48, borderRadius: "50%",
     border: "2px solid #333", position: "relative" as const,
     backgroundSize: "cover", backgroundPosition: "center",
+    cursor: "pointer",
   },
   onlineIndicator: (online: boolean) => ({
     position: "absolute" as const, bottom: -2, right: -2,
@@ -67,7 +70,13 @@ const styles = {
     border: "2px solid white",
   }),
   headerInfo: { flex: 1 },
-  friendName: { fontSize: 16, fontWeight: "bold" as const, color: "#333", margin: 0 },
+  friendName: { 
+    fontSize: 16, 
+    fontWeight: "bold" as const, 
+    color: "#333", 
+    margin: 0,
+    cursor: "pointer",
+  },
   status: { fontSize: 12, color: "#666" },
   typing: { fontSize: 12, color: "#4CAF50", fontStyle: "italic" as const },
   closeBtn: {
@@ -127,11 +136,10 @@ const styles = {
   },
 };
 
-// Generate stable room ID
 const getRoomId = (id1: string, id2: string) => [id1, id2].sort().join("_");
 
 export default function ChatWindow({
-  token, myAvatarId, myUserName, myAvatarImage, friend, onClose
+  token, myAvatarId, myUserName, myAvatarImage, friend, onClose, onChallenge
 }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -140,6 +148,7 @@ export default function ChatWindow({
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -150,7 +159,6 @@ export default function ChatWindow({
   const roomId = getRoomId(myAvatarId, friend.avatarId);
   const friendId = friend.avatarId;
 
-  // Fetch messages function
   const fetchMessages = async (pageNum: number = 1) => {
     if (loading) return;
     setLoading(true);
@@ -185,32 +193,22 @@ export default function ChatWindow({
     }
   };
 
-  // Setup effect - runs once when friend changes
   useEffect(() => {
     console.log("🔵 ChatWindow mounted for:", friendId);
     
-    // Join room
     emitEvent("joinChat", { friendAvatarId: friendId });
-    
-    // Fetch messages
     fetchMessages(1);
-    
-    // Mark as read
     emitEvent("markAsRead", { senderId: friendId });
 
-    // Setup listeners
     const cleanupReceive = subscribeEvent<any>("receiveMessage", (msg) => {
       console.log("📨 Received:", msg.content?.substring(0, 20));
       
-      // Only handle messages for this room
       const msgRoomId = getRoomId(msg.senderId, msg.receiverId);
       if (msgRoomId !== roomId) return;
 
       setMessages(prev => {
-        // Skip if already exists
         if (prev.some(m => m._id === msg._id)) return prev;
         
-        // Remove optimistic version if exists
         const filtered = prev.filter(m => 
           !(m.isOptimistic && m.content === msg.content && m.senderId === msg.senderId)
         );
@@ -218,7 +216,6 @@ export default function ChatWindow({
         return [...filtered, { ...msg, isOptimistic: false }];
       });
       
-      // Scroll to bottom
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     });
 
@@ -234,15 +231,11 @@ export default function ChatWindow({
       }
     });
 
-    // Handle message rejection (when blocked)
     const cleanupRejected = subscribeEvent<any>("messageRejected", (data) => {
       console.log("❌ Message rejected:", data);
       
-      // Only handle if it's for this chat window
       if (data.receiverId === friendId) {
-        // Find and mark the optimistic message as rejected
         setMessages(prev => {
-          // Find the most recent optimistic message from current user to this friend
           const lastOptimisticIndex = [...prev].reverse().findIndex(m => 
             m.isOptimistic && m.senderId === myAvatarId && !m.rejected
           );
@@ -260,13 +253,11 @@ export default function ChatWindow({
           return prev;
         });
         
-        // Show error banner
         setErrorMessage(data.reason || "Message could not be delivered");
         setTimeout(() => setErrorMessage(null), 5000);
       }
     });
 
-    // Cleanup
     return () => {
       console.log("🔴 ChatWindow unmounting for:", friendId);
       cleanupReceive();
@@ -279,13 +270,12 @@ export default function ChatWindow({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [friendId]); // Only re-run when friend changes
+  }, [friendId]);
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
     const content = inputValue.trim();
 
-    // Optimistic message
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: Message = {
       _id: tempId,
@@ -303,7 +293,6 @@ export default function ChatWindow({
     
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-    // Send
     console.log("📤 Sending:", content.substring(0, 20));
     emitEvent("sendPrivateMessage", {
       receiverId: friendId,
@@ -351,98 +340,117 @@ export default function ChatWindow({
   }, {});
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.chatContainer} onClick={e => e.stopPropagation()}>
-        {/* Error Banner */}
-        {errorMessage && (
-          <div style={styles.errorBanner}>
-            ❌ {errorMessage}
-          </div>
-        )}
-        
-        <div style={styles.header}>
-          <div style={{...styles.avatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}}>
-            <div style={styles.onlineIndicator(!!friend.online)} />
-          </div>
-          <div style={styles.headerInfo}>
-            <h3 style={styles.friendName}>{friend.userName}</h3>
-            {isTyping ? <span style={styles.typing}>typing...</span> : 
-             <span style={styles.status}>{friend.online ? "🟢 Online" : "⚫ Offline"}</span>}
-          </div>
-          <button onClick={onClose} style={styles.closeBtn}>✕</button>
-        </div>
-
-        <div ref={messagesContainerRef} style={styles.messagesContainer}>
-          {hasMore && !loading && (
-            <div style={styles.loadMoreBtn} onClick={() => fetchMessages(page + 1)}>
-              Load older messages ↑
+    <>
+      <div style={styles.overlay} onClick={onClose}>
+        <div style={styles.chatContainer} onClick={e => e.stopPropagation()}>
+          {errorMessage && (
+            <div style={styles.errorBanner}>
+              ❌ {errorMessage}
             </div>
           )}
-          {loading && <div style={styles.loadingIndicator}>Loading...</div>}
           
-          {messages.length === 0 && !loading ? (
-            <div style={styles.emptyState}>No messages yet.<br/>Say hello to {friend.userName}! 👋</div>
-          ) : (
-            Object.entries(grouped).map(([date, msgs]) => (
-              <div key={date}>
-                <div style={styles.dateDivider}>{date}</div>
-                {msgs.map((msg, idx) => {
-                  const isMe = msg.senderId === myAvatarId;
-                  const showAvatar = !isMe && (idx === msgs.length - 1 || msgs[idx + 1]?.senderId !== msg.senderId);
-                  
-                  return (
-                    <div key={msg._id} style={styles.messageRow(isMe, msg.rejected)}>
-                      {!isMe && showAvatar && (
-                        <div style={{...styles.messageAvatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}} />
-                      )}
-                      {!isMe && !showAvatar && <div style={{width: 32}} />}
-                      
-                      <div>
-                        <div style={styles.messageBubble(isMe, msg.rejected)}>
-                          {msg.content}
-                          {msg.rejected && (
-                            <div style={styles.rejectedText}>
-                              Blocked: {msg.rejectedReason || "Message could not be delivered"}
-                            </div>
-                          )}
-                        </div>
-                        <div style={styles.timestamp}>
-                          {formatTime(msg.createdAt)}
-                          {isMe && (
-                            <span style={{marginLeft: 4}}>
-                              {msg.rejected ? "❌" : msg.read ? "✓✓" : msg.isOptimistic ? "⏳" : "✓"}
-                            </span>
-                          )}
+          <div style={styles.header}>
+            <div 
+              style={{...styles.avatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}}
+              onClick={() => setShowProfile(true)}
+            >
+              <div style={styles.onlineIndicator(!!friend.online)} />
+            </div>
+            <div style={styles.headerInfo}>
+              <h3 
+                style={styles.friendName}
+                onClick={() => setShowProfile(true)}
+              >
+                {friend.userName}
+              </h3>
+              {isTyping ? <span style={styles.typing}>typing...</span> : 
+               <span style={styles.status}>{friend.online ? "🟢 Online" : "⚫ Offline"}</span>}
+            </div>
+            <button onClick={onClose} style={styles.closeBtn}>✕</button>
+          </div>
+
+          <div ref={messagesContainerRef} style={styles.messagesContainer}>
+            {hasMore && !loading && (
+              <div style={styles.loadMoreBtn} onClick={() => fetchMessages(page + 1)}>
+                Load older messages ↑
+              </div>
+            )}
+            {loading && <div style={styles.loadingIndicator}>Loading...</div>}
+            
+            {messages.length === 0 && !loading ? (
+              <div style={styles.emptyState}>No messages yet.<br/>Say hello to {friend.userName}! 👋</div>
+            ) : (
+              Object.entries(grouped).map(([date, msgs]) => (
+                <div key={date}>
+                  <div style={styles.dateDivider}>{date}</div>
+                  {msgs.map((msg, idx) => {
+                    const isMe = msg.senderId === myAvatarId;
+                    const showAvatar = !isMe && (idx === msgs.length - 1 || msgs[idx + 1]?.senderId !== msg.senderId);
+                    
+                    return (
+                      <div key={msg._id} style={styles.messageRow(isMe, msg.rejected)}>
+                        {!isMe && showAvatar && (
+                          <div style={{...styles.messageAvatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}} />
+                        )}
+                        {!isMe && !showAvatar && <div style={{width: 32}} />}
+                        
+                        <div>
+                          <div style={styles.messageBubble(isMe, msg.rejected)}>
+                            {msg.content}
+                            {msg.rejected && (
+                              <div style={styles.rejectedText}>
+                                Blocked: {msg.rejectedReason || "Message could not be delivered"}
+                              </div>
+                            )}
+                          </div>
+                          <div style={styles.timestamp}>
+                            {formatTime(msg.createdAt)}
+                            {isMe && (
+                              <span style={{marginLeft: 4}}>
+                                {msg.rejected ? "❌" : msg.read ? "✓✓" : msg.isOptimistic ? "⏳" : "✓"}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-        <div style={styles.inputContainer}>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Type a message..."
-            style={styles.input}
-            maxLength={1000}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!inputValue.trim()}
-            style={{...styles.sendBtn, opacity: inputValue.trim() ? 1 : 0.5, cursor: inputValue.trim() ? "pointer" : "not-allowed"}}
-          >
-            📨
-          </button>
+          <div style={styles.inputContainer}>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Type a message..."
+              style={styles.input}
+              maxLength={1000}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+              style={{...styles.sendBtn, opacity: inputValue.trim() ? 1 : 0.5, cursor: inputValue.trim() ? "pointer" : "not-allowed"}}
+            >
+              📨
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {showProfile && (
+        <PublicProfilePopup
+          token={token}
+          myAvatarId={myAvatarId}
+          targetAvatarId={friend.avatarId}
+          onClose={() => setShowProfile(false)}
+          onChallenge={onChallenge} 
+        />
+      )}
+    </>
   );
 }
