@@ -173,20 +173,6 @@ const styles = {
     justifyContent: "center",
     fontSize: 8,
   },
-  battleEndedIndicator: {
-    position: "absolute" as const,
-    bottom: -2,
-    right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: "50%",
-    background: "#9c27b0",
-    border: "2px solid white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 8,
-  },
   friendInfo: {
     flex: 1,
     minWidth: 0,
@@ -356,9 +342,6 @@ export default function FriendsList({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
-  
-  // NEW: Track which friends have ended battles but not acknowledged
-  const [battleEndedFriends, setBattleEndedFriends] = useState<Set<string>>(new Set());
 
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
 
@@ -641,46 +624,17 @@ export default function FriendsList({
             friend.avatarId === avatarId ? { ...friend, currentBattle: battleId } : friend
           )
         );
-        // Remove from battleEnded set if they started a new battle
-        setBattleEndedFriends((prev) => {
-          const next = new Set(prev);
-          next.delete(avatarId);
-          return next;
-        });
       }
     );
 
-    // UPDATED: Handle battle ended with acknowledgment
-    const cleanupBattleEnded = subscribeEvent<{ avatarId: string; battleId: string; acknowledged?: boolean }>(
+    const cleanupBattleEnded = subscribeEvent<{ avatarId: string; battleId: string }>(
       "friendBattleEnded",
-      ({ avatarId, acknowledged }) => {
-        if (acknowledged) {
-          // Player clicked home - fully available
-          setFriends((prev) =>
-            prev.map((friend) =>
-              friend.avatarId === avatarId 
-                ? { ...friend, currentBattle: null, online: true } 
-                : friend
-            )
-          );
-          setBattleEndedFriends((prev) => {
-            const next = new Set(prev);
-            next.delete(avatarId);
-            return next;
-          });
-        } else {
-          // Battle ended but not acknowledged - show special state
-          setBattleEndedFriends((prev) => new Set(prev).add(avatarId));
-          setFriends((prev) =>
-            prev.map((friend) =>
-              friend.avatarId === avatarId 
-                ? { ...friend, currentBattle: null } 
-                : friend
-            )
-          );
-        }
-        // Refresh to get latest state
-        fetchFriends();
+      ({ avatarId }) => {
+        setFriends((prev) =>
+          prev.map((friend) =>
+            friend.avatarId === avatarId ? { ...friend, currentBattle: null } : friend
+          )
+        );
       }
     );
 
@@ -697,31 +651,6 @@ export default function FriendsList({
       }
     );
 
-    const cleanupMatchInviteCancelled = subscribeEvent<{
-      inviteId: string;
-      reason: string;
-      message: string;
-      senderName: string;
-    }>("matchInviteCancelled", (data) => {
-      // Remove the cancelled invite from UI
-      setBattleInvites((prev) => prev.filter((inv) => inv.inviteId !== data.inviteId));
-      setMessage(`❌ ${data.message}`);
-      setTimeout(() => setMessage(""), 5000);
-    });
-
-    const cleanupMatchInviteDeclined = subscribeEvent<{
-      inviteId?: string;
-      by: string;
-      reason?: string;
-      message?: string;
-    }>("matchInviteDeclined", (data) => {
-      // If we have a specific inviteId, remove it
-      if (data.inviteId) {
-        setBattleInvites((prev) => prev.filter((inv) => inv.inviteId !== data.inviteId));
-      }
-      setMessage(data.message || "❌ Invitation declined. Receiver joined another battle.");
-      setTimeout(() => setMessage(""), 5000);
-    });
 
     // BATTLE INVITE LISTENERS
     const cleanupMatchInviteReceived = subscribeEvent<{
@@ -737,6 +666,14 @@ export default function FriendsList({
       setMessage(`⚔️ Battle challenge from ${data.senderName}!`);
       setTimeout(() => setMessage(""), 5000);
     });
+
+    const cleanupMatchInviteDeclined = subscribeEvent<{ by: string }>(
+      "matchInviteDeclined",
+      () => {
+        setMessage("❌ Challenge declined");
+        setTimeout(() => setMessage(""), 3000);
+      }
+    );
 
     const cleanupAvatarUpdate = subscribeEvent<{
       avatarId: string;
@@ -826,6 +763,7 @@ export default function FriendsList({
       cleanupBattleStarted?.();
       cleanupBattleEnded?.();
       cleanupMatchInviteReceived?.();
+      cleanupMatchInviteDeclined?.();
       cleanupAvatarUpdate();
       cleanupAutoAccept();
       cleanupRemovedByFriend();
@@ -833,9 +771,6 @@ export default function FriendsList({
       cleanupRequestAccepted();
       cleanupDirectMatchReady?.();
       cleanupMatchInviteError?.();
-      cleanupMatchInviteCancelled?.();
-      cleanupMatchInviteDeclined?.();
-
     };
   }, [emitEvent, subscribeEvent, myAvatarId]);
 
@@ -851,20 +786,6 @@ export default function FriendsList({
 
   // Get total notification count
   const totalNotifications = requests.length + battleInvites.length;
-
-  // NEW: Helper to get friend status display
-  const getFriendStatus = (friend: Friend) => {
-    if (battleEndedFriends.has(friend.avatarId)) {
-      return { text: "🏁 Viewing Results", color: "#9c27b0" };
-    }
-    if (friend.currentBattle) {
-      return { text: "🔴 In Battle", color: "#ff5722" };
-    }
-    if (friend.online) {
-      return { text: "🟢 Online", color: "#4CAF50" };
-    }
-    return { text: "⚫ Offline", color: "#666" };
-  };
 
   return (
     <>
@@ -956,69 +877,50 @@ export default function FriendsList({
                 {friends.length === 0 ? (
                   <div style={styles.emptyText}>No friends yet. Add some!</div>
                 ) : (
-                  friends.map((friend) => {
-                    const status = getFriendStatus(friend);
-                    const isBattleEnded = battleEndedFriends.has(friend.avatarId);
-                    
-                    return (
-                      <div key={friend.avatarId} style={styles.friendItem}>
-                        <div
-                          style={{
-                            ...styles.avatar,
-                            background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
-                          }}
-                        >
-                          {friend.currentBattle ? (
-                            <div style={styles.battleIndicator}>⚔️</div>
-                          ) : isBattleEnded ? (
-                            <div style={styles.battleEndedIndicator}>🏁</div>
-                          ) : (
-                            <div style={styles.onlineIndicator(!!friend.online)} />
-                          )}
+                  friends.map((friend) => (
+                    <div key={friend.avatarId} style={styles.friendItem}>
+                      <div
+                        style={{
+                          ...styles.avatar,
+                          background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
+                        }}
+                      >
+                        {friend.currentBattle ? (
+                          <div style={styles.battleIndicator}>⚔️</div>
+                        ) : (
+                          <div style={styles.onlineIndicator(!!friend.online)} />
+                        )}
+                      </div>
+                      <div style={styles.friendInfo}>
+                        <div style={styles.friendName}>{friend.userName}</div>
+                        <div style={styles.friendStatus}>
+                          {friend.currentBattle 
+                            ? "🔴 In Battle" 
+                            : friend.online 
+                              ? "🟢 Online" 
+                              : "⚫ Offline"
+                          }
                         </div>
-                        <div style={styles.friendInfo}>
-                          <div style={styles.friendName}>{friend.userName}</div>
-                          <div style={{ ...styles.friendStatus, color: status.color }}>
-                            {status.text}
-                          </div>
-                        </div>
-                        
-                        <div style={styles.actionButtons}>
-                          {friend.currentBattle ? (
+                      </div>
+                      
+                      <div style={styles.actionButtons}>
+                        {friend.currentBattle ? (
+                          <button
+                            onClick={() => handleSpectate(friend)}
+                            style={styles.iconBtn("#9c27b0")}
+                            title="Spectate"
+                          >
+                            👁️
+                          </button>
+                        ) : friend.online ? (
+                          <>
                             <button
-                              onClick={() => handleSpectate(friend)}
-                              style={styles.iconBtn("#9c27b0")}
-                              title="Spectate"
+                              onClick={() => handleChallengeFriend(friend)}
+                              style={styles.iconBtn("#ff5722")}
+                              title="Challenge"
                             >
-                              👁️
+                              ⚔️
                             </button>
-                          ) : isBattleEnded ? (
-                            // Can't challenge or chat while viewing results
-                            <button
-                              style={{ ...styles.iconBtn("#ccc"), cursor: "not-allowed" }}
-                              title="Viewing battle results"
-                              disabled
-                            >
-                              ⏳
-                            </button>
-                          ) : friend.online ? (
-                            <>
-                              <button
-                                onClick={() => handleChallengeFriend(friend)}
-                                style={styles.iconBtn("#ff5722")}
-                                title="Challenge"
-                              >
-                                ⚔️
-                              </button>
-                              <button
-                                onClick={() => setSelectedFriend(friend)}
-                                style={styles.iconBtn("#4CAF50")}
-                                title="Chat"
-                              >
-                                💬
-                              </button>
-                            </>
-                          ) : (
                             <button
                               onClick={() => setSelectedFriend(friend)}
                               style={styles.iconBtn("#4CAF50")}
@@ -1026,19 +928,27 @@ export default function FriendsList({
                             >
                               💬
                             </button>
-                          )}
-                          
+                          </>
+                        ) : (
                           <button
-                            onClick={() => handleRemoveFriend(friend.avatarId)}
-                            style={styles.iconBtn("#ff5555")}
-                            title="Remove"
+                            onClick={() => setSelectedFriend(friend)}
+                            style={styles.iconBtn("#4CAF50")}
+                            title="Chat"
                           >
-                            🗑️
+                            💬
                           </button>
-                        </div>
+                        )}
+                        
+                        <button
+                          onClick={() => handleRemoveFriend(friend.avatarId)}
+                          style={styles.iconBtn("#ff5555")}
+                          title="Remove"
+                        >
+                          🗑️
+                        </button>
                       </div>
-                    );
-                  })
+                    </div>
+                  ))
                 )}
               </div>
             </>

@@ -3,12 +3,6 @@ import Battle, { IBattlePokemon } from "../db/battle";
 import { IAvatar } from "../db/avatar";
 import MatchInvite from "../db/matchInvite";
 import Avatar from "../db/avatar";
-import { 
-  trackInvite, 
-  untrackInvite, 
-  clearSenderInvites,
-  clearReceiverInvites 
-} from "./matchInvite.service";
 
 /// to enable commuication about end of battle
 let ioInstance: any = null;
@@ -25,20 +19,11 @@ function emitBattleEnded(battle: any) {
   const player1Id = battle.player1?._id?.toString?.() || battle.player1?.toString?.();
   const player2Id = battle.player2?._id?.toString?.() || battle.player2?.toString?.();
   
-  // Emit to players that battle ended
   if (player1Id) {
     ioInstance.emit("battleEnded", { avatarId: player1Id, battleId: battle._id });
   }
   if (player2Id) {
     ioInstance.emit("battleEnded", { avatarId: player2Id, battleId: battle._id });
-  }
-  
-  // ALSO emit friendBattleEnded to update friend lists
-  if (player1Id) {
-    ioInstance.emit("friendBattleEnded", { avatarId: player1Id, battleId: battle._id });
-  }
-  if (player2Id) {
-    ioInstance.emit("friendBattleEnded", { avatarId: player2Id, battleId: battle._id });
   }
 }
 ///
@@ -402,7 +387,6 @@ export interface SendMatchInviteInput {
 }
 
 export async function sendMatchInvite({ senderId, receiverId }: SendMatchInviteInput) {
-  // Check if sender already has a pending invite to this receiver
   const existing = await MatchInvite.findOne({
     senderId,
     receiverId,
@@ -411,18 +395,6 @@ export async function sendMatchInvite({ senderId, receiverId }: SendMatchInviteI
 
   if (existing) throw new Error("Invite already pending");
 
-  // Check if sender is already in a battle
-  const senderAvatar = await Avatar.findById(senderId).select("currentBattle userName");
-  if (senderAvatar?.currentBattle) {
-    throw new Error("You are already in a battle");
-  }
-
-  // Check if receiver is already in a battle
-  const receiverAvatar = await Avatar.findById(receiverId).select("currentBattle");
-  if (receiverAvatar?.currentBattle) {
-    throw new Error("Opponent is already in a battle");
-  }
-
   const invite = await MatchInvite.create({
     senderId,
     receiverId,
@@ -430,15 +402,12 @@ export async function sendMatchInvite({ senderId, receiverId }: SendMatchInviteI
     expiresAt: new Date(Date.now() + 30_000),
   });
 
-  // Track the invite
-  trackInvite(senderId, receiverId, invite._id.toString());
-
-  const senderName = senderAvatar?.userName || "Unknown";
+  const senderAvatar = await Avatar.findById(senderId).select("userName avatar");
 
   return {
     invite,
     senderInfo: {
-      name: senderName,
+      name: senderAvatar?.userName || "Unknown",
       avatar: senderAvatar?.avatar || "",
     },
   };
@@ -473,33 +442,11 @@ export async function respondToMatchInvite({
   if (!accept) {
     invite.status = "declined";
     await invite.save();
-    
-    // Untrack the invite
-    untrackInvite(invite.senderId.toString(), receiverId);
-    
     return { declined: true, senderId: invite.senderId.toString() };
-  }
-
-  // Check if sender is still available
-  const senderAvatar = await Avatar.findById(invite.senderId).select("currentBattle userName");
-  if (senderAvatar?.currentBattle) {
-    invite.status = "cancelled";
-    await invite.save();
-    untrackInvite(invite.senderId.toString(), receiverId);
-    throw new Error(`${senderAvatar.userName || "Sender"} has joined another battle.`);
-  }
-
-  // Check if receiver is already in a battle
-  const receiverAvatar = await Avatar.findById(receiverId).select("currentBattle");
-  if (receiverAvatar?.currentBattle) {
-    throw new Error("You are already in a battle");
   }
 
   invite.status = "accepted";
   await invite.save();
-
-  // Untrack this specific invite
-  untrackInvite(invite.senderId.toString(), receiverId);
 
   const battle = await Battle.create({
     player1: invite.senderId,
@@ -513,23 +460,6 @@ export async function respondToMatchInvite({
     Avatar.findByIdAndUpdate(invite.senderId, { currentBattle: battle._id }),
     Avatar.findByIdAndUpdate(invite.receiverId, { currentBattle: battle._id }),
   ]);
-
-  // CLEAR OTHER INVITES
-  // 1. Cancel all other invites sent by the sender
-  if (ioInstance) {
-    await clearSenderInvites(
-      invite.senderId.toString(), 
-      ioInstance, 
-      receiverId
-    );
-    
-    // 2. Decline all other invites received by the receiver
-    await clearReceiverInvites(
-      receiverId,
-      invite.senderId.toString(),
-      ioInstance
-    );
-  }
 
   return { battle };
 }
