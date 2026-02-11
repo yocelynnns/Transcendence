@@ -1,10 +1,12 @@
 // src/components/Battle/MenuBar.tsx
+import PixelButton from "../elements/PixelButton";
+
 interface MenuBarProps {
   currentPokemon: string;
   pokemon1?: { icon: string; isDead: boolean; onClick: () => void };
   pokemon2?: { icon: string; isDead: boolean; onClick: () => void };
   onAttack: () => void;
-  onSurrender: () => void;   // ✅ NEW
+  onSurrender: () => void; 
   waiting: boolean;
   forceSwitch: boolean;
 }
@@ -14,7 +16,7 @@ export default function MenuBar({
   pokemon1,
   pokemon2,
   onAttack,
-  onSurrender,               // ✅ NEW
+  onSurrender, 
   waiting,
   forceSwitch,
 }: MenuBarProps) {
@@ -53,7 +55,7 @@ export default function MenuBar({
       />
 
       <div className="absolute inset-0 flex items-center gap-3 px-4 sm:px-8">
-        <div className="flex-1 text-[clamp(14px,1.6vw,22px)] text-[#222] pixelify-sans">
+        <div className="flex-1 text-[clamp(16px,1.9vw,26px)] text-[#222] pixelify-sans">
           {waiting ? (
             "WAITING FOR OPPONENT..."
           ) : forceSwitch ? (
@@ -74,26 +76,33 @@ export default function MenuBar({
             {pokemon1 && <Switch {...pokemon1} />}
             {pokemon2 && <Switch {...pokemon2} />}
 
-            <button
-              type="button"
+            <PixelButton
+              height={56}
+              width={120}
               onClick={!forceSwitch ? onAttack : undefined}
-              className={[
-                "h-[clamp(42px,7vh,64px)] px-4 rounded-xl text-white",
-                forceSwitch
-                  ? "bg-[#b04b52] opacity-60 cursor-not-allowed"
-                  : "bg-[#f01e2c] hover:brightness-95 active:scale-[0.99]",
-              ].join(" ")}
+              cursorPointer={!forceSwitch}
+              hoverScale={!forceSwitch ? 1.03 : 1}
+              colorA={!forceSwitch ? "#F01E2C" : "#B04B52"}
+              colorB={!forceSwitch ? "#B31621" : "#8F3D43"}
+              colorText="#FFFFFF"
+              textSize="18px"
             >
               ATTACK
-            </button>
+            </PixelButton>
 
-            <button
-              type="button"
-              onClick={onSurrender} 
-              className="h-[clamp(42px,7vh,64px)] px-4 rounded-xl text-white bg-[#676767] hover:brightness-95 active:scale-[0.99]"
+            <PixelButton
+              height={56}
+              width={130}
+              onClick={onSurrender}
+              cursorPointer={true}
+              hoverScale={1.03}
+              colorA="#676767"
+              colorB="#4F4F4F"
+              colorText="#FFFFFF"
+              textSize="18px"
             >
               SURRENDER
-            </button>
+            </PixelButton>
           </div>
         )}
       </div>

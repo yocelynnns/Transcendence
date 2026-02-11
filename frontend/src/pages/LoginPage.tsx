@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login as loginApi, getUserInfo } from "../services/authService";
-import PixelButton from "../components/elements/pixelButton";
+import PixelButton from "../components/elements/PixelButton";
 
 //TYPES / PROPS
 interface LoginPageProps {
