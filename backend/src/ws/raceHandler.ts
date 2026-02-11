@@ -33,11 +33,11 @@ export const setupRaceHandlers = (io: Server) => {
     // Join Race
     socket.on("joinRace", async ({ avatarId }: { avatarId: string }) => {
       try {
-        console.log("=== JOIN RACE DEBUG ===");
-        console.log("Join race request for avatarId:", avatarId);
-        console.log("AvatarId type:", typeof avatarId);
-        console.log("AvatarId length:", avatarId?.length);
-        console.log("Socket ID:", socket.id);
+        // console.log("=== JOIN RACE DEBUG ===");
+        // console.log("Join race request for avatarId:", avatarId);
+        // console.log("AvatarId type:", typeof avatarId);
+        // console.log("AvatarId length:", avatarId?.length);
+        // console.log("Socket ID:", socket.id);
 
         // Fetch player data from MongoDB
         const avatar = await Avatar.findById(avatarId);
@@ -48,7 +48,7 @@ export const setupRaceHandlers = (io: Server) => {
           return;
         }
 
-        console.log("✅ Avatar found:", avatar.userName);
+        // console.log("✅ Avatar found:", avatar.userName);
 
         // Update avatar's current socket
         avatar.currentSocket = socket.id;
@@ -69,14 +69,14 @@ export const setupRaceHandlers = (io: Server) => {
         if (!roomId) {
           roomId = `room_${Date.now()}`;
           races[roomId] = { players: [], started: false, finished: false };
-          console.log("Created new room:", roomId);
+          // console.log("Created new room:", roomId);
         }
 
         const race = races[roomId];
 
         // Join room
         socket.join(roomId);
-        console.log(`${avatar.userName} joined room ${roomId}`);
+        // console.log(`${avatar.userName} joined room ${roomId}`);
 
         // Assign random sprite to player
         const SPRITE_COUNT = 8;
@@ -92,8 +92,8 @@ export const setupRaceHandlers = (io: Server) => {
           sprite: sprite, // Include sprite
         });
 
-        console.log(`Room ${roomId} now has ${race.players.length} players`);
-        console.log(`${avatar.userName} assigned sprite: ${sprite}`);
+        // console.log(`Room ${roomId} now has ${race.players.length} players`);
+        // console.log(`${avatar.userName} assigned sprite: ${sprite}`);
 
         // Notify player which room they joined
         socket.emit("raceJoined", race.players, roomId);
@@ -223,7 +223,7 @@ async function saveRaceResult(
   timeMs: number,
   disconnectedAvatarId?: string
 ) {
-  console.log("=== SAVING RACE RESULT ===");
+  // console.log("=== SAVING RACE RESULT ===");
   
   const loser = race.players.find((p) => p.id !== winner.id);
   if (!loser) {
@@ -231,10 +231,10 @@ async function saveRaceResult(
     return;
   }
 
-  console.log("Winner:", winner.name, "(ID:", winner.avatarId, ")");
-  console.log("Loser:", loser.name, "(ID:", loser.avatarId, ")");
-  console.log("Time:", timeMs, "ms");
-  console.log("Disconnected:", disconnectedAvatarId || "none");
+  // console.log("Winner:", winner.name, "(ID:", winner.avatarId, ")");
+  // console.log("Loser:", loser.name, "(ID:", loser.avatarId, ")");
+  // console.log("Time:", timeMs, "ms");
+  // console.log("Disconnected:", disconnectedAvatarId || "none");
 
   try {
     // Create race match document
@@ -258,11 +258,11 @@ async function saveRaceResult(
       ranked: true,
     });
 
-    const savedMatch = await raceMatch.save();
-    console.log("✅ Race match saved to database:", savedMatch._id);
+    await raceMatch.save();
+    // console.log("✅ Race match saved to database:", savedMatch._id);
 
     // Update winner's stats
-    const winnerUpdate = await Avatar.findByIdAndUpdate(
+    await Avatar.findByIdAndUpdate(
       winner.avatarId,
       {
         $inc: { raceWin: 1 },
@@ -271,10 +271,10 @@ async function saveRaceResult(
       },
       { new: true }
     );
-    console.log("✅ Winner stats updated:", winnerUpdate?.userName, "- Wins:", winnerUpdate?.raceWin);
+    // console.log("✅ Winner stats updated:", winnerUpdate?.userName, "- Wins:", winnerUpdate?.raceWin);
 
     // Update loser's stats
-    const loserUpdate = await Avatar.findByIdAndUpdate(
+    await Avatar.findByIdAndUpdate(
       loser.avatarId,
       {
         $inc: { raceLoss: 1 },
@@ -283,9 +283,9 @@ async function saveRaceResult(
       },
       { new: true }
     );
-    console.log("✅ Loser stats updated:", loserUpdate?.userName, "- Losses:", loserUpdate?.raceLoss);
+    // console.log("✅ Loser stats updated:", loserUpdate?.userName, "- Losses:", loserUpdate?.raceLoss);
     
-    console.log("=== RACE RESULT SAVED SUCCESSFULLY ===");
+    // console.log("=== RACE RESULT SAVED SUCCESSFULLY ===");
   } catch (error) {
     console.error("❌ Error saving race result:", error);
     throw error;
