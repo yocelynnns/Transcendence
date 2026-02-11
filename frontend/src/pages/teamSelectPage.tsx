@@ -16,6 +16,17 @@ interface TeamSelectPageProps {
 const TEAM_SIZE = 3;
 const PICK_WINDOW_MS = 35_000;
 
+// Normalize player id whether battle.player1 is populated object or raw id
+function getAvatarIdFromPlayer(player: any): string | null {
+  if (!player) return null;
+  if (typeof player === "string") return player;
+  if (typeof player === "object") {
+    // mongoose populated doc
+    if (player._id) return player._id.toString?.() ?? String(player._id);
+  }
+  return null;
+}
+
 export default function TeamSelectPage({
   avatarData,
   currentBattle,
@@ -68,10 +79,7 @@ export default function TeamSelectPage({
 
   const { subscribeEvent, playerReadyMatch, emitEvent } = useGameSocket(() => {});
 
-  const usedIds = useMemo(
-    () => new Set(slots.filter(Boolean).map((p) => p!._id)),
-    [slots]
-  );
+  const avatarId = avatarData?._id ?? null;
 
   const battleId = activeBattle?._id || urlBattleId;
   const avatarId = avatarData?._id;
@@ -311,13 +319,7 @@ export default function TeamSelectPage({
     }
   }, [activeBattle, avatarId, navigate, battleEnded]);
 
-      setTimeout(() => {
-        setTimeLeft(Math.max(Math.ceil((endTime - now) / 1000), 0));
-      }, 0);
-    }
-  }, [currentBattle, avatarId, navigate, startWaiting, stopWaiting]);
-
-  // --- Convert current slots -> BattlePokemon[] and send ready ---
+  // Convert slots -> BattlePokemon[] and send ready
   const handleReady = useCallback(
     (currentSlots = slots) => {
       if (!currentSlots.every(Boolean)) return;
@@ -358,21 +360,20 @@ export default function TeamSelectPage({
               (p) => !slots.some((s) => s?._id === p._id)
             );
 
-          const nextSlots = [...slots];
-          for (let i = 0; i < nextSlots.length; i++) {
-            if (!nextSlots[i] && available.length > 0) {
-              const idx = Math.floor(Math.random() * available.length);
-              nextSlots[i] = available.splice(idx, 1)[0];
-            }
-          }
+    const nextSlots = [...slots];
+    for (let i = 0; i < nextSlots.length; i++) {
+      if (!nextSlots[i] && available.length > 0) {
+        const idx = Math.floor(Math.random() * available.length);
+        nextSlots[i] = available.splice(idx, 1)[0];
+      }
+    }
 
-          setSlots(nextSlots);
+    setSlots(nextSlots);
 
           if (nextSlots.every(Boolean)) {
             handleReady(nextSlots);
           }
         }
-
         return 0;
       });
     }, 1000);
@@ -380,7 +381,7 @@ export default function TeamSelectPage({
     return () => window.clearInterval(timer);
   }, [avatarData, slots, handleReady, battleEnded]);
 
-  // --- Pick/remove handlers ---
+  // Pick/remove handlers
   const pickPokemon = (p: PlayerPokemon) => {
     if (saving || battleEnded) return;
     if (timeLeft === 0) return;
@@ -407,7 +408,6 @@ export default function TeamSelectPage({
 
     setActiveSlot(idx);
     readySentRef.current = false;
-
     stopWaiting();
   };
 
@@ -442,21 +442,10 @@ export default function TeamSelectPage({
     }
   }, [battleReady, battleId, navigate, battleEnded]);
 
+  // Loading states
   if (!avatarData) {
     return (
-      <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#1e1e2f",
-          color: "#fff",
-          fontFamily: "monospace",
-          fontSize: 20,
-        }}
-      >
+      <div className="w-screen h-screen flex items-center justify-center bg-[#1e1e2f] text-white font-mono text-lg">
         Loading player data...
       </div>
     );
@@ -511,7 +500,7 @@ export default function TeamSelectPage({
 
   return (
     <TeamSelectLayout
-      inventory={avatarData.pokemonInventory}
+      inventory={avatarData.pokemonInventory ?? []}
       usedIds={usedIds}
       onPick={pickPokemon}
       slots={slots}
