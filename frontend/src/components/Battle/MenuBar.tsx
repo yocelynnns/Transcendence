@@ -1,45 +1,99 @@
-import "../../styles/MenuBar.css";
-
+// src/components/Battle/MenuBar.tsx
 interface MenuBarProps {
   currentPokemon: string;
   pokemon1?: { icon: string; isDead: boolean; onClick: () => void };
   pokemon2?: { icon: string; isDead: boolean; onClick: () => void };
   onAttack: () => void;
-  onSurrender: () => void;
-  disabled: boolean;
+  onSurrender: () => void;   // ✅ NEW
+  waiting: boolean;
+  forceSwitch: boolean;
 }
 
-export default function MenuBar({ currentPokemon, pokemon1, pokemon2, onAttack, disabled, onSurrender }: MenuBarProps) {
+export default function MenuBar({
+  currentPokemon,
+  pokemon1,
+  pokemon2,
+  onAttack,
+  onSurrender,               // ✅ NEW
+  waiting,
+  forceSwitch,
+}: MenuBarProps) {
   const menuBar = "/assets/menu_bar/menu_bar.png";
 
-  const renderSwitchButton = (pokemon: { icon: string; isDead: boolean; onClick: () => void }) => (
-    <div
-      className={`switch ${pokemon.isDead || disabled ? "disabled" : ""}`}
-      onClick={!pokemon.isDead && !disabled ? pokemon.onClick : undefined}
-    >
-      <img src={pokemon.icon} />
-      {(pokemon.isDead || disabled) && <div className="switch-overlay" />}
-    </div>
-  );
+  const Switch = (p: { icon: string; isDead: boolean; onClick: () => void }) => {
+    const blocked = p.isDead || waiting;
+
+    return (
+      <button
+        type="button"
+        onClick={!blocked ? p.onClick : undefined}
+        className={[
+          "relative flex items-center justify-center rounded-xl border-2 border-[#333] bg-[#eaeaea]",
+          "h-[clamp(42px,7vh,64px)] w-[clamp(42px,7vh,64px)]",
+          blocked
+            ? "opacity-60 cursor-not-allowed"
+            : "hover:brightness-95 active:scale-[0.99]",
+        ].join(" ")}
+      >
+        <img
+          src={p.icon}
+          className="h-[85%] w-[85%] [image-rendering:pixelated]"
+          draggable={false}
+        />
+      </button>
+    );
+  };
 
   return (
-    <div className="menu-bar">
-      <img src={menuBar} className="menu-bg" />
-      <div className="menu-content">
-        <div className="menu-text">
-          {disabled ? "WAITING FOR OPPONENT..." : <>WHAT WILL <span>{currentPokemon.toUpperCase()}</span> DO?</>}
+    <div className="absolute bottom-0 left-0 w-full h-[clamp(120px,22vh,180px)] select-none">
+      <img
+        src={menuBar}
+        className="h-full w-full [image-rendering:pixelated] pointer-events-none"
+        draggable={false}
+      />
+
+      <div className="absolute inset-0 flex items-center gap-3 px-4 sm:px-8">
+        <div className="flex-1 text-[clamp(14px,1.6vw,22px)] text-[#222] pixelify-sans">
+          {waiting ? (
+            "WAITING FOR OPPONENT..."
+          ) : forceSwitch ? (
+            <>
+              YOUR POKÉMON FAINTED! <span className="text-[#08519C]">SWITCH</span>!
+            </>
+          ) : (
+            <>
+              WHAT WILL{" "}
+              <span className="text-[#08519C]">{currentPokemon.toUpperCase()}</span>{" "}
+              DO?
+            </>
+          )}
         </div>
-        {!disabled && (
-          <div className="menu-actions">
-            {pokemon1 && renderSwitchButton(pokemon1)}
-            {pokemon2 && renderSwitchButton(pokemon2)}
+
+        {!waiting && (
+          <div className="flex items-center gap-3 pixelify-sans">
+            {pokemon1 && <Switch {...pokemon1} />}
+            {pokemon2 && <Switch {...pokemon2} />}
+
             <button
-              className="attack menu-button"
-              onClick={!disabled ? onAttack : undefined}
+              type="button"
+              onClick={!forceSwitch ? onAttack : undefined}
+              className={[
+                "h-[clamp(42px,7vh,64px)] px-4 rounded-xl text-white",
+                forceSwitch
+                  ? "bg-[#b04b52] opacity-60 cursor-not-allowed"
+                  : "bg-[#f01e2c] hover:brightness-95 active:scale-[0.99]",
+              ].join(" ")}
             >
               ATTACK
             </button>
-            <button className="surrender" onClick={!disabled ? onSurrender : undefined}>SURRENDER</button>
+
+            <button
+              type="button"
+              onClick={onSurrender} 
+              className="h-[clamp(42px,7vh,64px)] px-4 rounded-xl text-white bg-[#676767] hover:brightness-95 active:scale-[0.99]"
+            >
+              SURRENDER
+            </button>
           </div>
         )}
       </div>

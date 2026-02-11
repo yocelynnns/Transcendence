@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { GuildMessage } from "../../types/guildTypes";
-import PixelButton from "../elements/pixelButton";
+import PixelButton from "../elements/PixelButton";
 import { ASSETS } from "../../assets";
 
 interface GuildChatProps {

@@ -1,6 +1,6 @@
-import { PlayerPokemon } from "../../types/pokemonTypes";
+// src/components/teamSelect/inventoryGrid.tsx
+import type { PlayerPokemon } from "../../types/pokemonTypes";
 import { getPokemonIcon } from "../../assets/helpers";
-import "../../styles/teamSelect.css";
 
 type Props = {
   inventory: PlayerPokemon[];
@@ -9,32 +9,80 @@ type Props = {
   disabled?: boolean;
 };
 
+const MIN_TILES = 3;
+const MAX_TILES = 9;
+
 export default function InventoryGrid({ inventory, usedIds, onPick, disabled }: Props) {
+  const tileCount = Math.min(MAX_TILES, Math.max(MIN_TILES, inventory.length));
+  const tiles = Array.from({ length: tileCount }, (_, i) => inventory[i] ?? null);
+
   return (
-    <div className="ts-invGrid">
-      {inventory.map((p) => {
+    <div className="grid grid-cols-3 gap-3.5">
+      {tiles.map((p, idx) => {
+        if (!p) {
+          return (
+            <div
+              key={`empty-${idx}`}
+              className="h-21 rounded-lg border-4 border-black/10 bg-[#d9d9d9] opacity-70 shadow-[inset_0_-3px_0_rgba(0,0,0,.10)]"
+            />
+          );
+        }
+
         const used = usedIds.has(p._id);
-        const icon = getPokemonIcon(p.name, p.type, p.is_shiny );
+        const icon = getPokemonIcon(p.name, p.type, p.is_shiny);
 
         return (
           <button
             key={p._id}
-            className={`ts-pokeCard ${used ? "used" : ""}`}
+            type="button"
             onClick={() => onPick(p)}
             disabled={disabled || used}
             title={used ? "Already selected" : "Select"}
+            className={[
+              "relative h-21 rounded-lg border-4 border-black/10 bg-[#d9d9d9]",
+              "grid place-items-center overflow-hidden shadow-[inset_0_-3px_0_rgba(0,0,0,.10)]",
+              "transition-[filter] hover:brightness-[1.03]",
+              "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7db6d6]/70",
+              used || disabled ? "opacity-45 cursor-not-allowed grayscale-[.4]" : "cursor-pointer",
+              "group",
+            ].join(" ")}
           >
-            <div className="ts-pokeIconWrap">
-              <img className="ts-pokeIcon" src={icon} alt={p.name} />
-              {p.is_shiny && <div className="ts-shiny">✨</div>}
-            </div>
+            <img
+              className="w-14 h-14 [image-rendering:pixelated]"
+              src={icon}
+              alt={p.name}
+            />
 
-            <div className="ts-pokeInfo">
-              <div className="ts-pokeName">{p.name}</div>
-              <div className="ts-pokeMeta">
-                <span className={`ts-badge ${p.type.toLowerCase()}`}>{p.type}</span>
-                <span className="ts-stat">HP {p.hp}</span>
-                <span className="ts-stat">ATK {p.attack}</span>
+            {p.is_shiny && (
+              <span
+                className="absolute top-1.25 right-1.75 text-[30px] opacity-95"
+                title="Shiny"
+              >
+                ✦
+              </span>
+            )}
+
+            {/* hover/focus info overlay */}
+            <div
+              aria-hidden="true"
+              className={[
+                "absolute left-1.5 right-1.5 bottom-1..5 rounded-[7px]",
+                "px-1.75 py-1.5 bg-white/80 border-2 border-black/20",
+                "translate-y-2.5 opacity-0 pointer-events-none",
+                "transition-[opacity,transform] duration-150 ease-out",
+                "group-hover:opacity-100 group-hover:translate-y-0",
+                "group-focus-visible:opacity-100 group-focus-visible:translate-y-0",
+                used ? "hidden" : "",
+              ].join(" ")}
+            >
+              <div className="text-[10px] leading-[1.15] text-black/80 capitalize truncate">
+                {p.name}
+              </div>
+
+              <div className="mt-0.75 text-[9px] leading-[1.1] text-black/60 flex items-center justify-center gap-1.5">
+                <span>HP {p.hp}</span>
+                <span className="opacity-55">•</span>
+                <span>ATK {p.attack}</span>
               </div>
             </div>
           </button>

@@ -1,4 +1,4 @@
-import PixelButton from "./pixelButton";
+import PixelButton from "./PixelButton";
 import { ASSETS } from "../../assets";
 
 interface CatchDialogProps {
