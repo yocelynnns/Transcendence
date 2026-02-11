@@ -61,7 +61,7 @@ export default function GuildList({
         action: "update",
       });
     } catch (err: unknown) {
-      console.error("[JOIN GUILD]", err);
+      console.log("[JOIN GUILD]", err);
     } finally {
       setJoining(null);
       queryClient.invalidateQueries({ queryKey: ["avatar", avatarData._id], exact: true });

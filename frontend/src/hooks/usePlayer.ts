@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { Direction } from "../components/map/GamePlayer";
 import useKeyboard from "./useKeyboard";
-import { canMove } from "../utils/collision";
+import { canMove, PLAYER_OFFSET_X, PLAYER_OFFSET_Y } from "../utils/collision";
 
 import { PlayerState } from "../types/avatarTypes";
 
@@ -119,6 +119,15 @@ export default function usePlayer({
 
         if (!canMove(newPx, p.y, mapWidth, mapHeight, collision)) newPx = p.x;
         if (!canMove(p.x, newPy, mapWidth, mapHeight, collision)) newPy = p.y;
+
+        const nextTileX = Math.floor((p.x + dx + PLAYER_OFFSET_X) / TILE_SIZE);
+        const nextTileY = Math.floor((p.y + dy + PLAYER_OFFSET_Y) / TILE_SIZE);
+
+        // Compute 1D index
+        const index = (nextTileY) * mapWidth + nextTileX;
+
+        p.currentTiles = collision[index];
+        // console.log(p.currentTiles);
 
         let newFrame = p.frame;
         if (isMoving) {

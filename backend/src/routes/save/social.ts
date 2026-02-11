@@ -57,7 +57,7 @@ router.post("/block/:avatarId", authMiddleware, async (req: AuthRequest, res) =>
       res.status(400).json({ message: "Already blocked" });
       return;
     }
-    console.error("Block error:", err);
+    console.log("Block error:", err);
     res.status(500).json({ message: "Failed to block user" });
     return;
   }
@@ -89,7 +89,7 @@ router.delete("/block/:avatarId", authMiddleware, async (req: AuthRequest, res) 
     res.status(200).json({ message: "User unblocked" });
     return;
   } catch (err) {
-    console.error("Unblock error:", err);
+    console.log("Unblock error:", err);
     res.status(500).json({ message: "Failed to unblock user" });
     return;
   }
@@ -119,7 +119,7 @@ router.get("/blocked", authMiddleware, async (req: AuthRequest, res) => {
     res.status(200).json(blocked);
     return;
   } catch (err) {
-    console.error("Get blocked error:", err);
+    console.log("Get blocked error:", err);
     res.status(500).json({ message: "Failed to fetch blocked users" });
     return;
   }
@@ -159,7 +159,7 @@ router.get("/block/check/:avatarId", authMiddleware, async (req: AuthRequest, re
     });
     return;
   } catch (err) {
-    console.error("Check block error:", err);
+    console.log("Check block error:", err);
     res.status(500).json({ message: "Failed to check block status" });
     return;
   }
@@ -231,7 +231,7 @@ router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) =
     });
     return;
   } catch (err) {
-    console.error("Get profile error:", err);
+    console.log("Get profile error:", err);
     res.status(500).json({ message: "Failed to fetch profile" });
     return;
   }

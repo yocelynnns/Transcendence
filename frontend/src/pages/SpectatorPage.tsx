@@ -34,7 +34,7 @@ export default function SpectatorPage({
           setLoading(false);
         })
         .catch(err => {
-          console.error("Failed to fetch battle:", err);
+          console.log("Failed to fetch battle:", err);
           navigate("/");
         });
     }

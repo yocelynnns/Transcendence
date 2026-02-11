@@ -11,6 +11,7 @@ import guildMessageRoutes from "./routes/guildMessage";
 import friendRoutes from "./routes/friends";
 import chatRoutes from "./routes/chat";
 import socialRoutes from "./routes/social";
+import raceRoutes from "./routes/race";
 import { setupSocket } from "./ws/server";
 import { connectDB } from "./db/connection";
 
@@ -44,6 +45,7 @@ app.use("/api/guildMessage", guildMessageRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/social", socialRoutes);
+app.use("/api/race", raceRoutes);
 
 const PORT: number = Number(process.env.PORT) || 5001;
 
@@ -54,7 +56,7 @@ const server = http.createServer(app);
 setupSocket(server);
 
 // Connect MongoDB
-connectDB().catch(err => console.error("FAILED TO CONNECT DB:", err));
+connectDB().catch(err => console.log("FAILED TO CONNECT DB:", err));
 
 // Start server
 server.listen(PORT, () => {

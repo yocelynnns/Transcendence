@@ -1,6 +1,5 @@
 // IMPORTS
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { getPokemonFrontSprite } from "../../assets/helpers";
 import { ASSETS } from "../../assets";
@@ -27,9 +26,6 @@ export default function AvatarProfile({
   onOpen,
   onClose,
 }: AvatarProfileProps) {
-  // NAVIGATION
-  const navigate = useNavigate();
-
   // LOCAL STATE
   const [profileOpen, setProfileOpen] = useState(false);
   const [tempName, setTempName] = useState(() => avatarData?.userName ?? "");
@@ -106,7 +102,6 @@ export default function AvatarProfile({
     signOut();
     sessionStorage.removeItem("token");
     setToken(null);
-    navigate("/login");
   };
 
   // LOADING STATE

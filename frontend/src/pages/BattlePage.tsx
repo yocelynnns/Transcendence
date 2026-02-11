@@ -32,9 +32,9 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
   const myRole: "player1" | "player2" | null =
     battleData && myAvatarId
-      ? String(battleData.player1._id) === String(myAvatarId)
+      ? String(battleData.player1?._id) === String(myAvatarId)
         ? "player1"
-        : String(battleData.player2._id) === String(myAvatarId)
+        : String(battleData.player2?._id) === String(myAvatarId)
         ? "player2"
         : null
       : null;
@@ -73,7 +73,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
           winnerReason: fetchedBattle.winnerReason ?? undefined,
         });
       } catch (err) {
-        console.error("Failed to fetch battle:", err);
+        console.log("Failed to fetch battle:", err);
         setBattleData(null);
         setBattleId(null);
       }

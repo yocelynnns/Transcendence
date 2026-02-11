@@ -30,7 +30,7 @@ GuildSchema.pre("findOneAndDelete", async function (this: Query<any, any>) {
 
     await Avatar.updateMany({ guild: guildId }, { $unset: { guild: "" } });
   } catch (err) {
-    console.error("Error clearing avatars' guild field:", err);
+    console.log("Error clearing avatars' guild field:", err);
   }
 });
 

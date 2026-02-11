@@ -109,11 +109,10 @@ export async function catchPokemon({ mapPokemonId, userId }: CatchPokemonInput) 
 
   const user = await User.findById(userId).populate<{ avatar: IAvatar }>("avatar");
   if (!user || !user.avatar) throw new Error("Avatar not found");
-
   const avatar = user.avatar;
 
-  const mapPokemon = await MapPokemon.findById(mapPokemonId);
-  if (!mapPokemon) throw new Error("Map Pokemon not found");
+  const mapPokemon = await MapPokemon.findOneAndDelete({ _id: mapPokemonId });
+  if (!mapPokemon) throw new Error("Map Pokemon already caught");
 
   const playerPokemon = await PlayerPokemon.create({
     name: mapPokemon.name,
@@ -123,12 +122,14 @@ export async function catchPokemon({ mapPokemonId, userId }: CatchPokemonInput) 
     hp: mapPokemon.hp,
   });
 
-  avatar.pokemonInventory.push(playerPokemon._id);
-  await avatar.save();
+  // Atomically push to avatar inventory
+  const updatedAvatar = await Avatar.findByIdAndUpdate(
+    avatar._id,
+    { $push: { pokemonInventory: playerPokemon._id } },
+    { new: true }
+  ).populate("pokemonInventory");
 
-  await mapPokemon.deleteOne();
+  if (!updatedAvatar) throw new Error("Failed to update avatar inventory");
 
-  await avatar.populate("pokemonInventory");
-
-  return { avatar, playerPokemon };
+  return { avatar: updatedAvatar, playerPokemon };
 }

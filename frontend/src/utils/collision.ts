@@ -26,10 +26,10 @@ export function canMove(
 
   // COLLISION CHECK
   if (
-    collision[top * mapWidth + left] === 1 ||
-    collision[top * mapWidth + right] === 1 ||
-    collision[bottom * mapWidth + left] === 1 ||
-    collision[bottom * mapWidth + right] === 1
+    collision[top * mapWidth + left] !== 0 ||
+    collision[top * mapWidth + right] !== 0 ||
+    collision[bottom * mapWidth + left] !== 0 ||
+    collision[bottom * mapWidth + right] !== 0
   ) return false;
 
   return true;

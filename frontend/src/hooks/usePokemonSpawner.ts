@@ -31,10 +31,10 @@ export function usePokemonSpawner() {
           console.log("Received wrapped Pokemon object:", data.pokemons);
           setPokemonList(data.pokemons);
         } else {
-          console.warn("Unexpected Pokemon response format:", data);
+          console.log("Unexpected Pokemon response format:", data);
         }
       } catch (err) {
-        console.error("Failed to fetch Pokemon:", err);
+        console.log("Failed to fetch Pokemon:", err);
       }
     };
 

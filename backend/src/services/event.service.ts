@@ -8,19 +8,19 @@ export interface JoinCatchEventInput {
 }
 
 export async function joinCatchEvent({ eventId, avatarId, playerName }: JoinCatchEventInput) {
-  const eventDoc = await CatchEventModel.findOne({ eventId });
-  if (!eventDoc) throw new Error("Event not found");
+  const event = await CatchEventModel.findOne({ eventId });
+  if (!event) throw new Error("Event not found");
 
-  if (eventDoc.status === "waiting") {
-    return { status: "waiting", createdAt: eventDoc.createdAt };
+  if (event.status === "waiting") {
+    return { status: "waiting", createdAt: event.createdAt };
   }
 
-  if (eventDoc.status === "finished") {
-    const winner = [...eventDoc.players].sort((a, b) => b.catchCount - a.catchCount)[0];
+  if (event.status === "finished") {
+    const winner = [...event.players].sort((a, b) => b.catchCount - a.catchCount)[0];
     return {
       status: "finished",
       winnerId: winner.playerName,
-      scores: eventDoc.players.map((p) => ({
+      scores: event.players.map((p) => ({
         playerId: p.playerId,
         playerName: p.playerName,
         catchCount: p.catchCount,
@@ -28,15 +28,25 @@ export async function joinCatchEvent({ eventId, avatarId, playerName }: JoinCatc
     };
   }
 
-  const alreadyJoined = eventDoc.players.some((p) => p.playerId === avatarId.toString());
-  if (!alreadyJoined) {
-    eventDoc.players.push({ playerId: avatarId, playerName, catchCount: 0 });
-    await eventDoc.save();
+  const updatedEvent = await CatchEventModel.findOneAndUpdate(
+    { eventId, status: "running" },
+    {
+      $addToSet: {
+        players: { playerId: avatarId, playerName, catchCount: 0 }
+      }
+    },
+    { new: true }
+  );
+
+  if (!updatedEvent) {
+    throw new Error("Event not found or not running");
   }
 
+  if (!updatedEvent) throw new Error("Failed to add player to event");
+
   return {
-    status: eventDoc.status,
-    eventDoc,
+    status: updatedEvent.status,
+    eventDoc: updatedEvent,
   };
 }
 
@@ -48,39 +58,55 @@ export interface AttemptCatchInput {
 }
 
 export async function attemptCatch({ eventId, pokemonId, avatarId }: AttemptCatchInput) {
-  const event = await CatchEventModel.findOne({ eventId });
-  if (!event) throw new Error("Event not found");
-  if (event.status !== "running") throw new Error("Event is not running");
+  // Atomically catch the Pokémon, increment player's catch count, and finish event if all caught
+  const updatedEvent = await CatchEventModel.findOneAndUpdate(
+    {
+      eventId,
+      status: "running",
+      "pokemon._id": pokemonId,
+      "pokemon.caught": false
+    },
+    {
+      $set: { "pokemon.$[poke].caught": true },
+      $inc: { "players.$[player].catchCount": 1 }
+    },
+    {
+      new: true,
+      arrayFilters: [
+        { "poke._id": pokemonId, "poke.caught": false },
+        { "player.playerId": avatarId }
+      ]
+    }
+  );
 
-  const player = event.players.find((p) => p.playerId === avatarId);
-  if (!player) throw new Error("Player not in event");
-
-  const poke: any = event.pokemon.find((p) => p._id.toString() === pokemonId);
-  if (!poke) throw new Error("Pokemon not found");
-  if (poke.caught) throw new Error("Pokemon already caught");
-
-  poke.caught = true;
-  player.catchCount++;
+  if (!updatedEvent) {
+    throw new Error("Event not found, Pokémon already caught, or player not in event");
+  }
 
   let eventFinished: { winnerId: string; scores: any[]; lastCheckedAt: Date } | null = null;
 
-  if (event.pokemon.every((p) => p.caught)) {
-    event.status = "finished";
+  const finishedEvent = await CatchEventModel.findOneAndUpdate(
+    {
+      eventId,
+      status: "running",
+      "pokemon.caught": { $ne: false }
+    },
+    { $set: { status: "finished" } },
+    { new: true }
+  );
 
-    const winner = [...event.players].sort((a, b) => b.catchCount - a.catchCount)[0];
-
+  if (finishedEvent) {
+    const winner = [...finishedEvent.players].sort((a, b) => b.catchCount - a.catchCount)[0];
     eventFinished = {
       winnerId: winner.playerName,
-      scores: event.players.map((p) => ({
+      scores: finishedEvent.players.map((p) => ({
         playerId: p.playerId,
         playerName: p.playerName,
         catchCount: p.catchCount,
       })),
-      lastCheckedAt: event.lastCheckedAt,
+      lastCheckedAt: finishedEvent.lastCheckedAt,
     };
   }
 
-  await event.save();
-
-  return { event, eventFinished };
+  return { event: updatedEvent, eventFinished };
 }
