@@ -27,7 +27,7 @@ export function useEncounter(
   //CHECK ENCOUNTER
   useEffect(() => {
     if (state.encounterPokemon || state.showDialog) return;
-    if (Date.now() - lastNoTime < 10000) return;
+    if (Date.now() - lastNoTime < 1000) return;
 
     for (const p of pokemonList) {
       const dx = Math.abs(playerPos.x - p.x);
