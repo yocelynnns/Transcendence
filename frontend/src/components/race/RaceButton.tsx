@@ -1,46 +1,39 @@
-import { useState } from "react";
-import ButtonMashRace from "../race/ButtonMashRace";
-import { AvatarData } from "../../types/avatarTypes";
+import { useNavigate } from "react-router-dom";
 
-interface RaceButtonProps {
-  avatarData: AvatarData;
-}
+export default function RaceButton() {
+  const navigate = useNavigate();
 
-export default function RaceButton({ avatarData }: RaceButtonProps) {
-  const [showRace, setShowRace] = useState(false);
-
-  // You can use an icon/image like EventButton if you have one
-  // const raceIcon = ASSETS.RACE.ICON; // If you have a race icon
+  const handleClick = () => {
+    navigate("/race");
+  };
 
   return (
-    <>
+    <div
+      onClick={handleClick}
+      style={{
+        cursor: "pointer",
+        zIndex: 100,
+        width: 60,
+        height: 60,
+      }}
+      title="Button Mash Race"
+    >
       <div
-        onClick={() => setShowRace(true)}
         style={{
-          cursor: "pointer",
-          zIndex: 100,
-          width: 60,
-          height: 60,
-          background: "rgba(255,255,255,0.9)",
+          width: "100%",
+          height: "100%",
+          background: "#4CAF50",
           borderRadius: "8px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "24px",
+          fontSize: "32px",
+          border: "2px solid #2E7D32",
         }}
-        title="Button Mash Race"
       >
         🏁
       </div>
-
-      {/* Race Component - Full Screen Overlay */}
-      {showRace && (
-        <ButtonMashRace
-          avatarId={avatarData._id}
-          onExit={() => setShowRace(false)}
-        />
-      )}
-    </>
+    </div>
   );
 }
 
