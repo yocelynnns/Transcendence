@@ -45,7 +45,7 @@ router.post("/signup", async (req: Request, res: Response) => {
 
     return res.status(201).json({ token });
   } catch (err: any) {
-    console.error("[POST /signup]", err);
+    console.log("[POST /signup]", err);
     return res.status(400).json({
       message: err.message || "Signup failed",
     });
@@ -64,7 +64,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     return res.status(200).json({ token });
   } catch (err: any) {
-    console.error("[POST /login]", err);
+    console.log("[POST /login]", err);
     return res.status(400).json({
       message: err.message || "Login failed",
     });
@@ -82,7 +82,7 @@ router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
 
     return res.status(200).json(user);
   } catch (err: any) {
-    console.error("[GET /me]", err);
+    console.log("[GET /me]", err);
 
     if (err.message === "USER_NOT_FOUND") {
       return res.status(404).json({ message: "User not found" });

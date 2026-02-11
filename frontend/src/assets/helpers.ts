@@ -4,7 +4,7 @@ import { ASSETS } from './index'; // your central assets
 // GET FRONT SPRITE (CHECK IF SHINY)
 export function getPokemonFrontSprite(name?: string | null) {
   if (!name) {
-    console.warn("[getPokemonFrontSprite] missing name:", name);
+    console.log("[getPokemonFrontSprite] missing name:", name);
     return null; // fallback sprite
   }
 

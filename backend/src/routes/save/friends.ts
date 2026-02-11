@@ -91,7 +91,7 @@ router.post("/request", authMiddleware, async (req: AuthRequest, res) => {
       },
     });
   } catch (err) {
-    console.error("[POST /friends/request] error:", err);
+    console.log("[POST /friends/request] error:", err);
     return res.status(500).json({ message: "Failed to send friend request" });
   }
 });
@@ -150,7 +150,7 @@ router.post("/accept/:requestId", authMiddleware, async (req: AuthRequest, res) 
       },
     });
   } catch (err) {
-    console.error("[POST /friends/accept] error:", err);
+    console.log("[POST /friends/accept] error:", err);
     return res.status(500).json({ message: "Failed to accept friend request" });
   }
 });
@@ -174,7 +174,7 @@ router.delete("/reject/:requestId", authMiddleware, async (req: AuthRequest, res
 
     return res.status(200).json({ message: "Friend request rejected" });
   } catch (err) {
-    console.error("[DELETE /friends/reject] error:", err);
+    console.log("[DELETE /friends/reject] error:", err);
     return res.status(500).json({ message: "Failed to reject friend request" });
   }
 });
@@ -210,7 +210,7 @@ router.delete("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) 
       removedFriendAvatarId: friendAvatarId, // Return this for socket notification
     });
   } catch (err) {
-    console.error("[DELETE /friends/:friendAvatarId] error:", err);
+    console.log("[DELETE /friends/:friendAvatarId] error:", err);
     return res.status(500).json({ message: "Failed to remove friend" });
   }
 });
@@ -253,7 +253,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
 
     return res.status(200).json(friendsWithAvatars);
   } catch (err) {
-    console.error("[GET /friends] error:", err);
+    console.log("[GET /friends] error:", err);
     return res.status(500).json({ message: "Failed to get friends" });
   }
 });
@@ -297,7 +297,7 @@ router.get("/requests/pending", authMiddleware, async (req: AuthRequest, res) =>
 
     return res.status(200).json(requestsWithAvatars);
   } catch (err) {
-    console.error("[GET /friends/requests/pending] error:", err);
+    console.log("[GET /friends/requests/pending] error:", err);
     return res.status(500).json({ message: "Failed to get friend requests" });
   }
 });

@@ -40,6 +40,12 @@ export const onlineUsers = new Map<string, string>();
 // socketId -> avatarId
 export const socketToAvatar = new Map<string, string>();
 
+// SessionId -> avatarId
+export const avatarToSession = new Map<string, string>();
+
+// avatarId -> socketId
+export const avatarToSocket = new Map<string, string>();
+
 // Socket Setup
 export function setupSocket(server: any) {
   const io = new Server(server, {
@@ -53,15 +59,18 @@ export function setupSocket(server: any) {
   // AUTH middleware
   io.use(async (socket, next) => {
     try {
-      const token = socket.handshake.auth.token;
+      const { token, sessionId } = socket.handshake.auth;
       if (!token) return next(new Error("Unauthorized"));
+      if (!sessionId) return next(new Error("Missing sessionId"));
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
       const user = await User.findById(decoded.userId);
       if (!user) return next(new Error("User not found"));
 
+      // Attach all data to socket
       socket.data.userId = user._id;
       socket.data.avatarId = user.avatar;
+      socket.data.sessionId = sessionId;
 
       next();
     } catch (err) {
@@ -75,7 +84,29 @@ export function setupSocket(server: any) {
 
   // Socket connection
   io.on("connection", async (socket) => {
-    console.log("🟢 CONNECTED:", socket.id);
+    const { avatarId, sessionId } = socket.data;
+    const avatarIdString = avatarId?.toString();
+    console.log("🟢 CONNECTED:", socket.id, "Avatar:", avatarIdString, "Session:", sessionId);
+
+    if (!avatarIdString) return;
+
+    const existingSessionId = avatarToSession.get(avatarIdString);
+    const existingAvatarSocket = avatarToSocket.get(avatarIdString);
+
+    if ((existingSessionId != sessionId) && existingAvatarSocket) {
+      console.log(`🆕 Avatar ${avatarIdString} logged in on a new tab/device`);
+
+      const oldSocket = io.sockets.sockets.get(existingAvatarSocket);
+
+      if (oldSocket)
+        oldSocket.emit("forcedSignOut");        
+    }
+
+    // Register current session and socket
+    avatarToSession.set(avatarIdString, sessionId);
+    avatarToSocket.set(avatarIdString, socket.id);
+    socketToAvatar.set(socket.id, avatarIdString);
+    onlineUsers.set(avatarIdString, socket.id);
 
     setupFriendHandler(io, socket, onlineUsers, socketToAvatar);
 

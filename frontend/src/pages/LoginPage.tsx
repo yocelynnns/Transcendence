@@ -59,7 +59,7 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
         navigate("/profile");
       }
     } catch (err: unknown) {
-      console.error(err);
+      console.log(err);
       setError(err instanceof Error ? err.message : "Network error. Please try again.");
     } finally {
       setLoading(false);

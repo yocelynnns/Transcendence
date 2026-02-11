@@ -19,14 +19,14 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
     if (!avatarId) return;
 
     // Disconnect old socket if avatar already connected
-    if (avatarSockets[avatarId] && avatarSockets[avatarId] !== socket.id) {
-      const oldSocket = io.sockets.sockets.get(avatarSockets[avatarId]);
-      if (oldSocket) {
-        oldSocket.emit("signout");
-        oldSocket.disconnect(true);
-        console.log("⚠️ DISCONNECTED OLD SOCKET FOR AVATAR:", avatarId);
-      }
-    }
+    // if (avatarSockets[avatarId] && avatarSockets[avatarId] !== socket.id) {
+    //   const oldSocket = io.sockets.sockets.get(avatarSockets[avatarId]);
+    //   if (oldSocket) {
+    //     oldSocket.emit("signout");
+    //     // oldSocket.disconnect(true);
+    //     console.log("⚠️ DISCONNECTED OLD SOCKET FOR AVATAR:", avatarId);
+    //   }
+    // }
 
     // Save avatarId in socket and mappings
     socket.data.avatarId = avatarId;
@@ -55,7 +55,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
         console.log(`🔁 ${avatarId} rejoined room ${roomName}`);
       }
     } catch (err) {
-      console.error("Failed to rejoin battle room:", err);
+      console.log("Failed to rejoin battle room:", err);
     }
 
     // Send current players & Pokemon to this socket
@@ -64,7 +64,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
       const currentPokemons = await PokemonService.fetchAvailablePokemon({ limit: 50 });
       socket.emit("pokemonUpdate", currentPokemons);
     } catch (err) {
-      console.error("ERROR FETCHING POKEMON:", err);
+      console.log("ERROR FETCHING POKEMON:", err);
     }
 
     // Notify others
@@ -81,7 +81,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
       });
       console.log(`✅ Avatar ${avatarId} marked online with socket ${socket.id}`);
     } catch (err) {
-      console.error(`Failed to update online status for avatar ${avatarId}:`, err);
+      console.log(`Failed to update online status for avatar ${avatarId}:`, err);
     }
   });
 
@@ -124,9 +124,10 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
 
   // Player signout
   socket.on("signout", () => {
+    // add disconnected logic
     const rawAvatarId = socket.data?.avatarId || socketToAvatar.get(socket.id);
     const avatarId = rawAvatarId?.toString?.();
-    
+
     if (avatarId) {
       onlineUsers.delete(avatarId);
       socketToAvatar.delete(socket.id);
@@ -135,6 +136,11 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
     }
     cleanupPlayer(io, socket, matchingPool, players, avatarSockets);
     socket.disconnect(true);
+  });
+
+  socket.on("forced", () => {
+    console.log("I am forced to disconnect");
+    socket.disconnect(true); 
   });
 
   // Player disconnect
@@ -158,11 +164,12 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
           data: {
             online: false,
             currentSocket: null,
+            // currentBattle: null,
           },
         });
         console.log(`✅ Avatar ${avatarId} marked offline in DB`);
       } catch (err) {
-        console.error(`Failed to mark avatar offline in DB:`, err);
+        console.log(`Failed to mark avatar offline in DB:`, err);
       }
     } else {
       console.log(`⚠️ No avatarId found for socket ${socket.id} on disconnect`);

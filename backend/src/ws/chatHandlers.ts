@@ -102,7 +102,7 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
 
       console.log(`💬 Message saved & sent: ${senderId} -> ${receiverId}`);
     } catch (err) {
-      console.error("Failed to send message:", err);
+      console.log("Failed to send message:", err);
       socket.emit("messageError", { error: "Failed to send message" });
     }
   });
@@ -144,7 +144,7 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
         io.to(senderSocketId).emit("messagesRead", { byAvatarId: receiverId });
       }
     } catch (err) {
-      console.error("Failed to mark messages as read:", err);
+      console.log("Failed to mark messages as read:", err);
     }
   });
   }

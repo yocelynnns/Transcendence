@@ -27,7 +27,7 @@ export function setupGuildHandlers(io: Server, socket: Socket) {
         console.log(`👥 Socket ${socket.id} joined ${roomName}`);
       }
     } catch (err) {
-      console.error("[joinGuild]", err);
+      console.log("[joinGuild]", err);
     }
   });
 
@@ -48,7 +48,7 @@ export function setupGuildHandlers(io: Server, socket: Socket) {
 
       io.to(`guild_${guildId}`).emit("guildMessage", newMessage);
     } catch (err) {
-      console.error("[sendGuildMessage]", err);
+      console.log("[sendGuildMessage]", err);
     }
   });
 
@@ -79,7 +79,7 @@ export function setupGuildHandlers(io: Server, socket: Socket) {
           console.log("📢 Broadcast guild update:", guildId);
         }
       } catch (err) {
-        console.error("ERROR HANDLING guildUpdate:", err);
+        console.log("ERROR HANDLING guildUpdate:", err);
       }
     }
   );
