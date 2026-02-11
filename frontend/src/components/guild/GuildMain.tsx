@@ -115,7 +115,7 @@ export default function GuildMain({ avatarData, token, onClosePanel, scale }: Gu
                     >
                       <img
                         src={ASSETS.ICONS.BACK}
-                        alt="Friends"
+                        alt="Back"
                         className="w-8 h-8 object-contain image-rendering-pixelated hover:scale-110"
                       />
                     </button>
@@ -149,7 +149,7 @@ export default function GuildMain({ avatarData, token, onClosePanel, scale }: Gu
                   >
                     <img
                       src={ASSETS.ICONS.X}
-                      alt="Friends"
+                      alt="X"
                       className="w-10 h-10 object-contain image-rendering-pixelated hover:scale-110"
                     />
                   </button>

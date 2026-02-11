@@ -2,6 +2,7 @@ import { useState, useEffect, Dispatch } from "react";
 import { useNavigate } from "react-router-dom";
 import GameMap from "../components/map/GameMap";
 import AvatarProfile from "../components/profile/GameProfile";
+import AvatarProfileButton from "../components/profile/GameProfileButton";
 import { useAvatar } from "../hooks/useAvatar";
 import { ASSETS } from "../assets";
 import Guild from "../components/guild/GuildMain";
@@ -9,10 +10,13 @@ import { AvatarData } from "../types/avatarTypes";
 import { Battle } from "../types/battleTypes";
 import FriendsList from "../components/friendlist/FriendsList";
 import RaceButton from "../components/race/RaceButton";
+import MatchingButton from "../components/matching/matchingButton";
+import AiButton from "../components/ai/aiButton";
 
-const designWidth = 1512; 
-const maxScale = 1;   
-const minScale = 0.5;    
+const designWidth = 1512;
+const designHeight = 851; // added explicit design height
+const maxScale = 1;
+const minScale = 0.5;
 
 interface HomePageProps {
   setToken: (token: string | null) => void;
@@ -22,6 +26,26 @@ interface HomePageProps {
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
 }
 
+// Hook to detect mobile & portrait orientation
+function useMobileLandscape() {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      const portrait = window.innerHeight > window.innerWidth;
+      setIsMobile(mobile);
+      setIsPortrait(portrait);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return { isMobile, isPortrait };
+}
+
 export default function HomePage({
   setToken,
   avatarData,
@@ -29,46 +53,60 @@ export default function HomePage({
   setSpectatingBattle,
   setCurrentBattle,
 }: HomePageProps) {
-
   const navigate = useNavigate();
   const { updateAvatar } = useAvatar(avatarData?._id ?? null);
 
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [showGuildPanel, setShowGuildPanel] = useState(false);
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
 
-  const [bannerScale, setBannerScale] = useState(1);
-  const [guildScale, setGuildScale] = useState(1); // Add guild scale
+  const [bannerScale, setBannerScale] = useState(0); // start with 0 to wait for scale
+  const [guildScale, setGuildScale] = useState(0);
 
+  const { isMobile, isPortrait } = useMobileLandscape();
+
+  // Compute scales after mount & resize
   useEffect(() => {
     const handleResize = () => {
-      const designHeight = 851; // your design height
       const scaleHeight = window.innerHeight / designHeight;
-
       const scaleWidth = Math.min(maxScale, Math.max(minScale, window.innerWidth / designWidth));
-      
-      // pick the smaller scale to keep aspect ratio without overflowing
       const scale = Math.min(scaleHeight, scaleWidth);
 
-      setBannerScale(scale);  // still scale the banner if needed
-      setGuildScale(scale);   // width scales proportionally, height is full
+      setBannerScale(scale);
+      setGuildScale(scale);
     };
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    // Ensure calculation after DOM layout
+    requestAnimationFrame(handleResize);
+    window.addEventListener("resize", () => requestAnimationFrame(handleResize));
+    return () => window.removeEventListener("resize", () => requestAnimationFrame(handleResize));
   }, []);
 
-  if (!avatarData) return null;
+  if (!avatarData || bannerScale === 0) return null;
+
+  // Mobile portrait: show rotate overlay
+  if (isMobile && isPortrait) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black text-white z-50 p-4 text-center">
+        <p className="text-xl font-bold">
+          Please rotate your device to landscape mode for the best experience.
+        </p>
+      </div>
+    );
+  }
+
+  const finalBannerScale = isMobile ? 0.7 : bannerScale;
+  const finalGuildScale = isMobile ? 0.8 : guildScale;
 
   return (
-    <div className="relative w-screen h-screen bg-[#b3e5fc] pixelify-sans">
+    <div className="relative w-screen h-screen overflow-hidden bg-[#b3e5fc] pixelify-sans">
 
       {/* Game Map */}
       <div className="absolute inset-0 z-0">
         <GameMap
           avatarData={avatarData}
           avatarId={avatarData._id}
-          freeze={showGuildPanel || showFriendsPanel}
+          freeze={showProfilePanel || showGuildPanel || showFriendsPanel}
         />
       </div>
 
@@ -76,12 +114,16 @@ export default function HomePage({
       <div className="absolute inset-0 z-40 pointer-events-none">
         <div
           className="relative pointer-events-auto"
-          style={{ transform: `scale(${bannerScale})`, transformOrigin: "top left" }}
+          style={{
+            width: `${designWidth}px`,
+            height: `${designHeight}px`,
+            transform: `scale(${finalBannerScale})`,
+            transformOrigin: "top left",
+          }}
         >
-          <AvatarProfile
-            setToken={setToken}
+          <AvatarProfileButton
             avatarData={avatarData}
-            updateAvatar={updateAvatar}
+            onClick={() => setShowProfilePanel(true)}
           />
 
           {/* MENU BAR */}
@@ -91,7 +133,7 @@ export default function HomePage({
                 <img
                   src={ASSETS.ICONS.FRIENDLIST}
                   alt="Friends"
-                  className="w-14 h-14 object-contain image-rendering-pixelated hover:scale-110"
+                  className={`object-contain image-rendering-pixelated hover:scale-110 ${isMobile ? "w-10 h-10" : "w-14 h-14"}`}
                 />
               </button>
             </div>
@@ -101,7 +143,7 @@ export default function HomePage({
                 <img
                   src={ASSETS.ICONS.GUILD}
                   alt="Guild"
-                  className="w-14 h-14 object-contain image-rendering-pixelated hover:scale-110"
+                  className={`object-contain image-rendering-pixelated hover:scale-110 ${isMobile ? "w-10 h-10" : "w-14 h-14"}`}
                 />
               </button>
             </div>
@@ -111,10 +153,19 @@ export default function HomePage({
                 <img
                   src={ASSETS.ICONS.EVENT}
                   alt="Event"
-                  className="w-14 h-14 object-contain image-rendering-pixelated hover:scale-110"
+                  className={`object-contain image-rendering-pixelated hover:scale-110 ${isMobile ? "w-10 h-10" : "w-14 h-14"}`}
                 />
               </button>
             </div>
+
+            {/* <div className="transform transition-transform duration-200 hover:scale-110">
+              <MatchingButton avatarData={avatarData} />
+            </div>
+
+            <div className="transform transition-transform duration-200 hover:scale-110">
+                <AiButton />
+            </div> */}
+
           </div>
         </div>
       </div>
@@ -126,7 +177,6 @@ export default function HomePage({
           onClick={() => setShowGuildPanel(false)}
         />
       )}
-
       {showFriendsPanel && (
         <div
           className="fixed inset-0 bg-[#222222]/40 z-40"
@@ -134,9 +184,23 @@ export default function HomePage({
         />
       )}
 
+      {/* PROFILE PANEL */}
+      {showProfilePanel && (
+        <AvatarProfile
+          avatarData={avatarData}
+          updateAvatar={updateAvatar}
+          setToken={setToken}
+          onClose={() => setShowProfilePanel(false)}
+          me={true}
+        />
+      )}
+
       {/* FRIENDS PANEL */}
       {showFriendsPanel && avatarData && (
-        <div className="fixed top-0 right-0 h-screen w-1/3 min-w-[360px] max-w-[520px] border-l-2 border-gray-300 z-50">
+        <div
+          className={`fixed top-0 right-0 h-screen border-l-2 border-gray-300 z-50
+            ${isMobile ? "w-full max-w-[100%]" : "w-1/3 min-w-[360px] max-w-[520px]"}`}
+        >
           <FriendsList
             token={token}
             myAvatarId={avatarData._id}
@@ -155,7 +219,7 @@ export default function HomePage({
           avatarData={avatarData}
           token={token}
           onClosePanel={() => setShowGuildPanel(false)}
-          scale={guildScale} // Pass scale to Guild
+          scale={finalGuildScale}
         />
       )}
 

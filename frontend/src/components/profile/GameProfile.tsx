@@ -1,76 +1,97 @@
-// IMPORTS
-import { useState } from "react";
-import { useGameSocket } from "../../ws/useGameSocket";
-import { getPokemonFrontSprite } from "../../assets/helpers";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { getPokemonFrontSprite, getPokemonGifPath } from "../../assets/helpers";
 import { ASSETS } from "../../assets";
-import {AvatarData} from "../../types/avatarTypes"
+import { AvatarData } from "../../types/avatarTypes";
+import { useGameSocket } from "../../ws/useGameSocket";
 
-// DEFAULT ASSETS
-const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 const playerSprite = ASSETS.PLAYER.DEFAULT;
 
-// PROPS
-interface AvatarProfileProps {
-  setToken: (token: string | null) => void;
-  avatarData: AvatarData | null;
-  updateAvatar: (updatedFields: Partial<AvatarData>) => void;
-  onOpen?: () => void;
-  onClose?: () => void;
+interface BattlePokemon {
+  name: string;
+  type: string;
+  is_shiny: boolean;
 }
 
-// MAIN COMPONENT
-export default function AvatarProfile({
-  setToken,
+interface BattleHistory {
+  _id: string;
+  player1: { userName: string; _id: string };
+  player2: { userName: string; _id: string };
+  pokemon1: BattlePokemon[];
+  pokemon2: BattlePokemon[];
+  winner?: "player1" | "player2" | "draw";
+  winnerReason?: string;
+  createdAt: Date;
+  endedAt?: Date;
+}
+
+interface ProfilePageProps {
+  avatarData: AvatarData;
+  updateAvatar: (fields: Partial<AvatarData>) => void;
+  setToken: (token: string | null) => void;
+  onClose: () => void;
+  me?: boolean;
+}
+
+export default function ProfilePage({
   avatarData,
   updateAvatar,
-  onOpen,
+  setToken,
   onClose,
-}: AvatarProfileProps) {
-  // LOCAL STATE
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [tempName, setTempName] = useState(() => avatarData?.userName ?? "");
-  const [selectedIndex, setSelectedIndex] = useState(
-    () => avatarData?.characterOption ?? 0
-  );
-
-  // SOCKET - ADD emitEvent
+  me
+}: ProfilePageProps) {
+  const navigate = useNavigate();
   const { signOut, emitEvent } = useGameSocket(() => undefined);
 
-  // CHARACTER OPTIONS
+  const [tempName, setTempName] = useState(avatarData.userName);
+  const [selectedIndex, setSelectedIndex] = useState(avatarData.characterOption);
+  const [battles, setBattles] = useState<BattleHistory[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const options = [
     { x: 64, y: 72 },
     { x: 64, y: 168 },
     { x: 64, y: 264 },
   ];
 
-  // FUNCTIONS
-  const handleOpenProfile = () => {
-    if (avatarData) {
-      setTempName(avatarData.userName);
-      setSelectedIndex(avatarData.characterOption);
-    }
-    setProfileOpen(true);
-    onOpen?.();
-  };
+  // Fetch battle history only on mount or when battleHistory IDs change
+  useEffect(() => {
+    if (!avatarData?.battleHistory?.length) return;
 
-  const handleCloseProfile = () => {
-    if (avatarData) {
-      setTempName(avatarData.userName);
-      setSelectedIndex(avatarData.characterOption);
-    }
-    setProfileOpen(false);
-    onClose?.();
-  };
+    const fetchBattles = async () => {
+      try {
+        setLoading(true);
+        const results = await Promise.all(
+          avatarData.battleHistory.map(async (battleId) => {
+            const res = await fetch(
+              `http://localhost:5001/api/battle/${battleId.toString()}`
+            );
+            const data = await res.json();
+            return {
+              ...data,
+              createdAt: new Date(data.createdAt),
+              endedAt: data.endedAt ? new Date(data.endedAt) : undefined,
+            };
+          })
+        );
+        setBattles(results.reverse());
+      } catch {
+        setBattles([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchBattles();
+  }, [avatarData.battleHistory]);
+
+  // Avatar image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!avatarData || !e.target.files?.[0]) return;
-
+    if (!e.target.files?.[0]) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const newAvatar = ev.target?.result as string;
       updateAvatar({ avatar: newAvatar });
-      
-      // BROADCAST TO FRIENDS
       emitEvent("avatarUpdated", {
         avatarId: avatarData._id,
         avatarImage: newAvatar,
@@ -80,11 +101,9 @@ export default function AvatarProfile({
     reader.readAsDataURL(e.target.files[0]);
   };
 
+  // Username submit
   const handleNameSubmit = () => {
-    if (!avatarData) return;
     updateAvatar({ userName: tempName });
-    
-    // BROADCAST TO FRIENDS
     emitEvent("avatarUpdated", {
       avatarId: avatarData._id,
       avatarImage: avatarData.avatar,
@@ -92,11 +111,6 @@ export default function AvatarProfile({
     });
   };
 
-  const handleCharacterChange = (index: number) => {
-    if (!avatarData) return;
-    setSelectedIndex(index);
-    updateAvatar({ characterOption: index });
-  };
 
   const handleSignOut = () => {
     signOut();
@@ -104,259 +118,264 @@ export default function AvatarProfile({
     setToken(null);
   };
 
-  // LOADING STATE
-  if (!avatarData) return <div>Loading...</div>;
+  const formatDuration = (start: Date, end?: Date) => {
+    if (!end) return "-";
+    const diff = end.getTime() - start.getTime();
+    return `${Math.floor(diff / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`;
+  };
 
-  // RENDER
+  const getBattleBg = (winner?: string, playerId?: string) => {
+    if (winner === "draw") return "#fff9e6";
+    if (winner === "player1" && playerId === avatarData._id) return "#ecfdf3";
+    if (winner === "player2" && playerId === avatarData._id) return "#fdecec";
+    return "#fff"; // default
+  };
+
+  // Battle stats
+  const totalGames = battles.length;
+  const wins = battles.filter((b) => b.winner === "player1" && b.player1._id === avatarData._id).length;
+  const losses = battles.filter((b) => b.winner === "player2" && b.player2._id === avatarData._id).length;
+  const draws = battles.filter((b) => b.winner === "draw").length;
+
+  // NEW: compute win rate
+  const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
   return (
-    <>
-      {/* AVATAR BUTTON */}
-      {!profileOpen && (
-        <div
-        className="m-4"
-          style={{
-            transformOrigin: "top left",
-            width: "400px",
-            height: "160px",
-          }}
-        >
-          <div
-            onClick={handleOpenProfile}
-            className="relative cursor-pointer w-100 h-40 z-50"
-          >
-            {/* NAME (on right of banner) */}
-            <div className="absolute left-52 top-1/4 -translate-y-1/5 text-[#a7767c] font-bold text-3xl drop-shadow-lg pointer-events-none z-30 pixelify-sans">
-              PROFILE
-            </div>
+    <div className="fixed inset-0 bg-[#ab7b81] z-50 p-4 overflow-hidden">
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-8 right-8 text-2xl cursor-pointer z-50"
+      >
+        <img
+          src={ASSETS.ICONS.X}
+          alt="x"
+          className="w-10 h-10 object-contain image-rendering-pixelated hover:scale-110"
+        />
+      </button>
 
-            {/* BANNER */}
-            <div
-              className="absolute inset-0 bg-center bg-cover rounded-lg z-20"
-              style={{ backgroundImage: `url(${ASSETS.ELEMENTS.PROFILEBANNER})` }}
-            />
+      <div className="flex flex-col md:flex-row h-full gap-6 overflow-y-auto">
+        {/* LEFT PANEL */}
+        <div className="md:flex-[1_1_33%] w-full shrink-0">
+          <div className="h-full p-6 bg-[#ecc2be] rounded-lg flex flex-col overflow-y-auto">
 
-            {/* AVATAR */}
-            <div
-              className="absolute left-5 top-1/2 -translate-y-1/2 w-30 h-30 border-2 border-white bg-center bg-cover shadow-md z-10"
-              style={{
-                backgroundImage: `url(${avatarData.avatar || defaultAvatar})`,
-              }}
-            />
-
-          </div>
-        </div>
-      )}
-
-      {/* PROFILE PANEL */}
-      {profileOpen && (
-        <div
-          style={{
-            position: "absolute",
-            top: 20,
-            right: 20,
-            width: 300,
-            padding: 20,
-            background: "white",
-            borderRadius: 12,
-            boxShadow: "0 0 10px rgba(0,0,0,0.3)",
-            zIndex: 100,
-          }}
-        >
-          {/* CLOSE BUTTON */}
-          <button
-            onClick={handleCloseProfile}
-            style={{
-              position: "absolute",
-              top: 10,
-              right: 10,
-              background: "transparent",
-              border: "none",
-              fontSize: 18,
-              cursor: "pointer",
-            }}
-          >
-            ✕
-          </button>
-
-          {/* AVATAR UPLOAD */}
-          <div style={{ textAlign: "center", marginBottom: 10 }}>
-            <div
-              style={{
-                width: 120,
-                height: 120,
-                borderRadius: "50%",
-                margin: "0 auto",
-                border: "2px solid #333",
-                background: `url(${avatarData.avatar || defaultAvatar}) center/cover`,
-              }}
-            />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              style={{ display: "block", margin: "10px auto" }}
-            />
-          </div>
-
-          {/* USERNAME */}
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: 10,
-              display: "flex",
-              justifyContent: "center",
-              gap: 6,
-              alignItems: "center",
-            }}
-          >
-            <input
-              type="text"
-              value={tempName}
-              onChange={(e) => setTempName(e.target.value)}
-              style={{
-                fontSize: 16,
-                textAlign: "center",
-                padding: 4,
-                width: "60%",
-                borderRadius: 6,
-                border: "1px solid #ccc",
-              }}
-            />
-            <button
-              onClick={handleNameSubmit}
-              style={{
-                fontSize: 16,
-                padding: "4px 8px",
-                borderRadius: 6,
-                border: "1px solid #333",
-                cursor: "pointer",
-                background: "#f0f0f0",
-              }}
-            >
-              Change
-            </button>
-          </div>
-
-          {/* CHARACTER SELECTION */}
-          <div style={{ marginBottom: 10 }}>
-            <h3>Preferences</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {options.map((opt, i) => (
-                <div
-                  key={i}
-                  onClick={() => handleCharacterChange(i)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
-                >
-                  <div
-                    style={{
-                      width: 16,
-                      height: 24,
-                      border: "1px solid #ccc",
-                      background: `url(${playerSprite}) -${opt.x}px -${opt.y}px/auto`,
-                    }}
+            {/* Avatar */}
+            <div className="flex flex-col items-center mb-6">
+              <div
+                className="w-32 h-32 rounded-full bg-center bg-cover"
+                style={{
+                  backgroundImage: `url(${avatarData.avatar || ASSETS.AVATAR.CLEFFA})`,
+                }}
+              />
+              {me && (
+                <label className="mt-3 cursor-pointer">
+                  <span className="px-3 py-1 bg-[#fff1ef] rounded-md text-sm">
+                    Browse
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
                   />
-                  <span>Character {i + 1}</span>
-                  <div
-                    style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: "50%",
-                      border: "1px solid black",
-                      background: "white",
-                      marginLeft: "auto",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    {selectedIndex === i && (
-                      <div
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          background: "blue",
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
+                </label>
+              )}
             </div>
+
+            {/* Username */}
+          <div className="flex justify-center gap-2 mb-6 w-full">
+            {me ? (
+              <>
+                <input
+                  type="text"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  className="text-center px-2 py-1 bg-[#fff1ef] rounded-md w-2/3"
+                />
+                <button
+                  onClick={handleNameSubmit}
+                  className="px-3 py-1 bg-[#fff1ef] rounded-md"
+                >
+                  Change
+                </button>
+              </>
+            ) : (
+              <span className="px-3 py-1 bg-[#fff1ef] rounded-md text-center w-2/3">
+                {avatarData.userName}
+              </span>
+            )}
           </div>
 
-          {/* Pokemon INVENTORY */}
-          <div style={{ marginBottom: 10 }}>
-            <h3 style={{ textAlign: "center" }}>Inventory / Pokemon</h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4,1fr)",
-                justifyContent: "center",
-                gap: 6,
-                padding: "4px 0",
-                maxHeight: 300,
-                overflowY: "auto",
-              }}
-            >
-              {avatarData.pokemonInventory.map((p, i) => {
-                const sprite = getPokemonFrontSprite(p.name);
-                return (
+            {/* Character Selection */}
+            {me && (
+              <div className="mb-6 w-full">
+                <h3 className="text-center font-semibold mb-3">Character Selection</h3>
+                <div className="flex flex-col gap-3">
+                  {options.map((opt, i) => {
+                    const isSelected = selectedIndex === i;
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => {
+                          setSelectedIndex(i);
+                          updateAvatar({ characterOption: i });
+                          emitEvent("avatarUpdated", {
+                            avatarId: avatarData._id,
+                            avatarImage: avatarData.avatar,
+                            userName: avatarData.userName,
+                            characterOption: i,
+                          });
+                        }}
+                        className={`flex items-center gap-4 p-3 cursor-pointer rounded-md
+                          ${isSelected ? "bg-[#fff1ef]" : "bg-[#f6e3df]"}
+                        `}
+                      >
+                        <div
+                          style={{
+                            width: 16,
+                            height: 24,
+                            background: `url(${playerSprite}) -${opt.x}px -${opt.y}px/auto`,
+                          }}
+                        />
+                        <span className="font-medium text-[#ab7b81]">
+                          Character {i + 1}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Pokemon Inventory */}
+            <div className="mb-6 w-full">
+              <h3 className="text-center font-semibold mb-3">Inventory / Pokemon</h3>
+              <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                {avatarData.pokemonInventory.map((p, i) => (
                   <div
                     key={i}
-                    style={{
-                      border: "2px solid #333",
-                      borderRadius: 8,
-                      padding: 0,
-                      textAlign: "center",
-                      background: "#f9f9f9",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 64,
-                      height: 80,
-                    }}
+                    className="bg-[#fff1ef] rounded-md flex flex-col items-center justify-center p-2 text-xs"
                   >
-                    <img src={sprite || ""} alt={p.name ?? "unknown"} width={40} height={40} />
-                    <div
-                      title={p.name}
-                      style={{
-                        marginTop: 4,
-                        fontSize: 12,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        width: "100%",
-                      }}
-                    >
+                    <img
+                      src={getPokemonFrontSprite(p.name)}
+                      alt={p.name}
+                      width={40}
+                      height={40}
+                    />
+                    <span className="truncate w-full text-center text-[#ab7b81]">
                       {p.name}
-                    </div>
+                    </span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* SIGN OUT */}
-          <div style={{ textAlign: "center", marginTop: 16 }}>
-            <button
-              onClick={handleSignOut}
-              style={{
-                fontSize: 16,
-                padding: "8px 16px",
-                borderRadius: 6,
-                border: "1px solid #333",
-                cursor: "pointer",
-                background: "#ff5555",
-                color: "white",
-              }}
-            >
-              Sign Out
-            </button>
+            {/* Sign Out */}
+            {me && (
+              <div className="flex justify-center mt-auto w-full">
+                <button
+                  onClick={handleSignOut}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md w-full"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </>
+
+        {/* RIGHT PANEL */}
+        <div className="md:flex-[1_1_67%] w-full shrink-0">
+          <div className="h-full p-6 bg-[#ecc2be] rounded-lg flex flex-col overflow-y-auto font-mono">
+            <h2 className="text-center font-bold mb-6 text-lg">Match History</h2>
+
+            {/* Stats */}
+            <div className="flex justify-center gap-4 mb-6 flex-wrap">
+              <StatBox title="Games" value={totalGames} color="#4a90e2" />
+              <StatBox title="Wins" value={wins} color="#57b87c" />
+              <StatBox title="Losses" value={losses} color="#e74c3c" />
+              <StatBox title="Draws" value={draws} color="#888888" />
+              <StatBox title="Win Rate" value={winRate} color="#a982d0" suffix="%" />
+            </div>
+
+
+            {/* Battle List */}
+            {loading && <p className="text-center">Loading...</p>}
+            {!loading && battles.length === 0 && (
+              <p className="text-center text-[#ab7b81]">No matches yet</p>
+            )}
+
+            {battles.map((b) => (
+              <div
+                key={b._id}
+                className="bg-[#fff1ef] rounded-md p-4 mb-4"
+                style={{
+                  background: getBattleBg(
+                    b.winner,
+                    avatarData._id === b.player1._id ? b.player1._id : b.player2._id
+                  ),
+                }}
+              >
+                <div className="grid grid-cols-3 items-center mb-2">
+                  <div className="flex gap-1">
+                    {b.pokemon1.map((p, i) => (
+                      <img
+                        key={i}
+                        src={getPokemonGifPath(p.name, p.type, p.is_shiny, false)}
+                        width={36}
+                        height={36}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-center font-bold">VS</div>
+                  <div className="flex gap-1 justify-end">
+                    {b.pokemon2.map((p, i) => (
+                      <img
+                        key={i}
+                        src={getPokemonGifPath(p.name, p.type, p.is_shiny, false)}
+                        width={36}
+                        height={36}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-center font-bold">
+                  {b.player1.userName} vs {b.player2.userName}
+                </p>
+                <p className="text-center text-sm">{b.winnerReason ?? "—"}</p>
+                <p className="text-center text-sm">
+                  Duration: {formatDuration(b.createdAt, b.endedAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
   );
 }
+
+const StatBox = ({
+  title,
+  value,
+  color,
+  suffix,
+}: {
+  title: string;
+  value: number;
+  color: string;
+  suffix?: string;
+}) => (
+  <div
+    className="rounded-lg text-center text-white px-3 py-1 min-w-[60px]"
+    style={{ background: color }}
+  >
+    <div className="text-xs">{title}</div>
+    <div className="text-lg font-bold">
+      {value}
+      {suffix && suffix}
+    </div>
+  </div>
+);
