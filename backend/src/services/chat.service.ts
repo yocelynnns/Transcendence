@@ -3,6 +3,7 @@ import Message from "../db/message";
 import Avatar from "../db/avatar";
 import User from "../db/user";
 import Friend from "../db/friend";
+import { checkMessageBlock } from "./messageBlock.service";
 
 // Get chat history with a friend
 interface GetChatHistoryInput {
@@ -107,6 +108,14 @@ export const sendMessage = async ({
   }
 
   const senderId = currentUser.avatar.toString();
+
+  // CHECK BLOCK
+  const blockStatus = await checkMessageBlock(senderId, friendAvatarId);
+  if (blockStatus.isBlocked) {
+    const error = new Error("MESSAGES_BLOCKED");
+    (error as any).blockedBy = blockStatus.blockedBy;
+    throw error;
+  }
 
   const message = await Message.create({
     senderId,

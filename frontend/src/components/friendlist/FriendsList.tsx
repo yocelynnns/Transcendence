@@ -209,6 +209,44 @@ const styles = {
     justifyContent: "center",
     padding: 0,
   }),
+  blockBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    background: "#ff9800",
+    color: "white",
+    border: "2px solid #333",
+    cursor: "pointer",
+    fontSize: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+  },
+  unblockBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    background: "#4CAF50",
+    color: "white",
+    border: "2px solid #333",
+    cursor: "pointer",
+    fontSize: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+  },
+  blockedBadge: {
+    fontSize: 9,
+    color: "#ff5555",
+    fontWeight: "bold" as const,
+    background: "#ffebee",
+    padding: "1px 4px",
+    borderRadius: 4,
+    border: "1px solid #ff5555",
+    marginLeft: 4,
+  },
   requestItem: {
     display: "flex",
     alignItems: "center",
@@ -342,6 +380,7 @@ export default function FriendsList({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const [blockedFriends, setBlockedFriends] = useState<Set<string>>(new Set());
 
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
 
@@ -360,6 +399,21 @@ export default function FriendsList({
       }
     } catch (err) {
       console.error("Failed to fetch friends:", err);
+    }
+  };
+
+  // FETCH BLOCKED MESSAGES LIST
+  const fetchBlockedList = async () => {
+    try {
+      const res = await fetch("http://localhost:5001/api/blocked-messages", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBlockedFriends(new Set(data.blockedFriends.map((f: any) => f.avatarId)));
+      }
+    } catch (err) {
+      console.error("Failed to fetch blocked list:", err);
     }
   };
 
@@ -429,6 +483,62 @@ export default function FriendsList({
   const handleDeclineBattleInvite = (inviteId: string) => {
     emitEvent("respondToMatchInvite", { inviteId, accept: false });
     setBattleInvites((prev) => prev.filter((inv) => inv.inviteId !== inviteId));
+  };
+
+  // BLOCK MESSAGES FROM FRIEND
+  const handleBlockMessages = async (friend: Friend) => {
+    try {
+      const res = await fetch(`http://localhost:5001/api/block-messages/${friend.avatarId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setBlockedFriends(prev => new Set([...prev, friend.avatarId]));
+        setMessage(`🔇 Messages blocked from ${friend.userName}`);
+        
+        // Close chat if open with this friend
+        if (selectedFriend?.avatarId === friend.avatarId) {
+          setSelectedFriend(null);
+        }
+        
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        const data = await res.json();
+        setMessage(`❌ ${data.message}`);
+        setTimeout(() => setMessage(""), 3000);
+      }
+    } catch (err) {
+      setMessage("❌ Failed to block messages");
+      setTimeout(() => setMessage(""), 3000);
+    }
+  };
+
+  // UNBLOCK MESSAGES FROM FRIEND
+  const handleUnblockMessages = async (friend: Friend) => {
+    try {
+      const res = await fetch(`http://localhost:5001/api/block-messages/${friend.avatarId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setBlockedFriends(prev => {
+          const next = new Set(prev);
+          next.delete(friend.avatarId);
+          return next;
+        });
+        setMessage(`🔔 Messages unblocked from ${friend.userName}`);
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        const data = await res.json();
+        setMessage(`❌ ${data.message}`);
+        setTimeout(() => setMessage(""), 3000);
+      }
+    } catch (err) {
+      setMessage("❌ Failed to unblock messages");
+      setTimeout(() => setMessage(""), 3000);
+    }
   };
 
   // SEND FRIEND REQUEST
@@ -566,6 +676,12 @@ export default function FriendsList({
 
       if (res.ok) {
         setFriends((prev) => prev.filter((f) => f.avatarId !== friendAvatarId));
+        // Also remove from blocked list if they were blocked
+        setBlockedFriends(prev => {
+          const next = new Set(prev);
+          next.delete(friendAvatarId);
+          return next;
+        });
         setMessage("Friend removed");
         
         emitEvent("friendRemoved", { targetAvatarId: friendAvatarId });
@@ -719,6 +835,12 @@ export default function FriendsList({
       "removedByFriend",
       (data) => {
         setFriends((prev) => prev.filter((f) => f.avatarId !== data.removerAvatarId));
+        // Also clean up blocked status if they removed us
+        setBlockedFriends(prev => {
+          const next = new Set(prev);
+          next.delete(data.removerAvatarId);
+          return next;
+        });
         setMessage("A friend removed you");
         setTimeout(() => setMessage(""), 3000);
       }
@@ -779,10 +901,11 @@ export default function FriendsList({
     if (showPanel) {
       fetchFriends();
       fetchRequests();
+      fetchBlockedList();
     }
   }, [showPanel]);
 
-  const isSuccessMessage = message.startsWith("✅") || message.startsWith("⚔️");
+  const isSuccessMessage = message.startsWith("✅") || message.startsWith("⚔️") || message.startsWith("🔔");
 
   // Get total notification count
   const totalNotifications = requests.length + battleInvites.length;
@@ -877,78 +1000,115 @@ export default function FriendsList({
                 {friends.length === 0 ? (
                   <div style={styles.emptyText}>No friends yet. Add some!</div>
                 ) : (
-                  friends.map((friend) => (
-                    <div key={friend.avatarId} style={styles.friendItem}>
-                      <div
-                        style={{
-                          ...styles.avatar,
-                          background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
-                        }}
-                      >
-                        {friend.currentBattle ? (
-                          <div style={styles.battleIndicator}>⚔️</div>
-                        ) : (
-                          <div style={styles.onlineIndicator(!!friend.online)} />
-                        )}
-                      </div>
-                      <div style={styles.friendInfo}>
-                        <div style={styles.friendName}>{friend.userName}</div>
-                        <div style={styles.friendStatus}>
-                          {friend.currentBattle 
-                            ? "🔴 In Battle" 
-                            : friend.online 
-                              ? "🟢 Online" 
-                              : "⚫ Offline"
-                          }
+                  friends.map((friend) => {
+                    const isBlocked = blockedFriends.has(friend.avatarId);
+                    
+                    return (
+                      <div key={friend.avatarId} style={styles.friendItem}>
+                        <div
+                          style={{
+                            ...styles.avatar,
+                            background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
+                          }}
+                        >
+                          {friend.currentBattle ? (
+                            <div style={styles.battleIndicator}>⚔️</div>
+                          ) : (
+                            <div style={styles.onlineIndicator(!!friend.online)} />
+                          )}
                         </div>
-                      </div>
-                      
-                      <div style={styles.actionButtons}>
-                        {friend.currentBattle ? (
-                          <button
-                            onClick={() => handleSpectate(friend)}
-                            style={styles.iconBtn("#9c27b0")}
-                            title="Spectate"
-                          >
-                            👁️
-                          </button>
-                        ) : friend.online ? (
-                          <>
+                        <div style={styles.friendInfo}>
+                          <div style={styles.friendName}>
+                            {friend.userName}
+                            {isBlocked && <span style={styles.blockedBadge}>BLOCKED</span>}
+                          </div>
+                          <div style={styles.friendStatus}>
+                            {isBlocked 
+                              ? "🔇 Messages Blocked" 
+                              : friend.currentBattle 
+                                ? "🔴 In Battle" 
+                                : friend.online 
+                                  ? "🟢 Online" 
+                                  : "⚫ Offline"
+                            }
+                          </div>
+                        </div>
+                        
+                        <div style={styles.actionButtons}>
+                          {/* CHAT BUTTON - Disabled if blocked */}
+                          {!friend.currentBattle && (
                             <button
-                              onClick={() => handleChallengeFriend(friend)}
-                              style={styles.iconBtn("#ff5722")}
-                              title="Challenge"
-                            >
-                              ⚔️
-                            </button>
-                            <button
-                              onClick={() => setSelectedFriend(friend)}
-                              style={styles.iconBtn("#4CAF50")}
-                              title="Chat"
+                              onClick={() => !isBlocked && setSelectedFriend(friend)}
+                              style={{
+                                ...styles.iconBtn(isBlocked ? "#ccc" : "#4CAF50"),
+                                cursor: isBlocked ? "not-allowed" : "pointer",
+                                opacity: isBlocked ? 0.5 : 1,
+                              }}
+                              title={isBlocked ? "Unblock to chat" : "Chat"}
+                              disabled={isBlocked}
                             >
                               💬
                             </button>
-                          </>
-                        ) : (
+                          )}
+
+                          {/* SPECTATE BUTTON */}
+                          {friend.currentBattle && (
+                            <button
+                              onClick={() => handleSpectate(friend)}
+                              style={styles.iconBtn("#9c27b0")}
+                              title="Spectate"
+                            >
+                              👁️
+                            </button>
+                          )}
+
+                          {/* CHALLENGE BUTTON - Disabled if blocked */}
+                          {!friend.currentBattle && friend.online && (
+                            <button
+                              onClick={() => !isBlocked && handleChallengeFriend(friend)}
+                              style={{
+                                ...styles.iconBtn(isBlocked ? "#ccc" : "#ff5722"),
+                                cursor: isBlocked ? "not-allowed" : "pointer",
+                                opacity: isBlocked ? 0.5 : 1,
+                              }}
+                              title={isBlocked ? "Unblock to challenge" : "Challenge"}
+                              disabled={isBlocked}
+                            >
+                              ⚔️
+                            </button>
+                          )}
+
+                          {/* BLOCK/UNBLOCK BUTTON */}
+                          {isBlocked ? (
+                            <button
+                              onClick={() => handleUnblockMessages(friend)}
+                              style={styles.unblockBtn}
+                              title="Unblock Messages"
+                            >
+                              🔔
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleBlockMessages(friend)}
+                              style={styles.blockBtn}
+                              title="Block Messages"
+                            >
+                              🔇
+                            </button>
+                          )}
+
+                          {/* REMOVE FRIEND BUTTON */}
                           <button
-                            onClick={() => setSelectedFriend(friend)}
-                            style={styles.iconBtn("#4CAF50")}
-                            title="Chat"
+                            onClick={() => handleRemoveFriend(friend.avatarId)}
+                            style={styles.iconBtn("#ff5555")}
+                            title="Remove Friend"
                           >
-                            💬
+                            🗑️
                           </button>
-                        )}
-                        
-                        <button
-                          onClick={() => handleRemoveFriend(friend.avatarId)}
-                          style={styles.iconBtn("#ff5555")}
-                          title="Remove"
-                        >
-                          🗑️
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </>
