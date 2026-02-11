@@ -523,6 +523,7 @@ export default function FriendsList({
   }, [showPanel]);
 
     // Re-sync when panel opens
+  useEffect(() => {
     emitEvent("userOnline", myAvatarId);
     fetchFriends();
     fetchRequests();

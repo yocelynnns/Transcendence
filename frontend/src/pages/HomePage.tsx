@@ -159,7 +159,7 @@ export default function HomePage({
 
             <div className="transform transition-transform duration-200 hover:scale-110">
               <MatchingButton avatarData={avatarData} />
-            </div>
+            </div> 
 
             <div className="transform transition-transform duration-200 hover:scale-110">
                 <AiButton />

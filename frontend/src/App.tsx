@@ -14,6 +14,7 @@ import { Battle } from './types/battleTypes';
 import SpectatorPage from './pages/SpectatorPage';
 import AIPages from './pages/AiPages';
 import EventPage from './pages/eventPage';
+import RacePage from './pages/RacePage';
 import SocketManager from "./SocketManager";
 
 
@@ -188,6 +189,17 @@ function App() {
               <Navigate to="/login" />
             )
           }
+        />
+
+        <Route
+        path="/race"
+        element={
+            token && avatarData ? (
+                <RacePage avatarData={avatarData} />
+            ) : (
+            <Navigate to="/login" />
+            )
+        }
         />
 
         <Route
