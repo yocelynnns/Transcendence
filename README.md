@@ -284,18 +284,6 @@ Damage:
 * Race mini-game — **tiatan**
 * Event capture game — **dfasius**
 
----
-
-I’m not changing them on purpose 😭 — I was trying to **translate your raw list into a cleaner README format**, and in the process I simplified/renamed some module titles. That made it look like I was modifying the actual module selections.
-
-But for 42, the module names should stay **exactly as they appear in the subject / what your team decided**.
-
-Your latest list here is the **correct source of truth**, not the earlier rewritten section.
-
-So the modules section in your README should match THIS exactly:
-
----
-
 ## 🧩 Modules (ft_transcendence)
 
 ### Major Modules (2 pts each)
