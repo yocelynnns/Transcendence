@@ -116,6 +116,7 @@ export default function ProfilePage({
     signOut();
     sessionStorage.removeItem("token");
     setToken(null);
+    navigate("/login");
   };
 
   const formatDuration = (start: Date, end?: Date) => {

@@ -9,9 +9,8 @@ import Guild from "../components/guild/GuildMain";
 import { AvatarData } from "../types/avatarTypes";
 import { Battle } from "../types/battleTypes";
 import FriendsList from "../components/friendlist/FriendsList";
-import RaceButton from "../components/race/RaceButton";
-import MatchingButton from "../components/matching/matchingButton";
-import AiButton from "../components/ai/aiButton";
+// import MatchingButton from "../components/matching/matchingButton";
+// import AiButton from "../components/ai/aiButton";
 
 const designWidth = 1512;
 const designHeight = 851; // added explicit design height
@@ -199,7 +198,7 @@ export default function HomePage({
       {showFriendsPanel && avatarData && (
         <div
           className={`fixed top-0 right-0 h-screen border-l-2 border-gray-300 z-50
-            ${isMobile ? "w-full max-w-[100%]" : "w-1/3 min-w-[360px] max-w-[520px]"}`}
+            ${isMobile ? "w-full max-w-full" : "w-1/3 min-w-[360px] max-w-[520px]"}`}
         >
           <FriendsList
             token={token}
