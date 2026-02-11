@@ -1238,6 +1238,13 @@ export default function FriendsList({
           myAvatarImage={myAvatarData.avatar}
           friend={selectedFriend}
           onClose={() => setSelectedFriend(null)}
+          onChallenge={(avatarId) => {
+            // Find the friend and challenge them
+            const friend = friends.find(f => f.avatarId === avatarId);
+            if (friend) {
+              handleChallengeFriend(friend);
+            }
+          }}
         />
       )}
     </>
