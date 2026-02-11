@@ -86,7 +86,7 @@ router.get("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) => 
     });
     return;
   } catch (err) {
-    console.error("[GET /chat/:friendAvatarId] error:", err);
+    console.log("[GET /chat/:friendAvatarId] error:", err);
     res.status(500).json({ message: "Failed to fetch chat history" });
     return;
   }
@@ -131,7 +131,7 @@ router.post("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) =>
     res.status(201).json({ message: populatedMessage });
     return;
   } catch (err) {
-    console.error("[POST /chat/:friendAvatarId] error:", err);
+    console.log("[POST /chat/:friendAvatarId] error:", err);
     res.status(500).json({ message: "Failed to send message" });
     return;
   }
@@ -177,7 +177,7 @@ router.get("/unread/count", authMiddleware, async (req: AuthRequest, res) => {
     });
     return;
   } catch (err) {
-    console.error("[GET /chat/unread/count] error:", err);
+    console.log("[GET /chat/unread/count] error:", err);
     res.status(500).json({ message: "Failed to fetch unread count" });
     return;
   }

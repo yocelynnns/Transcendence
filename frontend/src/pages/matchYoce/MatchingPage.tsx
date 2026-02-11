@@ -70,7 +70,7 @@ export default function Matching({ avatarData }: MatchMakingProps) {
           const avatar: AvatarData = await res.json();
           setOpponentDetails({ ...data, avatar });
         } catch (err) {
-          console.error("Failed to fetch opponent avatar:", err);
+          console.log("Failed to fetch opponent avatar:", err);
           setOpponentDetails({ ...data, avatar: undefined });
         }
 

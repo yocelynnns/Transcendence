@@ -17,7 +17,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     });
     return res.status(201).json(newGuild);
   } catch (err: any) {
-    console.error("[POST /guild]", err);
+    console.log("[POST /guild]", err);
     return res.status(400).json({ message: err.message || "Failed to create guild" });
   }
 });
@@ -41,7 +41,7 @@ router.put("/:guildId", authMiddleware, async (req: AuthRequest, res) => {
 
     return res.json({ message: "Guild updated successfully", guild });
   } catch (err: any) {
-    console.error("[PUT /guild/:guildId]", err);
+    console.log("[PUT /guild/:guildId]", err);
     return res.status(400).json({ message: err.message || "Failed to update guild" });
   }
 });
@@ -60,7 +60,7 @@ router.post("/:guildId/join", authMiddleware, async (req: AuthRequest, res) => {
 
     return res.json({ message: "Joined guild", guild });
   } catch (err: any) {
-    console.error("[POST /guild/:guildId/join]", err);
+    console.log("[POST /guild/:guildId/join]", err);
     return res.status(400).json({ message: err.message || "Failed to join guild" });
   }
 });
@@ -79,7 +79,7 @@ router.post("/:guildId/leave", authMiddleware, async (req: AuthRequest, res) => 
 
     return res.json({ message: "Left guild successfully", guild });
   } catch (err: any) {
-    console.error("[POST /guild/:guildId/leave]", err);
+    console.log("[POST /guild/:guildId/leave]", err);
     return res.status(400).json({ message: err.message || "Failed to leave guild" });
   }
 });
@@ -100,7 +100,7 @@ router.post("/:guildId/kick/:targetAvatarId", authMiddleware, async (req: AuthRe
 
     return res.json({ message: "Member kicked successfully", kickedAvatarId });
   } catch (err: any) {
-    console.error("[POST /guild/:guildId/kick/:targetAvatarId]", err);
+    console.log("[POST /guild/:guildId/kick/:targetAvatarId]", err);
     return res.status(400).json({ message: err.message || "Failed to kick member" });
   }
 });
@@ -111,7 +111,7 @@ router.get("/", async (_req, res) => {
     const guilds = await GuildService.getAllGuilds();
     return res.json(guilds);
   } catch (err: any) {
-    console.error("[GET /guild]", err);
+    console.log("[GET /guild]", err);
     return res
       .status(500)
       .json({ message: err.message || "Failed to get guilds" });
@@ -128,7 +128,7 @@ router.get("/:guildId", async (req, res) => {
     const guild = await GuildService.getGuildById(guildId);
     return res.json(guild);
   } catch (err: any) {
-    console.error("[GET /guild/:guildId]", err);
+    console.log("[GET /guild/:guildId]", err);
     return res.status(400).json({ message: err.message || "Failed to get guild" });
   }
 });
@@ -147,7 +147,7 @@ router.delete("/:guildId", authMiddleware, async (req: AuthRequest, res) => {
 
     return res.json({ message: "Guild deleted successfully" });
   } catch (err: any) {
-    console.error("[DELETE /guild/:guildId]", err);
+    console.log("[DELETE /guild/:guildId]", err);
     return res.status(400).json({ message: err.message || "Failed to delete guild" });
   }
 });
@@ -174,7 +174,7 @@ router.post(
 
       return res.json({ message: "Member promoted to co-leader", guild });
     } catch (err: any) {
-      console.error("[POST /guild/:guildId/promote/:targetAvatarId]", err);
+      console.log("[POST /guild/:guildId/promote/:targetAvatarId]", err);
       return res.status(400).json({ message: err.message || "Failed to promote member" });
     }
   }
@@ -202,7 +202,7 @@ router.post(
 
       return res.json({ message: "Co-leader demoted to member", guild });
     } catch (err: any) {
-      console.error("[POST /guild/:guildId/demote/:targetAvatarId]", err);
+      console.log("[POST /guild/:guildId/demote/:targetAvatarId]", err);
       return res.status(400).json({ message: err.message || "Failed to demote co-leader" });
     }
   }

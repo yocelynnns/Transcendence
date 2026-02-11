@@ -3,6 +3,7 @@ import Battle, { IBattlePokemon } from "../db/battle";
 import { IAvatar } from "../db/avatar";
 import MatchInvite from "../db/matchInvite";
 import Avatar from "../db/avatar";
+import PQueue from "p-queue";
 
 /// to enable commuication about end of battle
 let ioInstance: any = null;
@@ -26,7 +27,6 @@ function emitBattleEnded(battle: any) {
     ioInstance.emit("battleEnded", { avatarId: player2Id, battleId: battle._id });
   }
 }
-///
 
 // Get a specific battle
 export interface GetBattleInput {
@@ -79,7 +79,6 @@ export async function createBattle({ player1, player2 }: CreateBattleInput) {
 export const BATTLE_TIMEOUT = 40_000; // 40 seconds
 export const battleTimers: Record<string, NodeJS.Timeout> = {};
 
-// Mark player ready and return updated battle
 export async function markPlayerReady(
   battleId: string,
   avatarId: string,
@@ -87,25 +86,32 @@ export async function markPlayerReady(
 ) {
   const battle = await Battle.findById(battleId);
   if (!battle) throw new Error("Battle not found");
-
+  
   const isPlayer1 = battle.player1.toString() === avatarId;
+  const playerField = isPlayer1 ? "pokemon1" : "pokemon2";
+  const timeField = isPlayer1 ? "lastPlayer1Turn" : "lastPlayer2Turn";
 
-  const currentPokemon = isPlayer1 ? battle.pokemon1 : battle.pokemon2;
-  if (currentPokemon && currentPokemon.length > 0) {
-    return battle;
-  }
-
-  const updatedBattle = await Battle.findByIdAndUpdate(
-    battleId,
+  const updatedBattle = await Battle.findOneAndUpdate(
     {
-      $set: isPlayer1
-        ? { pokemon1: selectedPokemon , lastPlayer1Turn: new Date() }
-        : { pokemon2: selectedPokemon  , lastPlayer2Turn: new Date()},
+      _id: battleId,
+      [playerField]: { $in: [null, undefined, []] }
+    },
+    {
+      $set: {
+        [playerField]: selectedPokemon,
+        [timeField]: new Date()
+      }
     },
     { new: true }
   );
 
-  if (!updatedBattle) throw new Error("Battle not found after update");
+  if (!updatedBattle) {
+    const existingBattle = await Battle.findById(battleId);
+    if (!existingBattle) throw new Error("Battle not found");
+    
+    return existingBattle;
+  }
+
   return updatedBattle;
 }
 
@@ -243,6 +249,15 @@ export function startMoveTimeout(battleId: string, io: any) {
   }, MOVE_TIMEOUT);
 }
 
+const battleQueues = new Map<string, PQueue>();
+
+function getBattleQueue(battleId: string) {
+  if (!battleQueues.has(battleId)) {
+    battleQueues.set(battleId, new PQueue({ concurrency: 1 }));
+  }
+  return battleQueues.get(battleId)!;
+}
+
 // Process a player action
 export async function playerAction(
   battleId: string,
@@ -378,6 +393,18 @@ export async function playerAction(
   await battle.save();
 
   return battle;
+}
+
+export async function playerActionSafe(
+  battleId: string,
+  avatarId: string,
+  action: any,
+  attackerActiveIndex: number,
+  defenderActiveIndex: number
+) {
+  const queue = getBattleQueue(battleId);
+
+  return queue.add(() => playerAction(battleId, avatarId, action, attackerActiveIndex, defenderActiveIndex));
 }
 
 // Send match invite

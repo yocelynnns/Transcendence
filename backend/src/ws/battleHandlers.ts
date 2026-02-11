@@ -4,7 +4,7 @@ import User from "../db/user";
 import Friend from "../db/friend";
 import { onlineUsers } from "./server";
 import Avatar from "../db/avatar";
-
+import PQueue from "p-queue";
 import * as AvatarService from "../services/avatar.service";
 import * as BattleService from "../services/battle.service";
 
@@ -14,7 +14,8 @@ export function setupBattleHandlers(
   matchingPool: { socketId: string; avatarId: string; userId:string }[]
 ) {
 
-  // Helper to notify friends about battle status
+  const matchingQueue = new PQueue({ concurrency: 1 });
+
   async function notifyFriendsBattleStarted(io: Server, avatarId: string, battleId: string) {
     try {
       const userRecord = await User.findOne({ avatar: avatarId }).populate("avatar");
@@ -48,6 +49,7 @@ export function setupBattleHandlers(
 
   // Join matching
   async function tryMatch() {
+
     while (matchingPool.length >= 2) {
       const player1 = matchingPool.shift()!;
       const player2 = matchingPool.shift()!;
@@ -98,8 +100,7 @@ export function setupBattleHandlers(
       userId,
       avatarId,
     });
-
-    tryMatch();
+    matchingQueue.add(() => tryMatch());
   });
 
   // Player ready on team select
@@ -155,7 +156,7 @@ export function setupBattleHandlers(
       const avatarId = socket.data.avatarId?.toString();
       if (!avatarId) return;
 
-      const battle = await BattleService.playerAction(
+      const battle = await BattleService.playerActionSafe(
         data.battleId,
         avatarId,
         data.action,

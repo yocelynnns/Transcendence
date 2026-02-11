@@ -6,11 +6,19 @@ import { Battle, BattlePokemon } from "../types/battleTypes";
 let socket: Socket | null = null;
 
 export function connectSocket(token: string): Socket {
+  let sessionId = sessionStorage.getItem("sessionId");
+    
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    sessionStorage.setItem("sessionId", sessionId);
+  }
+    
   if (!socket) {
     socket = io("http://localhost:5001", {
       autoConnect: true,
       auth: {
         token,
+        sessionId,
       },
     });
   }
@@ -23,7 +31,7 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
   const latestPlayerRef = useRef<PlayerState | null>(null);
   const token = sessionStorage.getItem("token");
   if (!token) {
-    throw new Error("No token found");
+    // console.log("No token found");
   }
   // keep latest callback reference
   useEffect(() => {
@@ -33,7 +41,7 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
   // initialize socket and subscribe to players
   useEffect(() => {
     if (!socketRef.current) {
-      socketRef.current = connectSocket(token);
+      socketRef.current = connectSocket(token!);
     }
 
     const s = socketRef.current;
@@ -50,7 +58,7 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
       s.off("playersUpdate", handlePlayersUpdate);
     };
   }, [token]);
-
+  
   // send player movement
   const sendPlayerMove = useCallback(
     (x: number, y: number, direction: string, frame: number, charIndex: number) => {
@@ -65,9 +73,8 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
     async () => {
       try {
         socketRef.current?.emit("registerPlayer");
-
       } catch (err) {
-        console.error("REGISTER PLAYER FAILED:", err);
+        console.log("REGISTER PLAYER FAILED:", err);
       }
     },
     []
@@ -122,15 +129,47 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
     []
   );
 
-
   // sign out and clean socket
   const signOut = useCallback(() => {
     socketRef.current?.emit("signout");
-    socketRef.current?.disconnect();
     socketRef.current = null;
     socket = null;
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("sessionId");
   }, []);
+
+  const forcedSignOut = useCallback(async () => {    
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+    }
+    
+    socketRef.current = null;
+    socket = null;
+    
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("sessionId");
+  }, []);
+
+  useEffect(() => {
+    const s = socketRef.current;
+    if (!s) return;
+
+    const handleForcedSignOut = () => {
+      console.log("⚠️ Forced sign out detected");
+      forcedSignOut();
+      // Optionally redirect to login or show a message
+      window.location.href = '/login'; // or however you handle this
+    };
+
+    s.on("forcedSignOut", handleForcedSignOut);
+
+    return () => {
+      s.off("forcedSignOut", handleForcedSignOut);
+    };
+  }, [forcedSignOut]);
+
+
 
   const leaveMatching = useCallback((avatarId: string) => {
     socketRef.current?.emit("leaveMatching", avatarId);
@@ -146,5 +185,6 @@ export function useGameSocket(onPlayersUpdate: (players: PlayerState[]) => void)
     signOut,
     leaveMatching,
     playerReadyMatch,
+    forcedSignOut,
   };
 }

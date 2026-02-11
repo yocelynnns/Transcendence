@@ -9,6 +9,7 @@ import { BattlePokemon } from "../types/battleTypes";
 import { useBattleLogic } from "../components/ai/aiBattleLogic";
 import { AiPokemon } from "../components/ai/aiTypes";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 
 const toBattlePokemon = (p: AiPokemon): BattlePokemon => ({
@@ -43,9 +44,15 @@ export default function AiPages() {
   const playerPokemon = toBattlePokemon(playerActive);
   const enemyPokemon = toBattlePokemon(enemyActive);
 
+  const [surrender, setSurrender] = useState<boolean>(false);
+
   const otherPokemons = playerTeam
     .map(toBattlePokemon)
     .filter(p => p.pokemonId !== playerPokemon.pokemonId);
+
+  const handleSurrender = () => {
+    setSurrender(!surrender);
+  };
 
   return (
     <div
@@ -139,6 +146,7 @@ export default function AiPages() {
         }}
         onAttack={playerAttack}
         disabled={turn !== "p1"}
+        onSurrender={handleSurrender}
       />
 
       {activePlayerIsDead && !battleResult && (
@@ -160,7 +168,7 @@ export default function AiPages() {
         </div>
 )}
 
-      {battleResult && (
+      {(battleResult || surrender) && (
         <div className="battle-result-overlay">
           <h1>{battleResult === "win" ? "You Won!" : "You Lost!"}</h1>
           <p>{battleData?.winnerReason ?? ""}</p>
@@ -174,6 +182,8 @@ export default function AiPages() {
           <button
             onClick={() => {
               resetBattle();
+              if (surrender)
+                handleSurrender();
             }}
           >
             Play Again

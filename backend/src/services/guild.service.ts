@@ -78,28 +78,25 @@ export async function joinGuild({ userId, guildId }: JoinGuildInput) {
   if (!mongoose.Types.ObjectId.isValid(guildId)) throw new Error("Invalid guild ID");
 
   const user = await User.findById(userId).populate<{ avatar: IAvatar }>("avatar");
-  if (!user || !user.avatar) throw new Error("User must have an avatar to join a guild");
+  if (!user || !user.avatar) throw new Error("User must have an avatar");
 
   const avatar = user.avatar;
 
-  if (avatar.guild) {
-    throw new Error("You are already a member of a guild and cannot join another");
-  }
+  const updatedGuild = await Guild.findOneAndUpdate(
+    { _id: guildId, "members.avatar": { $ne: avatar._id } },
+    { $push: { members: { avatar: avatar._id, role: "member" } } },
+    { new: true }
+  );
+  if (!updatedGuild) throw new Error("Already a member or guild not found");
 
-  const guild = await Guild.findById(guildId);
-  if (!guild) throw new Error("Guild not found");
+  const updatedAvatar = await Avatar.findOneAndUpdate(
+    { _id: avatar._id, guild: { $exists: false } },
+    { $set: { guild: guildId } },
+    { new: true }
+  );
+  if (!updatedAvatar) throw new Error("User already in a guild");
 
-  if (guild.members.some((m) => m.avatar.equals(avatar._id))) {
-    throw new Error("Already a member of this guild");
-  }
-
-  guild.members.push({ avatar: avatar._id, role: "member" });
-  await guild.save();
-
-  avatar.guild = guild._id;
-  await avatar.save();
-
-  return guild;
+  return updatedGuild;
 }
 
 // leave Guild
@@ -114,26 +111,43 @@ export async function leaveGuild({ userId, guildId }: LeaveGuildInput) {
 
   const user = await User.findById(userId).populate<{ avatar: IAvatar }>("avatar");
   if (!user || !user.avatar || !user.avatar.guild) throw new Error("You are not in any guild");
-
   const avatar = user.avatar;
 
-  const guild = await Guild.findById(guildId);
-  if (!guild) throw new Error("Guild not found");
-
-  if (guild._id.toString() !== avatar.guild?.toString()) {
+  if (avatar?.guild?.toString() !== guildId) {
     throw new Error("You are not a member of this guild");
   }
 
-  const member = guild.members.find((m) => m.avatar.equals(avatar._id));
-  if (!member) throw new Error("Member not found in guild");
+  const guild = await Guild.findOneAndUpdate(
+    {
+      _id: guildId,
+      members: {
+        $elemMatch: {
+          avatar: avatar._id,
+          role: { $ne: "leader" }
+        }
+      }
+    },
+    {
+      $pull: { members: { avatar: avatar._id } }
+    },
+    { new: true }
+  );
 
-  if (member.role === "leader") throw new Error("Guild leader cannot leave the guild");
+  if (!guild) {
+    const existingGuild = await Guild.findById(guildId);
+    if (!existingGuild) throw new Error("Guild not found");
+    
+    const member = existingGuild.members.find((m) => m.avatar.equals(avatar._id));
+    if (!member) throw new Error("Member not found in guild");
+    if (member.role === "leader") throw new Error("Guild leader cannot leave the guild");
+    
+    throw new Error("Failed to leave guild");
+  }
 
-  guild.members = guild.members.filter((m) => !m.avatar.equals(avatar._id));
-  await guild.save();
-
-  avatar.guild = undefined;
-  await avatar.save();
+  await Avatar.findByIdAndUpdate(
+    avatar._id,
+    { $unset: { guild: "" } }
+  );
 
   return guild;
 }
@@ -155,37 +169,46 @@ export async function kickMember({ userId, guildId, targetAvatarId }: KickMember
 
   const actorAvatar = user.avatar;
 
-  const guild = await Guild.findById(guildId);
-  if (!guild) throw new Error("Guild not found");
+  const guild = await Guild.findOne({
+    _id: guildId,
+    "members.avatar": actorAvatar._id,
+    "members.role": { $in: ["leader", "co-leader"] }
+  });
+
+  if (!guild) throw new Error("You are not authorized to kick members");
 
   const actorMember = guild.members.find((m) => m.avatar.equals(actorAvatar._id));
-  if (!actorMember || (actorMember.role !== "leader" && actorMember.role !== "co-leader")) {
-    throw new Error("Only leader or co-leader can kick members");
-  }
-
+  if (!actorMember) throw new Error("Actor not found in guild");
   if (actorMember.role === "leader" && actorAvatar._id.equals(targetAvatarId)) {
     throw new Error("Leader cannot kick themselves");
   }
 
   const targetMember = guild.members.find((m) => m.avatar.equals(targetAvatarId));
   if (!targetMember) throw new Error("Target is not in this guild");
-
   if (targetMember.role === "leader") throw new Error("Cannot kick the guild leader");
   if (targetMember.role === "co-leader" && actorMember.role !== "leader") {
     throw new Error("Co-leaders cannot kick other co-leaders");
   }
 
-  guild.members = guild.members.filter((m) => !m.avatar.equals(targetAvatarId));
-  await guild.save();
+  const updatedGuild = await Guild.findOneAndUpdate(
+    { _id: guildId, "members.avatar": targetAvatarId },
+    { $pull: { members: { avatar: targetAvatarId } } },
+    { new: true }
+  );
 
-  const targetAvatar = await Avatar.findById(targetAvatarId);
-  if (targetAvatar) {
-    targetAvatar.guild = undefined;
-    await targetAvatar.save();
-  }
+  if (!updatedGuild) throw new Error("Failed to remove member from guild");
+
+  const updatedAvatar = await Avatar.findOneAndUpdate(
+    { _id: targetAvatarId, guild: guildId },
+    { $unset: { guild: "" } },
+    { new: true }
+  );
+
+  if (!updatedAvatar) throw new Error("Failed to update target avatar");
 
   return targetAvatarId;
 }
+
 
 // Search All Guild
 export async function getAllGuilds() {

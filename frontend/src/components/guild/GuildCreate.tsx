@@ -66,10 +66,10 @@ export default function GuildCreate({
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
-        console.error("Guild creation error:", err);
+        console.log("Guild creation error:", err);
       } else {
         setError("Failed to create guild");
-        console.error("Guild creation unknown error:", err);
+        console.log("Guild creation unknown error:", err);
       }
     } finally {
       setLoading(false);

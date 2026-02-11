@@ -33,7 +33,7 @@ function App() {
       setBattleId(user.avatar?.currentBattle?.toString() ?? null);
     } catch (err) {
       setToken(null);
-      console.error("Failed to fetch user info:", err);
+      console.log("Failed to fetch user info:", err);
     }
   }, [token]);
 
@@ -59,7 +59,7 @@ function App() {
         setCurrentBattle(battleData);
         return battleData;
       } catch (err) {
-        console.error("Failed to fetch battle:", err);
+        console.log("Failed to fetch battle:", err);
         setCurrentBattle(null);
         setBattleId(null);
       }
@@ -83,7 +83,12 @@ function App() {
   const { avatarData } = useAvatar(avatarId);
   
   return (
-    <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
       {token && avatarId && <SocketManager avatarId={avatarId} />}
 
       <Routes>

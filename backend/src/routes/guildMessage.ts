@@ -18,7 +18,7 @@ router.get("/:guildId/messages", authMiddleware, async (req: AuthRequest, res) =
 
     return res.json(messages);
   } catch (err: any) {
-    console.error("[GET /guild/:guildId/messages]", err);
+    console.log("[GET /guild/:guildId/messages]", err);
     return res.status(400).json({ message: err.message || "Failed to fetch messages" });
   }
 });

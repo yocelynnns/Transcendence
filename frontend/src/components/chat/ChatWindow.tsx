@@ -142,7 +142,7 @@ export default function ChatWindow({
       );
       
       if (!res.ok) {
-        console.error("Failed to fetch messages:", res.status);
+        console.log("Failed to fetch messages:", res.status);
         setLoading(false);
         return;
       }
@@ -159,7 +159,7 @@ export default function ChatWindow({
       setHasMore(data.pagination.hasMore);
       setPage(pageNum);
     } catch (err) {
-      console.error("Failed to fetch messages:", err);
+      console.log("Failed to fetch messages:", err);
     } finally {
       setLoading(false);
     }

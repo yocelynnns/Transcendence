@@ -47,7 +47,7 @@ export function useAvatar(avatarId: string | null) {
 
 
     onError: (err) => {
-      console.error("Failed to update avatar:", err.message);
+      console.log("Failed to update avatar:", err.message);
     },
   });
 

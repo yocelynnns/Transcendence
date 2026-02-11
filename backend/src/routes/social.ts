@@ -31,7 +31,7 @@ router.post("/block/:avatarId", authMiddleware, async (req: AuthRequest, res) =>
       return res.status(404).json({ message: "Avatar not found" });
     }
 
-    console.error("[POST /block/:avatarId] error:", err);
+    console.log("[POST /block/:avatarId] error:", err);
     return res.status(500).json({ message: "Failed to block user" });
   }
 });
@@ -56,7 +56,7 @@ router.delete("/block/:avatarId", authMiddleware, async (req: AuthRequest, res) 
       return res.status(404).json({ message: "Avatar not found" });
     }
 
-    console.error("[DELETE /block/:avatarId] error:", err);
+    console.log("[DELETE /block/:avatarId] error:", err);
     return res.status(500).json({ message: "Failed to unblock user" });
   }
 });
@@ -74,7 +74,7 @@ router.get("/blocked", authMiddleware, async (req: AuthRequest, res) => {
       return res.status(404).json({ message: "Avatar not found" });
     }
 
-    console.error("[GET /blocked] error:", err);
+    console.log("[GET /blocked] error:", err);
     return res.status(500).json({ message: "Failed to fetch blocked users" });
   }
 });
@@ -99,7 +99,7 @@ router.get("/block/check/:avatarId", authMiddleware, async (req: AuthRequest, re
       return res.status(404).json({ message: "Avatar not found" });
     }
 
-    console.error("[GET /block/check/:avatarId] error:", err);
+    console.log("[GET /block/check/:avatarId] error:", err);
     return res.status(500).json({ message: "Failed to check block status" });
   }
 });
@@ -130,7 +130,7 @@ router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) =
       return res.status(404).json({ message: "Profile not found" });
     }
 
-    console.error("[GET /profile/:avatarId] error:", err);
+    console.log("[GET /profile/:avatarId] error:", err);
     return res.status(500).json({ message: "Failed to fetch profile" });
   }
 });

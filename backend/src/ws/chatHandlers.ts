@@ -102,7 +102,7 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
 
       console.log(`💬 Message saved & sent: ${senderId} -> ${receiverId}`);
     } catch (err) {
-      console.error("Failed to send message:", err);
+      console.log("Failed to send message:", err);
       socket.emit("messageError", { error: "Failed to send message" });
     }
   });
@@ -128,23 +128,23 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
 
   // Mark messages as read
   socket.on("markAsRead", async (data: { 
-    receiverId: string 
+    senderId: string  // ✅ Changed from receiverId to senderId
   }) => {
-    const { receiverId } = data;
-
-    const senderId = socket.data.avatarId.toString();
+    const { senderId } = data;  // ✅ Use senderId
+    const receiverId = socket.data.avatarId.toString();  // Current user is the receiver
     
     if (!senderId || !receiverId) return;
     
     try {
       await markMessagesRead({ senderId, receiverId });
       
+      // Notify the SENDER that their messages were read by the RECEIVER
       const senderSocketId = onlineUsers.get(senderId);
       if (senderSocketId) {
         io.to(senderSocketId).emit("messagesRead", { byAvatarId: receiverId });
       }
     } catch (err) {
-      console.error("Failed to mark messages as read:", err);
+      console.log("Failed to mark messages as read:", err);
     }
   });
-}
+  }

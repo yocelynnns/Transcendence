@@ -28,7 +28,7 @@ router.get("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) => 
 
     return res.status(200).json(result);
   } catch (err: any) {
-    console.error("[GET /chat/:friendAvatarId]", err);
+    console.log("[GET /chat/:friendAvatarId]", err);
 
     switch (err.message) {
       case "INVALID_AVATAR_ID":
@@ -67,7 +67,7 @@ router.post("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) =>
 
     return res.status(201).json({ message });
   } catch (err: any) {
-    console.error("[POST /chat/:friendAvatarId]", err);
+    console.log("[POST /chat/:friendAvatarId]", err);
 
     switch (err.message) {
       case "INVALID_AVATAR_ID":
@@ -93,7 +93,7 @@ router.get("/unread/count", authMiddleware, async (req: AuthRequest, res) => {
 
     return res.status(200).json(result);
   } catch (err: any) {
-    console.error("[GET /chat/unread/count]", err);
+    console.log("[GET /chat/unread/count]", err);
 
     if (err.message === "AVATAR_NOT_FOUND") {
       return res.status(404).json({ message: "Avatar not found" });
