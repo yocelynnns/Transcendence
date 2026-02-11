@@ -111,6 +111,7 @@ import eventicon from "./elements/icons/event.png"
 import xicon from "./elements/icons/x.png"
 import backicon from "./elements/icons/back.png"
 import sendicon from "./elements/icons/send.png"
+import battleicon from "./elements/icons/battle.png"
 
 // EXPORT CENTRAL ASSETS
 export const ASSETS = {
@@ -177,6 +178,7 @@ export const ASSETS = {
     EVENT: eventicon,
     X: xicon,
     BACK: backicon,
-    SEND: sendicon
+    SEND: sendicon,
+    BATTLE: battleicon,
   }
 };

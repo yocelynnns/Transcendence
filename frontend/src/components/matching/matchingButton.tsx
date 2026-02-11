@@ -11,7 +11,7 @@ export default function MatchingButton({ avatarData }: MatchingButtonProps) {
 
   if (!avatarData) return null;
 
-  const swordButton = ASSETS.HEALTH.SWORD.CROSS;
+  const swordButton = ASSETS.ICONS.BATTLE;
 
   const handleClick = () => {
     const pokemonInventory = avatarData.pokemonInventory ?? [];
@@ -25,28 +25,15 @@ export default function MatchingButton({ avatarData }: MatchingButtonProps) {
   };
 
   return (
-    <div
+    <button
       onClick={handleClick}
-      style={{
-        // position: "absolute",
-        // top: 100,
-        // right: 8,
-        cursor: "pointer",
-        zIndex: 100,
-        width: 70,
-        height: 70,
-      }}
+      className="transform transition-transform duration-200 hover:scale-110"
     >
       <img
         src={swordButton}
         alt="Go to Matching"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          imageRendering: "pixelated",
-        }}
+        className="object-contain image-rendering-pixelated w-12 h-12"
       />
-    </div>
+    </button>
   );
 }
