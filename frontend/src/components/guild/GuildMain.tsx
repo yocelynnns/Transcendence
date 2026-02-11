@@ -8,7 +8,7 @@ import type { AvatarData } from "../../types/avatarTypes";
 import { fetchAllGuilds } from "../../hooks/useGuildData";
 import { fetchGuildMessages } from "../../hooks/useGuildChat";
 import { useFullGuildUpdates, useGuildChatSocket } from "../../hooks/useGuildSubcribe";
-import PixelButton from "../elements/pixelButton";
+import PixelButton from "../elements/PixelButton";
 import { ASSETS } from "../../assets";
 
 type View = "list" | "create" | "profile" | "chat";

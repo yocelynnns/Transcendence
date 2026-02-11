@@ -1,61 +1,66 @@
-//IMPORTS
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login as loginApi, getUserInfo } from "../services/authService";
+import PixelButton from "../components/elements/PixelButton";
 
-//TYPES / PROPS
 interface LoginPageProps {
   setToken: (token: string | null) => void;
   setAvatarId?: (id: string | null) => void;
 }
 
-//MAIN COMPONENT
+// DESIGN SIZE (like profile & signup)
+const designWidth = 450;
+const designHeight = 400;
+const padding = 32;
+const maxScale = 1;
+const minScale = 0.5;
+
 export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
-  //STATE
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [scale, setScale] = useState(1);
 
-  //NAVIGATION
-  const navigate = useNavigate();
+  // SCALE OUTER WRAPPER
+  useEffect(() => {
+    const handleResize = () => {
+      const scaleX = (window.innerWidth - padding * 2) / designWidth;
+      const scaleY = (window.innerHeight - padding * 2) / designHeight;
+      const newScale = Math.min(
+        maxScale,
+        Math.max(minScale, Math.min(scaleX, scaleY))
+      );
+      setScale(newScale);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  //HANDLE LOGIN
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
-    //VALIDATION
     if (!email || !password) return setError("Email and password are required!");
 
     try {
       setLoading(true);
 
-      //LOGIN API
       const data = await loginApi(email, password);
-
-      //SAVE TOKEN
       sessionStorage.setItem("token", data.token);
       setToken(data.token);
 
-      //GET USER INFO
       const userData = await getUserInfo(data.token);
+      if (userData._id) sessionStorage.setItem("userId", userData._id);
 
-      // SAVE USER ID for friendlist
-      if (userData._id) {
-        sessionStorage.setItem("userId", userData._id);
-      }
-
-      //CHECK AVATAR
       if (userData.avatar?._id) {
-        setAvatarId?.(userData.avatar?._id);
-
-        //HOME PAGE
+        setAvatarId?.(userData.avatar._id);
         navigate("/");
       } else {
         setAvatarId?.(null);
-
-        //PROFILE CREATION
         navigate("/profile");
       }
     } catch (err: unknown) {
@@ -66,40 +71,102 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
     }
   };
 
-  //RENDER
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", width: "100vw", background: "#b3e5fc", fontFamily: "monospace" }}>
-      <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", background: "#fff", border: "4px solid #000", padding: 20, borderRadius: 8, width: 300, textAlign: "center" }}>
-        {/*HEADER*/}
-        <h1 style={{ fontSize: 32, marginBottom: 20 }}>Pokemon Login</h1>
-
-        {/*EMAIL INPUT*/}
-        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-          style={{ fontFamily: "monospace", fontSize: 16, marginBottom: 12, padding: 8, border: "2px solid #000", borderRadius: 4, outline: "none" }}
+    <div className="fixed inset-0 flex items-center justify-center bg-blue-200">
+      <div
+        style={{
+          width: designWidth,
+          height: designHeight,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+        }}
+        className="relative w-full"
+      >
+        {/* PIXEL BACKGROUND */}
+        <PixelButton
+          colorA="#677fb4"
+          colorB="#384071"
+          colorText="#384071"
+          textSize="1rem"
+          height={400}
+          width="100%"
+          cursorPointer={false}
         />
 
-        {/*PASSWORD INPUT*/}
-        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-          style={{ fontFamily: "monospace", fontSize: 16, marginBottom: 12, padding: 8, border: "2px solid #000", borderRadius: 4, outline: "none" }}
-        />
+        {/* FORM CONTENT */}
+        <form
+          onSubmit={handleLogin}
+          className="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center p-10 text-center"
+        >
+          <h1 className="text-3xl mb-8 pixelify-sans text-[#ffffff]">Pokemon Login</h1>
 
-        {/*SUBMIT BUTTON*/}
-        <button type="submit" disabled={loading}
-          style={{ fontFamily: "monospace", fontSize: 16, padding: 10, background: loading ? "#ccc" : "#ffcc00", border: "2px solid #000", cursor: loading ? "not-allowed" : "pointer", marginTop: 8 }}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+          <div className="relative mb-3 w-full">
+            <PixelButton
+              colorA="#a5b6dd"
+              colorB="#384071"
+              colorText="#384071"
+              textSize="1rem"
+              height={50}
+              width="100%"
+              cursorPointer={false}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className={`absolute top-0 left-0 w-full h-full px-3 border-none outline-none font-mono bg-transparent
+                ${email ? "text-white" : "text-[#384071]"}`
+              }
+            />
+          </div>
 
-        {/*ERROR MESSAGE*/}
-        {error && <div style={{ color: "red", marginTop: 12 }}>{error}</div>}
+          <div className="relative mb-3 w-full">
+            <PixelButton
+              colorA="#a5b6dd"
+              colorB="#384071"
+              colorText="#384071"
+              textSize="1rem"
+              height={50}
+              width="100%"
+              cursorPointer={false}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className={`absolute top-0 left-0 w-full h-full px-3 border-none outline-none font-mono bg-transparent
+                ${password ? "text-white" : "text-[#384071]"}`
+              }
+            />
+          </div>
 
-        {/*SIGNUP LINK*/}
-        <div style={{ marginTop: 12 }}>
-          No account?{" "}
-          <Link to="/signup" style={{ fontWeight: "bold", color: "#0077cc" }}>
-            Sign up
-          </Link>
-        </div>
-      </form>
+          <div className="mt-2 w-full">
+            <PixelButton
+              colorA={loading ? "#ccc" : "#ffcc00"}
+              colorB={loading ? "#aaa" : "#d4a500"}
+              colorText="#000"
+              textSize="1rem"
+              height={50}
+              width="100%"
+              cursorPointer={!loading}
+              onClick={() => document.querySelector('form')?.requestSubmit()}
+            >
+              {loading ? "Logging in..." : "Login"}
+            </PixelButton>
+          </div>
+
+          {error && <div className="mt-3 text-[#ff8ea8]">{error}</div>}
+
+          <div className="mt-6 text-sm text-[#ffffff]">
+            No account?{" "}
+            <Link to="/signup" className="font-bold text-[#ffcc00]">
+              Sign up
+            </Link>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

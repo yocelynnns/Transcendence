@@ -1,9 +1,10 @@
+// src/pages/matchingpage.tsx
 import { useEffect, useState, useMemo, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { AvatarData } from "../types/avatarTypes";
+import type { AvatarData } from "../types/avatarTypes";
 import { ASSETS } from "../assets";
 import { useGameSocket } from "../ws/useGameSocket";
-import { Battle } from "../types/battleTypes";
+import type { Battle } from "../types/battleTypes";
 
 interface MatchMakingProps {
   avatarData: AvatarData | null | undefined;
@@ -50,11 +51,7 @@ export default function Matching({
       new Date(currentBattle.createdAt ?? Date.now()).getTime() + 5_000;
 
     const updateCountdown = () => {
-      const secondsLeft = Math.max(
-        Math.ceil((endTime - Date.now()) / 1000),
-        0
-      );
-
+      const secondsLeft = Math.max(Math.ceil((endTime - Date.now()) / 1000), 0);
       setCountdown(secondsLeft);
 
       if (secondsLeft <= 0) {
@@ -64,7 +61,6 @@ export default function Matching({
 
     updateCountdown();
     const timer = setInterval(updateCountdown, 200);
-
     return () => clearInterval(timer);
   }, [currentBattle, opponentAvatar, navigate]);
 
@@ -86,9 +82,7 @@ export default function Matching({
 
     const cleanupError = subscribeEvent(
       "matchError",
-      (data: { message: string }) => {
-        alert(data.message);
-      }
+      (data: { message: string }) => alert(data.message)
     );
 
     return () => {
@@ -98,99 +92,76 @@ export default function Matching({
   }, [currentId, currentBattle, joinMatching, subscribeEvent, setCurrentBattle]);
 
   const handleReturn = () => {
-    if (currentId) {
-      emitEvent("leaveMatching", currentId);
-    }
+    if (currentId) emitEvent("leaveMatching", currentId);
     navigate("/", { replace: true });
   };
 
   if (!avatarData) {
     return (
-      <div className="fullscreen-center" style={{ color: "#fff" }}>
+      <div className="w-screen h-screen grid place-items-center bg-black text-white pixelify-sans text-lg">
         Loading player data...
       </div>
     );
   }
 
+  const title = matchStarted ? "MATCH FOUND!" : "WAITING FOR OPPONENT...";
+
   return (
     <div
+      className="w-screen h-screen flex flex-col items-center justify-center text-center px-4 pixelify-sans"
       style={{
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #1e1e2f 0%, #2a2a3f 100%)",
-        fontFamily: "monospace",
-        color: "#999",
-        textAlign: "center",
+        background: "linear-gradient(to bottom, #a9c0dc 0%, #7fa3c7 100%)",
       }}
     >
-      <h1
-        style={{
-          fontSize: 32,
-          marginBottom: 12,
-          color: "#fff",
-          textShadow: "0 0 10px #888",
-        }}
-      >
-        {matchStarted ? "Match Found!" : "Waiting for Opponent..."}
-      </h1>
+      {/* TITLE PANEL */}
+      <div className="mb-6 px-8 py-4 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55]">
+        <h1 className="text-[24px] sm:text-[28px] text-white tracking-wide">
+          {title}
+        </h1>
+      </div>
 
+      {/* COUNTDOWN */}
       {matchStarted && (
-        <div
-          style={{
-            fontSize: 18,
-            marginBottom: 30,
-            color: "#a2d5f2",
-            textShadow: "0 0 6px #000",
-          }}
-        >
+        <div className="mb-6 px-6 py-3 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55] text-[16px] text-white">
           Match starts in {countdown} second{countdown !== 1 ? "s" : ""}
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
+      {/* AVATARS */}
+      <div className="flex flex-col sm:flex-row items-center gap-8 sm:gap-14">
         <AvatarCard
           avatar={avatarData.avatar || defaultAvatar}
           name={avatarData.userName}
-          color="#a2d5f2"
         />
 
-        <div
-          style={{
-            fontSize: 36,
-            fontWeight: "bold",
-            color: "#888",
-            textShadow: "0 0 15px #666",
-          }}
-        >
+        <div className="hidden sm:block text-[28px] font-bold text-white drop-shadow-[2px_2px_0_#2b3d55]">
           VS
         </div>
 
         <AvatarCard
           avatar={opponentAvatar?.avatar}
           name={waiting ? "Searching..." : opponentAvatar?.userName || ""}
-          color="#ff5555"
           loading={waiting}
         />
       </div>
 
+      {/* RETURN BUTTON */}
       <button
         onClick={handleReturn}
-        style={{
-          marginTop: 40,
-          padding: "10px 20px",
-          borderRadius: 10,
-          border: "2px solid black",
-          background: "white",
-          cursor: "pointer",
-          fontWeight: 600,
-          color: "black",
-        }}
+        className="
+          mt-10
+          px-8 py-3
+          bg-[#5f78a8]
+          border-4 border-black
+          text-white
+          text-[16px]
+          shadow-[6px_6px_0px_#2b3d55]
+          active:translate-x-0.5
+          active:translate-y-0.5
+          active:shadow-[3px_3px_0px_#2b3d55]
+        "
       >
-        Return
+        ← Return
       </button>
     </div>
   );
@@ -199,38 +170,44 @@ export default function Matching({
 function AvatarCard({
   avatar,
   name,
-  color,
   loading = false,
 }: {
   avatar?: string;
   name: string;
-  color: string;
   loading?: boolean;
 }) {
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="text-center">
       <div
+        className="
+          w-30 h-30
+          sm:w-35 sm:h-35
+          border-4 border-black
+          bg-[#5f78a8]
+          shadow-[6px_6px_0px_#2b3d55]
+          flex items-center justify-center
+          overflow-hidden
+        "
         style={{
-          width: 150,
-          height: 150,
-          borderRadius: 16,
-          border: `4px solid ${color}`,
-          boxShadow: `0 0 15px ${color}`,
-          background: avatar ? `url(${avatar}) center/cover` : "#444",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          backgroundImage: !loading && avatar ? `url(${avatar})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          imageRendering: "pixelated",
         }}
       >
         {loading && (
           <img
             src="/assets/matching/loading.gif"
             alt="Searching..."
-            style={{ width: "100%", height: "100%" }}
+            className="w-full h-full object-cover"
+            style={{ imageRendering: "pixelated" }}
           />
         )}
       </div>
-      <div style={{ marginTop: 12, color: "#fff" }}>{name}</div>
+
+      <div className="mt-3 text-white text-[15px] tracking-wide drop-shadow-[2px_2px_0_#2b3d55]">
+        {name}
+      </div>
     </div>
   );
 }

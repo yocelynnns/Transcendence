@@ -3,7 +3,7 @@ import Shield from "./GuildShield";
 import { useGameSocket } from "../../ws/useGameSocket";
 import type { AvatarData } from "../../types/avatarTypes";
 import { useQueryClient } from "@tanstack/react-query";
-import PixelButton from "../elements/pixelButton";
+import PixelButton from "../elements/PixelButton";
 
 interface GuildCreateProps {
   token: string | null;

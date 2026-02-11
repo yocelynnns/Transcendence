@@ -1,8 +1,6 @@
-import "../../styles/StatusPanel.css";
-
+// src/components/Battle/StatusPanel.tsx
 import { ASSETS } from "../../assets";
-
-import {BattlePokemon} from "../../types/battleTypes"
+import { BattlePokemon } from "../../types/battleTypes";
 
 const enemyHpBlock = ASSETS.HEALTH.BLOCK.ENEMY;
 const playerHpBlock = ASSETS.HEALTH.BLOCK.PLAYER;
@@ -14,16 +12,18 @@ const redHp = ASSETS.HEALTH.HP.RED;
 const pokeballAlive = ASSETS.HEALTH.POKEBALL.ALIVE;
 const pokeballDead = ASSETS.HEALTH.POKEBALL.DEAD;
 
-
 interface StatusPanelProps {
   pokemon: BattlePokemon;
   isPlayer?: boolean;
   aliveCount?: number;
 }
 
-export default function StatusPanel({ pokemon, isPlayer = false, aliveCount = 3}: StatusPanelProps) {
+export default function StatusPanel({
+  pokemon,
+  isPlayer = false,
+  aliveCount = 3,
+}: StatusPanelProps) {
   const { name, attack, maxHp, currentHp } = pokemon;
-
   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
 
   let hpImg = greenHp;
@@ -31,31 +31,68 @@ export default function StatusPanel({ pokemon, isPlayer = false, aliveCount = 3}
   else if (hpPercent <= 60) hpImg = yellowHp;
 
   const hpBlockImg = isPlayer ? playerHpBlock : enemyHpBlock;
+  const pokeballs = [0, 1, 2].map((i) => i < aliveCount);
 
-  const pokeballs = [0, 1, 2].map(i => i < aliveCount);
-  
   return (
-    <div className={`sp ${isPlayer ? "player-sp" : "player2-sp"}`}>
-      <img src={hpBlockImg} className="sp-bg" />
+    <div className="relative w-full max-w-115 select-none">
+      <img
+        src={hpBlockImg}
+        className="w-full [image-rendering:pixelated]"
+        draggable={false}
+      />
 
-      <div className={`hp-bar ${isPlayer ? "player" : ""}`}>
-        <img src={hpImg} style={{ width: `${hpPercent}%`, height: "100%" }} />
+      {/* Name */}
+      <div
+        className={[
+          "absolute top-[18%] text-[clamp(14px,0.9vw,18px)] text-[#222] pixelify-sans font-bold",
+          isPlayer ? "left-[15%]" : "left-[8%]",
+        ].join(" ")}
+      >
+        {name}
       </div>
 
-      <div className={`sp-name ${isPlayer ? "player" : ""}`}>{name}</div>
+      {/* ATK/HP */}
+      <div
+        className={[
+          "absolute top-[30%] text-[clamp(12px,0.8vw,16px)] text-[#666] text-right pixelify-sans font-semibold",
+          isPlayer ? "right-[8%]" : "right-[16%]",
+        ].join(" ")}
+      >
+        ATK <span className="text-[#999] mono-font">{attack}</span>, HP{" "}
+        <span className="text-[#999] mono-font">{currentHp}</span>/
+        <span className="text-[#999] mono-font">{maxHp}</span>
+      </div>
 
-      <div className={`sp-balls ${isPlayer ? "player" : ""}`}>
+      {/* Balls */}
+      <div
+        className={[
+          "absolute top-[42%] flex items-center gap-0.5",
+          isPlayer ? "left-[15%]" : "left-[8%]",
+        ].join(" ")}
+      >
         {pokeballs.map((alive, i) => (
           <img
             key={i}
             src={alive ? pokeballAlive : pokeballDead}
-            alt={`ball ${i + 1}`}
+            className="w-[clamp(14px,1.2vw,20px)] [image-rendering:pixelated]"
+            draggable={false}
           />
         ))}
       </div>
 
-      <div className={`sp-atk ${isPlayer ? "player" : ""}`}>
-        ATK <span>{attack}</span>, HP <span>{currentHp}</span>/<span>{maxHp}</span>
+      {/* HP bar */}
+      <div
+        className={[
+          "absolute top-[58%] h-[9.5%] overflow-hidden",
+          isPlayer ? "left-[47%] w-[46.5%]" : "left-[39%] w-[46.5%]",
+        ].join(" ")}
+      >
+        <img
+          src={hpImg}
+          className="h-full [image-rendering:pixelated]"
+          style={{ width: `${hpPercent}%` }}
+          draggable={false}
+        />
       </div>
     </div>
   );

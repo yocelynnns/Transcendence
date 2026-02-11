@@ -25,16 +25,20 @@ Main battle container
 
 .player2-platform {
   position: absolute;
-  left: 40%;
+  left: 55%;
   top: 45%;
-  width: 60%;
+  transform: translateX(-50%);
+  width: clamp(220px, 28vw, 420px); 
 }
 
 .player2-pokemon {
   position: absolute;
   left: 55%;
-  top: 0%;
-  width: 30%;
+  top: 8%;
+  transform: translateX(-50%);
+  height: clamp(90px, 16vh, 180px);  
+  width: auto;
+  max-width: 260px;
 }
 
 /* Player container */
@@ -47,18 +51,20 @@ Main battle container
 
 .player-platform {
   position: absolute;
+  right: 8%;
   bottom: -5%;
-  width: 83%;
+  width: clamp(260px, 34vw, 520px); 
 }
 
 .player-pokemon {
   position: absolute;
-  left: 17%;
-  top: -30%;
-  width: 45%;
+  right: 12%;
+  bottom: 15%;
+  height: clamp(140px, 28vh, 300px); 
+  width: auto;
+  max-width: 420px;
 }
 
-/* Optional: make child components absolute inside their containers */
 .player2-container > *:not(.player2-pokemon):not(.player2-platform) {
   position: absolute;
 }

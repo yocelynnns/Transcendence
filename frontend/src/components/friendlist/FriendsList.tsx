@@ -20,8 +20,6 @@ export interface FriendsListProps {
   };
   setSpectatingBattle?: React.Dispatch<React.SetStateAction<Battle | null>>;
   setCurrentBattle: React.Dispatch<React.SetStateAction<Battle | null>>;
-  isOpen: boolean;
-  onClosePanel?: () => void;
 }
 
 export default function FriendsList(props: FriendsListProps) {
@@ -36,15 +34,13 @@ export default function FriendsList({
   myAvatarId, 
   myAvatarData,
   setSpectatingBattle,
-  setCurrentBattle,
-  isOpen,
-  onClosePanel,
+  setCurrentBattle  
 }: FriendsListProps) {
   const navigate = useNavigate();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [battleInvites, setBattleInvites] = useState<BattleInvite[]>([]);
-  // const [showPanel, setShowPanel] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "battles">("friends");
   const [friendEmail, setFriendEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -120,7 +116,7 @@ export default function FriendsList({
       }
 
       navigate(`/spectating/${friend.currentBattle}`);
-      onClosePanel?.();
+      setShowPanel(false);
     } catch (err) {
       console.error("Failed to spectate:", err);
       alert("Failed to join spectator mode");
@@ -316,7 +312,6 @@ export default function FriendsList({
 
   // SOCKET LISTENERS
   useEffect(() => {
-    if (!isOpen) return;
     emitEvent("userOnline", myAvatarId);
 
     const cleanupStatusUpdate = subscribeEvent<{ avatarId: string; online: boolean }[]>(
@@ -384,7 +379,7 @@ export default function FriendsList({
         console.log("🎮 Setting current battle and navigating...");
         setCurrentBattle(battle);
         navigate(`/teamSelect/${battle._id}`, { state: { battle } });
-        onClosePanel?.();
+        setShowPanel(false);
         console.log("🎮 Navigation called to:", `/teamSelect/${battle._id}`);
       }
     );
@@ -520,7 +515,12 @@ export default function FriendsList({
 
   // INITIAL FETCH
   useEffect(() => {
-    if (!isOpen) return;
+    if (showPanel) {
+      fetchFriends();
+      fetchRequests();
+      fetchBlockedList();
+    }
+  }, [showPanel]);
 
     // Re-sync when panel opens
     emitEvent("userOnline", myAvatarId);
@@ -531,12 +531,12 @@ export default function FriendsList({
   const isSuccessMessage = message.startsWith("✅") || message.startsWith("⚔️") || message.startsWith("🔔");
 
   // Get total notification count
-  // const totalNotifications = requests.length + battleInvites.length;
+  const totalNotifications = requests.length + battleInvites.length;
 
   return (
     <>
       {/* FRIENDS BUTTON */}
-      {/* {!showPanel && (
+      {!showPanel && (
         <div
           onClick={() => setShowPanel(true)}
           style={styles.friendBtn}
@@ -554,83 +554,66 @@ export default function FriendsList({
             </div>
           )}
         </div>
-      )} */}
+      )}
 
       {/* FRIENDS PANEL */}
-      {/* {showPanel && ( */}
-        <div className="fixed top-0 right-0 h-full w-1/3 bg-white z-50 overflow-auto p-6">          {/* HEADER */}
-          <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-gray-800">
-            <h2 className="text-xl font-bold">Friends</h2>
-          <button onClick={() => onClosePanel?.()}
-            className="text-xl font-bold hover:text-red-500">
+      {showPanel && (
+        <div style={styles.panel}>
+          {/* HEADER */}
+          <div style={styles.header}>
+            <h2 style={styles.title}>Friends</h2>
+            <button onClick={() => setShowPanel(false)} style={styles.closeBtn}>
               ✕
             </button>
           </div>
 
           {/* TABS */}
-          <div className="flex gap-4 mb-4">
+          <div style={styles.tabs}>
             <button
               onClick={() => setActiveTab("friends")}
-              className={`px-3 py-1 rounded font-semibold ${
-              activeTab === "friends"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
+              style={styles.tab(activeTab === "friends")}
             >
               Friends ({friends.length})
             </button>
             <button
               onClick={() => setActiveTab("requests")}
-              className={`px-3 py-1 rounded font-semibold ${
-              activeTab === "requests"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
+              style={styles.tab(activeTab === "requests")}
             >
               Requests{requests.length > 0 && ` (${requests.length})`}
             </button>
             <button
               onClick={() => setActiveTab("battles")}
-              className={`px-3 py-1 rounded font-semibold ${
-              activeTab === "battles"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
+              style={styles.tab(activeTab === "battles")}
             >
               Battles{battleInvites.length > 0 && ` (${battleInvites.length})`}
             </button>
           </div>
 
           {/* MESSAGE */}
-          {message && (
-            <div
-              className={`mb-4 p-2 rounded font-medium ${
-                isSuccessMessage ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"
-              }`}
-            >
-              {message}
-            </div>
-          )}
+          {message && <div style={styles.message(isSuccessMessage)}>{message}</div>}
 
           {/* FRIENDS TAB */}
           {activeTab === "friends" && (
             <>
               {/* ADD FRIEND FORM */}
-              <div className="flex gap-2 mb-4">
+              <div style={styles.addFriendBox}>
                 <input
                   type="email"
                   value={friendEmail}
                   onChange={(e) => setFriendEmail(e.target.value)}
                   placeholder="friend@email.com"
-                  className="flex-1 border border-gray-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  style={styles.input}
                   onKeyPress={(e) => e.key === "Enter" && handleSendRequest()}
                 />
                 <button
                   onClick={handleSendRequest}
                   disabled={loading}
-                  className={`px-3 py-1 rounded font-semibold text-white ${
-                    loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                  }`}                >
+                  style={{
+                    ...styles.addBtn,
+                    opacity: loading ? 0.6 : 1,
+                    cursor: loading ? "not-allowed" : "pointer",
+                  }}
+                >
                   {loading ? "..." : "Add Friend"}
                 </button>
               </div>
@@ -638,7 +621,7 @@ export default function FriendsList({
               {/* FRIENDS LIST */}
               <div>
                 {friends.length === 0 ? (
-                  <div className="text-gray-500">No friends yet. Add some!</div>
+                  <div style={styles.emptyText}>No friends yet. Add some!</div>
                 ) : (
                   friends.map((friend) => {
                     const isBlocked = blockedFriends.has(friend.avatarId);
@@ -758,30 +741,30 @@ export default function FriendsList({
           {activeTab === "requests" && (
             <div>
               {requests.length === 0 ? (
-                <div className="text-gray-500">No pending requests</div>
+                <div style={styles.emptyText}>No pending requests</div>
               ) : (
                 requests.map((request) => (
-                  <div key={request.requestId} 
-                    className="flex items-center justify-between p-2 border rounded border-gray-300"
-                  >
+                  <div key={request.requestId} style={styles.requestItem}>
                     <div
-                      className="w-10 h-10 rounded-full bg-center bg-cover"
-                      style={{ backgroundImage: `url(${request.avatarImage || defaultAvatar})` }}
+                      style={{
+                        ...styles.avatar,
+                        background: `url(${request.avatarImage || defaultAvatar}) center/cover`,
+                      }}
                     />
-                    <div>
-                      <div className="font-semibold">{request.userName}</div>
-                      <div className="text-xs text-gray-600">{request.email}</div>
+                    <div style={styles.friendInfo}>
+                      <div style={styles.friendName}>{request.userName}</div>
+                      <div style={styles.friendStatus}>{request.email}</div>
                     </div>
-                    <div className="flex gap-1">
+                    <div style={styles.actionBtns}>
                       <button
                         onClick={() => handleAcceptRequest(request.requestId)}
-                        className="w-7 h-7 rounded-full bg-green-600 text-white text-xs flex items-center justify-center"
+                        style={styles.acceptBtn}
                       >
                         ✓
                       </button>
                       <button
                         onClick={() => handleRejectRequest(request.requestId)}
-                        className="w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center"
+                        style={styles.rejectBtn}
                       >
                         ✕
                       </button>
@@ -794,35 +777,32 @@ export default function FriendsList({
 
           {/* BATTLES TAB */}
           {activeTab === "battles" && (
-            <div className="space-y-4">
+            <div>
               {/* BATTLE INVITES */}
               {battleInvites.length > 0 && (
-                <div>
-                  <div className="font-semibold text-gray-800 mb-2">⚔️ Challenges Received</div>
+                <div style={styles.battleInvitesSection}>
+                  <div style={styles.sectionTitle}>⚔️ Challenges Received</div>
                   {battleInvites.map((invite) => (
-                    <div
-                      key={invite.inviteId}
-                      className="flex items-center justify-between p-2 border rounded border-gray-300"
-                    >
-                      <img
-                        src={invite.senderAvatar || defaultAvatar}
-                        alt=""
-                        className="w-9 h-9 rounded-full border-2 border-gray-800"
+                    <div key={invite.inviteId} style={styles.inviteItem}>
+                      <img 
+                        src={invite.senderAvatar || defaultAvatar} 
+                        alt="" 
+                        style={{ width: 36, height: 36, borderRadius: "50%", border: "2px solid #333" }}
                       />
-                      <div className="flex-1 ml-2">
-                        <div className="font-bold text-sm">{invite.senderName}</div>
-                        <div className="text-xs text-gray-500">Wants to battle!</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: "bold", fontSize: 13 }}>{invite.senderName}</div>
+                        <div style={{ fontSize: 11, color: "#666" }}>Wants to battle!</div>
                       </div>
-                      <div className="flex gap-1">
+                      <div style={styles.actionBtns}>
                         <button
                           onClick={() => handleAcceptBattleInvite(invite.inviteId)}
-                          className="w-7 h-7 rounded-full bg-green-600 text-white text-xs flex items-center justify-center"
+                          style={styles.acceptBtn}
                         >
                           ✓
                         </button>
                         <button
                           onClick={() => handleDeclineBattleInvite(invite.inviteId)}
-                          className="w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center"
+                          style={styles.rejectBtn}
                         >
                           ✕
                         </button>
@@ -834,34 +814,31 @@ export default function FriendsList({
 
               {/* FRIENDS IN BATTLE (Spectate Section) */}
               <div>
-                <div className="font-semibold text-gray-800 mb-2">👁️ Spectate Friends</div>
-                {friends.filter((f) => f.currentBattle).length === 0 ? (
-                  <div className="text-gray-500">No friends in battle</div>
+                <div style={{ ...styles.sectionTitle, color: "#333", marginBottom: 10 }}>
+                  👁️ Spectate Friends
+                </div>
+                {friends.filter(f => f.currentBattle).length === 0 ? (
+                  <div style={styles.emptyText}>No friends in battle</div>
                 ) : (
                   friends
-                    .filter((f) => f.currentBattle)
+                    .filter(f => f.currentBattle)
                     .map((friend) => (
-                      <div
-                        key={friend.avatarId}
-                        className="flex items-center justify-between p-2 border rounded border-purple-600"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-10 h-10 rounded-full bg-center bg-cover relative"
-                            style={{ backgroundImage: `url(${friend.avatarImage || defaultAvatar})` }}
-                          >
-                            <div className="absolute bottom-0 right-0 bg-purple-600 text-white text-xs rounded-full px-1">
-                              ⚔️
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-semibold">{friend.userName}</div>
-                            <div className="text-xs text-red-600">🔴 In Battle</div>
-                          </div>
+                      <div key={friend.avatarId} style={{ ...styles.friendItem, borderColor: "#9c27b0" }}>
+                        <div
+                          style={{
+                            ...styles.avatar,
+                            background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
+                          }}
+                        >
+                          <div style={styles.battleIndicator}>⚔️</div>
+                        </div>
+                        <div style={styles.friendInfo}>
+                          <div style={styles.friendName}>{friend.userName}</div>
+                          <div style={styles.friendStatus}>🔴 In Battle</div>
                         </div>
                         <button
                           onClick={() => handleSpectate(friend)}
-                          className="w-7 h-7 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center"
+                          style={styles.iconBtn("#9c27b0")}
                           title="Spectate"
                         >
                           👁️
@@ -873,6 +850,7 @@ export default function FriendsList({
             </div>
           )}
         </div>
+      )}
 
       {selectedFriend && myAvatarData && !selectedFriend.currentBattle && (
         <ChatWindow

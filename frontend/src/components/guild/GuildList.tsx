@@ -6,7 +6,7 @@ import { useGameSocket } from "../../ws/useGameSocket";
 import { Dispatch, SetStateAction } from "react";
 import type { AvatarData } from "../../types/avatarTypes";
 import { useQueryClient } from "@tanstack/react-query";
-import PixelButton from "../elements/pixelButton";
+import PixelButton from "../elements/PixelButton";
 
 const logo = ASSETS.GUILD.LOGO;
 

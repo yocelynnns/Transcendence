@@ -206,8 +206,8 @@ export default function HomePage({
             myAvatarData={avatarData}
             setSpectatingBattle={setSpectatingBattle}
             setCurrentBattle={setCurrentBattle}
-            // isOpen={showFriendsPanel}
-            // onClosePanel={() => setShowFriendsPanel(false)}
+            isOpen={showFriendsPanel}
+            onClosePanel={() => setShowFriendsPanel(false)}
           />
         </div>
       )}
