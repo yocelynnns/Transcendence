@@ -22,7 +22,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
 
     return res.status(201).json({ avatar: newAvatar });
   } catch (err: any) {
-    console.error("[POST /avatar]", err);
+    console.log("[POST /avatar]", err);
     return res.status(400).json({ message: err.message || "Failed to create avatar" });
   }
 });
@@ -38,7 +38,7 @@ router.get("/:avatarId", async (req, res) => {
 
     return res.json(avatar);
   } catch (err: any) {
-    console.error("[GET /avatar/:avatarId]", err);
+    console.log("[GET /avatar/:avatarId]", err);
     return res.status(400).json({ message: err.message || "Server error" });
   }
 });
@@ -57,7 +57,7 @@ router.put("/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
 
     return res.json(updatedAvatar);
   } catch (err: any) {
-    console.error("[PUT /avatar/:avatarId]", err);
+    console.log("[PUT /avatar/:avatarId]", err);
     return res.status(400).json({ message: err.message || "Failed to update avatar" });
   }
 });

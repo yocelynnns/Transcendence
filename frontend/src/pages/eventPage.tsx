@@ -262,7 +262,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
           position: "absolute",
           top: 60,
           left: 60,
-          zIndex: 100,
+          zIndex: 110,
           background: "#fff",
           border: "3px solid #000",
           padding: "6px 10px",

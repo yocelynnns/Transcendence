@@ -17,8 +17,14 @@ interface TeamSelectPageProps {
 
 const TEAM_SIZE = 3;
 
+type PlayerRef =
+  | string
+  | {
+      _id: string | { toString(): string };
+    };
+
 // Helper to get player ID from either string or populated object
-const getPlayerId = (player: any): string => {
+const getPlayerId = (player: PlayerRef): string => {
   if (typeof player === 'string') return player;
   if (player?._id) return player._id.toString();
   return '';
@@ -35,7 +41,7 @@ export default function TeamSelectPage({
   
   // Get battle from navigation state or props
   const navBattle = location.state?.battle;
-  const activeBattle = navBattle || currentBattle;
+  const activeBattle = navBattle as Battle || currentBattle as Battle;
   
   // Sync to parent state if we have nav state but no currentBattle
   useEffect(() => {
@@ -89,7 +95,6 @@ export default function TeamSelectPage({
 
     // Handle both populated objects and string IDs
     const player1Id = getPlayerId(activeBattle.player1);
-    const player2Id = getPlayerId(activeBattle.player2);
 
     const isPlayer1 = player1Id === avatarId;
 
@@ -239,7 +244,7 @@ export default function TeamSelectPage({
     const offBattleError = subscribeEvent(
       "TeamUpError",
       (data: { message: string }) => {
-        console.error("Battle error:", data.message);
+        console.log("Battle error:", data.message);
         alert(`enemy has disconnected from the battle!`);
         setCurrentBattle(null);
         navigate("/", { replace: true });

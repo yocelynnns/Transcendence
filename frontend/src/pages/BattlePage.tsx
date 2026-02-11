@@ -73,7 +73,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
           winnerReason: fetchedBattle.winnerReason ?? undefined,
         });
       } catch (err) {
-        console.error("Failed to fetch battle:", err);
+        console.log("Failed to fetch battle:", err);
         setBattleData(null);
         setBattleId(null);
       }

@@ -22,7 +22,7 @@ export const setupPokemonHandlers = (io: Server, socket: Socket) => {
 
       socket.emit("catchPokemonSuccess", result);
     } catch (err) {
-      console.error("ERROR CATCHING Pokemon:", err);
+      console.log("ERROR CATCHING Pokemon:", err);
       socket.emit("catchPokemonError", { message: "Catch failed" });
     }
   });

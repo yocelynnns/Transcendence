@@ -66,7 +66,7 @@ export default function ProfilePage({ setAvatarId }: ProfilePageProps) {
       //NAVIGATE HOME
       navigate("/");
     } catch (err) {
-      console.error(err);
+      console.log(err);
       alert("FAILED TO CREATE AVATAR: " + (err instanceof Error ? err.message : "UNKNOWN ERROR"));
     } finally {
       setLoading(false);

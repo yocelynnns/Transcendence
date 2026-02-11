@@ -5,7 +5,7 @@ import { useAvatar } from "../hooks/useAvatar";
 import Guild from "../components/guild/GuildMain";
 import { AvatarData } from "../types/avatarTypes";
 import MatchingButton from "../components/matching/matchingButton";
-import SpectatingButton from "../components/matching/spectatingButton";
+// import SpectatingButton from "../components/matching/spectatingButton";
 import { Battle } from "../types/battleTypes";
 import HistoryMain from "../components/Battle/historyMain";
 import AiButton from "../components/ai/aiButton";
@@ -118,10 +118,10 @@ export default function HomePage({
           >
             <Guild avatarData={avatarData} token={token} />
             <MatchingButton avatarData={avatarData} />
-            <SpectatingButton
+            {/* <SpectatingButton
               avatarId={"6985698f183c87855c7a8d33"}
               setSpectatingBattle={setSpectatingBattle}
-            />
+            /> */}
             <HistoryMain avatarData={avatarData} />
             <AiButton />
             <EventButton />

@@ -41,7 +41,7 @@ export function setupEventHandlers(io: Server, socket: Socket) {
         status: eventDoc.status,
       });
     } catch (err) {
-      console.error("Failed to join catch event:", err);
+      console.log("Failed to join catch event:", err);
 
       const message = err instanceof Error ? err.message : "Unknown error occurred";
       socket.emit("joinCatchEventError", { message });
@@ -78,7 +78,7 @@ export function setupEventHandlers(io: Server, socket: Socket) {
           io.to(roomName).emit("eventFinished", eventFinished);
         }
       } catch (err) {
-        console.error("Error during attemptCatch:", err);
+        console.log("Error during attemptCatch:", err);
         const message = err instanceof Error ? err.message : "Unknown error";
         socket.emit("attemptCatchError", { message });
       }

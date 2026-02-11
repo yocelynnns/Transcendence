@@ -24,7 +24,7 @@ export async function connectDB() {
       console.log(`DB already has ${currentCount} Pokemon, skipping seed`);
     }
   } catch (err) {
-    console.error("MongoDB connection error:", err);
+    console.log("MongoDB connection error:", err);
     throw err;
   }
 }

@@ -359,7 +359,7 @@ export default function FriendsList({
         emitEvent("requestFriendsStatus", friendIds);
       }
     } catch (err) {
-      console.error("Failed to fetch friends:", err);
+      console.log("Failed to fetch friends:", err);
     }
   };
 
@@ -372,7 +372,7 @@ export default function FriendsList({
       const data = await res.json();
       setRequests(data);
     } catch (err) {
-      console.error("Failed to fetch requests:", err);
+      console.log("Failed to fetch requests:", err);
     }
   };
 
@@ -398,7 +398,7 @@ export default function FriendsList({
       navigate(`/spectating/${friend.currentBattle}`);
       setShowPanel(false);
     } catch (err) {
-      console.error("Failed to spectate:", err);
+      console.log("Failed to spectate:", err);
       alert("Failed to join spectator mode");
     }
   };
@@ -532,7 +532,7 @@ export default function FriendsList({
         setTimeout(() => setMessage(""), 3000);
       }
     } catch (err) {
-      console.error("Failed to accept request:", err);
+      console.log("Failed to accept request:", err);
     }
   };
 
@@ -550,7 +550,7 @@ export default function FriendsList({
         setTimeout(() => setMessage(""), 3000);
       }
     } catch (err) {
-      console.error("Failed to reject request:", err);
+      console.log("Failed to reject request:", err);
     }
   };
 
@@ -573,7 +573,7 @@ export default function FriendsList({
         setTimeout(() => setMessage(""), 3000);
       }
     } catch (err) {
-      console.error("Failed to remove friend:", err);
+      console.log("Failed to remove friend:", err);
     }
   };
 

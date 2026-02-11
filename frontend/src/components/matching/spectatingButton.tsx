@@ -24,7 +24,7 @@ export default function SpectatingButton({ avatarId, setSpectatingBattle }: Spec
         const res = await axios.get(`http://localhost:5001/api/avatar/${avatarId}`);
         setAvatarData(res.data);
       } catch (err) {
-        console.error("Failed to fetch avatar:", err);
+        console.log("Failed to fetch avatar:", err);
       } finally {
         setLoading(false);
       }

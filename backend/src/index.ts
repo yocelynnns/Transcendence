@@ -54,7 +54,7 @@ const server = http.createServer(app);
 setupSocket(server);
 
 // Connect MongoDB
-connectDB().catch(err => console.error("FAILED TO CONNECT DB:", err));
+connectDB().catch(err => console.log("FAILED TO CONNECT DB:", err));
 
 // Start server
 server.listen(PORT, () => {

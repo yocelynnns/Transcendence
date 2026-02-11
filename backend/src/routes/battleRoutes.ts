@@ -14,7 +14,7 @@ router.get("/:battleId", async (req, res) => {
 
     return res.json(battle);
   } catch (err: any) {
-    console.error("[GET /battle/:battleId]", err);
+    console.log("[GET /battle/:battleId]", err);
     return res.status(400).json({ message: err.message || "Server error" });
   }
 });

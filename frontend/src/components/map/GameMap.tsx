@@ -70,7 +70,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     axios
       .get<MapPokemon[]>("http://localhost:5001/api/pokemon")
       .then((res) => setPokemonList(res.data))
-      .catch((err) => console.error("Failed to fetch initial Pokemon:", err));
+      .catch((err) => console.log("Failed to fetch initial Pokemon:", err));
   }, [setPokemonList]);
 
   //SUBSCRIBE POKEMON UPDATES
@@ -91,7 +91,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
 
   const handleCatchPokemon = (p: MapPokemon) => {
     if (!avatarId || !avatarData) {
-      console.error("No avatar ID found or avatarData missing");
+      console.log("No avatar ID found or avatarData missing");
       handleCatchNo();
       return;
     }
