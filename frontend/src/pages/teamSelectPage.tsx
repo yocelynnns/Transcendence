@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TeamSelectLayout from "../components/teamSelect/teamSelectLayout";
-import { AvatarData } from "../types/avatarTypes";
+import type { AvatarData } from "../types/avatarTypes";
 import { useGameSocket } from "../ws/useGameSocket";
 import { Battle, BattlePokemon } from "../types/battleTypes";
 import { PlayerPokemon } from "../types/pokemonTypes";
@@ -16,19 +16,7 @@ interface TeamSelectPageProps {
 }
 
 const TEAM_SIZE = 3;
-
-type PlayerRef =
-  | string
-  | {
-      _id: string | { toString(): string };
-    };
-
-// Helper to get player ID from either string or populated object
-const getPlayerId = (player: PlayerRef): string => {
-  if (typeof player === 'string') return player;
-  if (player?._id) return player._id.toString();
-  return '';
-};
+const PICK_WINDOW_MS = 35_000;
 
 export default function TeamSelectPage({
   avatarData,
@@ -165,6 +153,7 @@ export default function TeamSelectPage({
     return () => clearInterval(interval);
   }, [handleReady]);
 
+  // --- Pick/remove handlers ---
   const pickPokemon = (p: PlayerPokemon) => {
     if (saving || battleEnded) return;
     if (timeLeft === 0) return;
@@ -173,8 +162,10 @@ export default function TeamSelectPage({
     setSlots((prev) => {
       const next = [...prev];
       next[activeSlot] = p;
+
       const nextEmpty = next.findIndex((x) => x === null);
       if (nextEmpty !== -1) setActiveSlot(nextEmpty);
+
       return next;
     });
   };
@@ -186,7 +177,11 @@ export default function TeamSelectPage({
       next[idx] = null;
       return next;
     });
+
     setActiveSlot(idx);
+    readySentRef.current = false;
+
+    stopWaiting();
   };
 
   useEffect(() => {
@@ -208,7 +203,7 @@ export default function TeamSelectPage({
           handleBattleLatestAndNavigate();
         }
       }
-    );
+    });
 
     const offBattleError = subscribeEvent(
       "TeamUpError",
