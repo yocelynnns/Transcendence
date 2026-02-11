@@ -195,6 +195,94 @@
 }
 /* End Achievements Section */
 
+/* Leaderboard Section */
+.leaderboard-section {
+  margin-top: 20px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #FF6B6B;
+}
+
+.leaderboard-section h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.no-leaderboard {
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  padding: 20px;
+}
+
+.leaderboard-entry {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.3s;
+}
+
+.leaderboard-entry.current-user {
+  border-color: #4CAF50;
+  background: linear-gradient(to right, #f1f8f4 0%, white 100%);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.leaderboard-entry:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.leaderboard-rank {
+  font-size: 32px;
+  min-width: 50px;
+  text-align: center;
+}
+
+.leaderboard-info {
+  flex: 1;
+}
+
+.leaderboard-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.you-badge {
+  font-size: 12px;
+  color: #4CAF50;
+  font-weight: normal;
+}
+
+.leaderboard-stats {
+  font-size: 13px;
+  color: #666;
+}
+
+.leaderboard-wins {
+  font-size: 24px;
+  font-weight: bold;
+  color: #FF6B6B;
+  min-width: 50px;
+  text-align: right;
+}
+/* End Leaderboard Section */
+
+
 .join-screen input {
   width: 100%;
   padding: 10px;

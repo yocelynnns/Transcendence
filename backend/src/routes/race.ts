@@ -31,8 +31,8 @@ router.get('/avatar/:avatarId', async (req, res) => {
 router.get('/history/:avatarId', async (req, res) => {
   try {
     const { avatarId } = req.params;
-    // console.log("=== FETCHING RACE HISTORY ===");
-    // console.log("Avatar ID:", avatarId);
+    console.log("=== FETCHING RACE HISTORY ===");
+    console.log("Avatar ID:", avatarId);
     
     const matches = await RaceMatch.find({
       players: avatarId
@@ -42,7 +42,7 @@ router.get('/history/:avatarId', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5);
     
-    // console.log("Matches found:", matches.length);
+    console.log("Matches found:", matches.length);
     
     // Format for frontend - ensure player order matches database
     const formattedMatches = matches.map(match => {
@@ -53,7 +53,7 @@ router.get('/history/:avatarId', async (req, res) => {
       const player1Name = players[0]?.userName || 'Unknown';
       const player2Name = players[1]?.userName || 'Unknown';
       
-      // console.log("Match:", player1Name, "vs", player2Name, "- Winner:", winner.userName);
+      console.log("Match:", player1Name, "vs", player2Name, "- Winner:", winner.userName);
       
       return {
         _id: match._id.toString(),
@@ -64,7 +64,7 @@ router.get('/history/:avatarId', async (req, res) => {
       };
     });
     
-    // console.log("Sending", formattedMatches.length, "formatted matches");
+    console.log("Sending", formattedMatches.length, "formatted matches");
     return res.json(formattedMatches);
   } catch (error) {
     console.error('❌ Error fetching race history:', error);
@@ -95,6 +95,34 @@ router.get('/stats/:avatarId', async (req, res) => {
   } catch (error) {
     console.error('Error fetching race stats:', error);
     return res.status(500).json({ error: 'Failed to fetch race stats' });
+  }
+});
+
+// GET /api/race/leaderboard
+// Get top players by race wins
+router.get('/leaderboard', async (_req, res) => {
+  try {
+    console.log("=== FETCHING RACE LEADERBOARD ===");
+    
+    const topPlayers = await Avatar.find({ raceWin: { $gt: 0 } })
+      .select('userName raceWin raceLoss')
+      .sort({ raceWin: -1 })
+      .limit(3);
+    
+    console.log("Top players found:", topPlayers.length);
+    
+    const leaderboard = topPlayers.map((player, index) => ({
+      rank: index + 1,
+      userName: player.userName,
+      wins: player.raceWin,
+      losses: player.raceLoss,
+      totalRaces: player.raceWin + player.raceLoss,
+    }));
+    
+    return res.json(leaderboard);
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    return res.status(500).json({ error: 'Failed to fetch leaderboard' });
   }
 });
 
