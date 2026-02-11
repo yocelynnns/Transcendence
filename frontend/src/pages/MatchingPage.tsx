@@ -25,7 +25,6 @@ export default function Matching({
   const [countdown, setCountdown] = useState(5);
   const joinRef = useRef<boolean>(false);
 
-  // inventory guard
   useEffect(() => {
     if (!avatarData) return;
     const inventory = avatarData.pokemonInventory ?? [];
@@ -35,7 +34,6 @@ export default function Matching({
     }
   }, [avatarData, navigate]);
 
-  // opponent logic
   const opponentAvatar = useMemo(() => {
     if (!currentBattle || !currentId) return null;
     return currentBattle.player1._id === currentId
@@ -46,7 +44,6 @@ export default function Matching({
   const matchStarted = Boolean(currentBattle && opponentAvatar);
   const waiting = !matchStarted;
 
-  // countdown -> team select
   useEffect(() => {
     if (!currentBattle || !opponentAvatar) return;
 
@@ -54,11 +51,7 @@ export default function Matching({
       new Date(currentBattle.createdAt ?? Date.now()).getTime() + 5_000;
 
     const updateCountdown = () => {
-      const secondsLeft = Math.max(
-        Math.ceil((endTime - Date.now()) / 1000),
-        0
-      );
-
+      const secondsLeft = Math.max(Math.ceil((endTime - Date.now()) / 1000), 0);
       setCountdown(secondsLeft);
 
       if (secondsLeft <= 0) {
@@ -68,11 +61,9 @@ export default function Matching({
 
     updateCountdown();
     const timer = setInterval(updateCountdown, 200);
-
     return () => clearInterval(timer);
   }, [currentBattle, opponentAvatar, navigate]);
 
-  // join + events
   useEffect(() => {
     if (!currentId || currentBattle) return;
 
@@ -91,9 +82,7 @@ export default function Matching({
 
     const cleanupError = subscribeEvent(
       "matchError",
-      (data: { message: string }) => {
-        alert(data.message);
-      }
+      (data: { message: string }) => alert(data.message)
     );
 
     return () => {
@@ -109,50 +98,70 @@ export default function Matching({
 
   if (!avatarData) {
     return (
-      <div className="w-screen h-screen grid place-items-center bg-[#1e1e2f] text-white font-mono text-lg">
+      <div className="w-screen h-screen grid place-items-center bg-black text-white pixelify-sans text-lg">
         Loading player data...
       </div>
     );
   }
 
-  const title = matchStarted ? "Match Found!" : "Waiting for Opponent...";
+  const title = matchStarted ? "MATCH FOUND!" : "WAITING FOR OPPONENT...";
 
   return (
-    <div className="w-screen h-screen flex flex-col items-center justify-center bg-linear-to-br from-[#1e1e2f] to-[#2a2a3f] text-center font-mono text-[#999] px-4">
-      <h1 className="text-[28px] sm:text-[32px] mb-3 text-white drop-shadow-[0_0_10px_#888]">
-        {title}
-      </h1>
+    <div
+      className="w-screen h-screen flex flex-col items-center justify-center text-center px-4 pixelify-sans"
+      style={{
+        background: "linear-gradient(to bottom, #a9c0dc 0%, #7fa3c7 100%)",
+      }}
+    >
+      {/* TITLE PANEL */}
+      <div className="mb-6 px-8 py-4 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55]">
+        <h1 className="text-[24px] sm:text-[28px] text-white tracking-wide">
+          {title}
+        </h1>
+      </div>
 
+      {/* COUNTDOWN */}
       {matchStarted && (
-        <div className="text-[16px] sm:text-[18px] mb-7 text-[#a2d5f2] drop-shadow-[0_0_6px_#000]">
+        <div className="mb-6 px-6 py-3 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55] text-[16px] text-white">
           Match starts in {countdown} second{countdown !== 1 ? "s" : ""}
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
+      {/* AVATARS */}
+      <div className="flex flex-col sm:flex-row items-center gap-8 sm:gap-14">
         <AvatarCard
           avatar={avatarData.avatar || defaultAvatar}
           name={avatarData.userName}
-          color="border-[#a2d5f2] shadow-[0_0_15px_#a2d5f2]"
         />
 
-        <div className="hidden sm:block text-[34px] font-bold text-[#888] drop-shadow-[0_0_15px_#666]">
+        <div className="hidden sm:block text-[28px] font-bold text-white drop-shadow-[2px_2px_0_#2b3d55]">
           VS
         </div>
 
         <AvatarCard
           avatar={opponentAvatar?.avatar}
           name={waiting ? "Searching..." : opponentAvatar?.userName || ""}
-          color="border-[#ff5555] shadow-[0_0_15px_#ff5555]"
           loading={waiting}
         />
       </div>
 
+      {/* RETURN BUTTON */}
       <button
         onClick={handleReturn}
-        className="mt-10 px-5 py-3 rounded-[10px] border-2 border-black bg-white text-black font-semibold hover:brightness-105 active:scale-[0.99]"
+        className="
+          mt-10
+          px-8 py-3
+          bg-[#5f78a8]
+          border-4 border-black
+          text-white
+          text-[16px]
+          shadow-[6px_6px_0px_#2b3d55]
+          active:translate-x-0.5
+          active:translate-y-0.5
+          active:shadow-[3px_3px_0px_#2b3d55]
+        "
       >
-        Return
+        ← Return
       </button>
     </div>
   );
@@ -161,27 +170,29 @@ export default function Matching({
 function AvatarCard({
   avatar,
   name,
-  color,
   loading = false,
 }: {
   avatar?: string;
   name: string;
-  color: string;
   loading?: boolean;
 }) {
   return (
     <div className="text-center">
       <div
-        className={[
-          "w-32.5 h-32.5 sm:w-37.5 sm:h-37.5",
-          "rounded-2xl border-4 bg-[#444] overflow-hidden",
-          "grid place-items-center",
-          color,
-        ].join(" ")}
+        className="
+          w-30 h-30
+          sm:w-35 sm:h-35
+          border-4 border-black
+          bg-[#5f78a8]
+          shadow-[6px_6px_0px_#2b3d55]
+          flex items-center justify-center
+          overflow-hidden
+        "
         style={{
           backgroundImage: !loading && avatar ? `url(${avatar})` : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          imageRendering: "pixelated",
         }}
       >
         {loading && (
@@ -189,11 +200,14 @@ function AvatarCard({
             src="/assets/matching/loading.gif"
             alt="Searching..."
             className="w-full h-full object-cover"
+            style={{ imageRendering: "pixelated" }}
           />
         )}
       </div>
 
-      <div className="mt-3 text-white">{name}</div>
+      <div className="mt-3 text-white text-[15px] tracking-wide drop-shadow-[2px_2px_0_#2b3d55]">
+        {name}
+      </div>
     </div>
   );
 }

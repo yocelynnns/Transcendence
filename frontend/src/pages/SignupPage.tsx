@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signup, getUserInfo } from "../services/authService";
-import PixelButton from "../components/elements/pixelButton";
+import PixelButton from "../components/elements/PixelButton";
 
 // PROPS
 interface SignupPageProps {
