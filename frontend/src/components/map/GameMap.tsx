@@ -242,7 +242,7 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
       {/* ENCOUNTER DIALOG */}
       {showDialog && encounterPokemon && (
         <CatchDialog
-          scale={uiScale}       // scale passed here
+          scale={uiScale}
           onYes={() => handleCatchPokemon(encounterPokemon)}
           onNo={handleCatchNo}
         />
