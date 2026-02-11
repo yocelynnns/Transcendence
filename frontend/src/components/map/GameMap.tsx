@@ -13,6 +13,7 @@ import type { AvatarData } from "../../types/avatarTypes";
 import { ASSETS } from "../../assets";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlayerState } from "../../types/avatarTypes";
+import GamePopup from "./GamePopup";
 
 //ASSETS
 const mapImage = ASSETS.MAP.DEFAULT;
@@ -65,6 +66,19 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     setOtherPlayers(others);
   });
 
+  const [showPopupOne, setShowPopUpOne] = useState(false);
+  const [showPopupTwo, setShowPopUpTwo] = useState(false);
+
+
+  // Show popup when player.currentTiles === 2
+  useEffect(() => {
+    if (player.currentTiles === 2) {
+      setShowPopUpOne(true);
+    } else if (player.currentTiles === 3)
+      setShowPopUpTwo(true);
+  }, [player.currentTiles]);
+  
+
   //FETCH INITIAL POKEMON
   useEffect(() => {
     axios
@@ -86,6 +100,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     sendPlayerMove(player.x, player.y, player.direction, player.frame, player.charIndex);
   }, [player.x, player.y, player.direction, player.frame, player.charIndex, sendPlayerMove]);
 
+
   //HANDLE CATCH
   const queryClient = useQueryClient();
 
@@ -95,6 +110,14 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
       handleCatchNo();
       return;
     }
+
+    const existing = pokemonList.find((poke) => poke._id === p._id);
+
+    if (!existing) {
+      console.log("Pokemon not found in list, skipping catch")
+      handleCatchNo();
+      return; // exit early
+    }     
 
     const tempId = `temp-${p._id}-${Date.now()}`;
     queryClient.setQueryData<AvatarData>(["avatar", avatarId], (old) => {
@@ -202,6 +225,37 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
           pointerEvents: "none",
         }}
       />
+
+      {showPopupOne && (
+      <GamePopup
+        title="Choose Mode"
+        onClose={() => setShowPopUpOne(false)}
+        button1Text="Battle Match"
+        onButton1={() => {
+          console.log("Battle Match clicked");
+          setShowPopUpOne(false);
+        }}
+        button2Text="Training Ground"
+        onButton2={() => {
+          console.log("Training Ground clicked");
+          setShowPopUpOne(false);
+        }}
+      />
+    )}
+
+    {showPopupTwo && (
+      <GamePopup
+        title="Mini Game"
+        onClose={() => setShowPopUpTwo(false)}
+        button1Text="Eevee Race"
+        onButton1={() => {
+          console.log("Eeveed Race clicked");
+          setShowPopUpTwo(false);
+        }}
+      />
+    )}
+
+
 
       {/* ENCOUNTER DIALOG */}
       {showDialog && encounterPokemon && (

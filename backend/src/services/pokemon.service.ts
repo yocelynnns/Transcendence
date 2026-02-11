@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import MapPokemon from "../db/mapPokemon";
 
 // Fetch available Pokemon
@@ -11,4 +12,14 @@ export async function fetchAvailablePokemon({ limit = 50 }: FetchAvailablePokemo
     .limit(limit);
 
   return pokemons;
+}
+
+export async function fetchPokemonById(id: string) {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error("Invalid Pokemon ID");
+  }
+
+  const pokemon = await MapPokemon.findById(id);
+
+  return pokemon;
 }

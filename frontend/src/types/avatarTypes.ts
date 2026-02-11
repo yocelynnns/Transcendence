@@ -32,4 +32,5 @@ export type PlayerState = {
   frame: number;
   charIndex: number;
   moving?: boolean;
+  currentTiles?: number;
 };
