@@ -119,6 +119,7 @@ import blockicon from "./elements/icons/block.png"
 import unblockicon from "./elements/icons/unblock.png"
 import battleicon from "./elements/icons/battle.png"
 import friendlistblue from "./elements/icons/friendlistblue.png"
+import tickicon from "./elements/icons/tick.png"
 
 // EXPORT CENTRAL ASSETS
 export const ASSETS = {
@@ -197,6 +198,7 @@ export const ASSETS = {
     BLOCK : blockicon,
     UNBLOCK: unblockicon,
     BATTLE: battleicon,
-    FRIENDLIST: friendlistblue
+    FRIENDLIST: friendlistblue,
+    TICK: tickicon,
   }
 };

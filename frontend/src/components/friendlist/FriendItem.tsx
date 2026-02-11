@@ -41,7 +41,7 @@ export function FriendItem({
         colorA="#a5b6dd"
         colorB="#384071"
         colorText="#384071"
-        textSize="0" // hide PixelButton label
+        textSize="0"
         height={80}
         width="100%"
         cursorPointer={false}
@@ -69,7 +69,7 @@ export function FriendItem({
 
         {/* Name & Status */}
         <div className="flex-1 min-w-0 px-2">
-          <div className="flex items-center text-[13px] font-bold text-gray-800 mb-0.5 overflow-hidden whitespace-nowrap">
+          <div className="flex items-center text-[13px] font-bold text-[#384071] mb-0.5 overflow-hidden whitespace-nowrap">
             {friend.userName}
             {isBlocked && 
               <span className="ml-1 text-[9px] font-bold text-red-500 bg-red-100 px-1 rounded border border-red-500">
