@@ -18,6 +18,17 @@ interface TeamSelectPageProps {
 const TEAM_SIZE = 3;
 const PICK_WINDOW_MS = 35_000;
 
+// Normalize player id whether battle.player1 is populated object or raw id
+function getAvatarIdFromPlayer(player: any): string | null {
+  if (!player) return null;
+  if (typeof player === "string") return player;
+  if (typeof player === "object") {
+    // mongoose populated doc
+    if (player._id) return player._id.toString?.() ?? String(player._id);
+  }
+  return null;
+}
+
 export default function TeamSelectPage({
   avatarData,
   currentBattle,
@@ -180,7 +191,6 @@ export default function TeamSelectPage({
 
     setActiveSlot(idx);
     readySentRef.current = false;
-
     stopWaiting();
   };
 
@@ -223,6 +233,7 @@ export default function TeamSelectPage({
   }, [battleId, subscribeEvent, navigate, setCurrentBattle, refetchBattle]);
 
 
+  // Loading states
   if (!avatarData) {
     return (
       <div className="w-screen h-screen flex justify-center items-center bg-[#1e1e2f] text-white font-mono text-[20px]">
