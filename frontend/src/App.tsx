@@ -16,6 +16,7 @@ import AIPages from './pages/AiPages';
 import EventPage from './pages/eventPage';
 import SocketManager from "./SocketManager";
 
+
 function App() {
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('token'));
 
