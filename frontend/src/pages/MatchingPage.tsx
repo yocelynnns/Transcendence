@@ -54,6 +54,7 @@ export default function Matching({
     }
   }, [avatarData, navigate]);
 
+  // opponent logic
   const opponentAvatar = useMemo(() => {
     if (!currentBattle || !currentId) return null;
     return currentBattle.player1._id === currentId
@@ -64,6 +65,7 @@ export default function Matching({
   const matchStarted = Boolean(currentBattle && opponentAvatar);
   const waiting = !matchStarted;
 
+  // countdown -> team select
   useEffect(() => {
     if (!currentBattle || !opponentAvatar) return;
 
@@ -83,6 +85,7 @@ export default function Matching({
     return () => clearInterval(timer);
   }, [currentBattle, opponentAvatar, navigate]);
 
+  // join + events
   useEffect(() => {
     if (!currentId || currentBattle) return;
 

@@ -374,6 +374,7 @@ export default function TeamSelectPage({
             handleReady(nextSlots);
           }
         }
+
         return 0;
       });
     }, 1000);
