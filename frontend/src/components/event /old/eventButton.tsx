@@ -14,7 +14,7 @@ export default function EventButton() {
     >
       <img
         src={ASSETS.ICONS.EVENT}
-        alt="Friends"
+        alt="Event"
         className="w-14 h-14 object-contain image-rendering-pixelated hover:scale-110"
       />
     </div>

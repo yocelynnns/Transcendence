@@ -1,62 +1,66 @@
-//IMPORTS
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login as loginApi, getUserInfo } from "../services/authService";
 import PixelButton from "../components/elements/PixelButton";
 
-//TYPES / PROPS
 interface LoginPageProps {
   setToken: (token: string | null) => void;
   setAvatarId?: (id: string | null) => void;
 }
 
-//MAIN COMPONENT
+// DESIGN SIZE (like profile & signup)
+const designWidth = 450;
+const designHeight = 400;
+const padding = 32;
+const maxScale = 1;
+const minScale = 0.5;
+
 export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
-  //STATE
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [scale, setScale] = useState(1);
 
-  //NAVIGATION
-  const navigate = useNavigate();
+  // SCALE OUTER WRAPPER
+  useEffect(() => {
+    const handleResize = () => {
+      const scaleX = (window.innerWidth - padding * 2) / designWidth;
+      const scaleY = (window.innerHeight - padding * 2) / designHeight;
+      const newScale = Math.min(
+        maxScale,
+        Math.max(minScale, Math.min(scaleX, scaleY))
+      );
+      setScale(newScale);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  //HANDLE LOGIN
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
-    //VALIDATION
     if (!email || !password) return setError("Email and password are required!");
 
     try {
       setLoading(true);
 
-      //LOGIN API
       const data = await loginApi(email, password);
-
-      //SAVE TOKEN
       sessionStorage.setItem("token", data.token);
       setToken(data.token);
 
-      //GET USER INFO
       const userData = await getUserInfo(data.token);
+      if (userData._id) sessionStorage.setItem("userId", userData._id);
 
-      // SAVE USER ID for friendlist
-      if (userData._id) {
-        sessionStorage.setItem("userId", userData._id);
-      }
-
-      //CHECK AVATAR
       if (userData.avatar?._id) {
-        setAvatarId?.(userData.avatar?._id);
-
-        //HOME PAGE
+        setAvatarId?.(userData.avatar._id);
         navigate("/");
       } else {
         setAvatarId?.(null);
-
-        //PROFILE CREATION
         navigate("/profile");
       }
     } catch (err: unknown) {
@@ -68,29 +72,34 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
   };
 
   return (
-    <div className="flex items-center justify-center w-screen h-screen bg-blue-200 font-mono">
-      {/* Form wrapper relative to place pixel background */}
-      <div className="relative w-100">
-        {/* PIXEL BACKGROUND FOR FORM */}
+    <div className="fixed inset-0 flex items-center justify-center bg-blue-200">
+      <div
+        style={{
+          width: designWidth,
+          height: designHeight,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+        }}
+        className="relative w-full"
+      >
+        {/* PIXEL BACKGROUND */}
         <PixelButton
           colorA="#677fb4"
           colorB="#384071"
           colorText="#384071"
           textSize="1rem"
-          height={400}  // adjust to fit form height
+          height={400}
           width="100%"
           cursorPointer={false}
         />
 
-        {/* FORM CONTENT ON TOP */}
-        <form 
-          onSubmit={handleLogin} 
+        {/* FORM CONTENT */}
+        <form
+          onSubmit={handleLogin}
           className="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center p-10 text-center"
         >
-          {/* HEADER */}
-          <h1 className="text-3xl mb-5 pixelify-sans text-[#ffffff]">Pokemon Login</h1>
+          <h1 className="text-3xl mb-8 pixelify-sans text-[#ffffff]">Pokemon Login</h1>
 
-          {/* EMAIL INPUT */}
           <div className="relative mb-3 w-full">
             <PixelButton
               colorA="#a5b6dd"
@@ -112,7 +121,6 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
             />
           </div>
 
-          {/* PASSWORD INPUT */}
           <div className="relative mb-3 w-full">
             <PixelButton
               colorA="#a5b6dd"
@@ -134,7 +142,6 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
             />
           </div>
 
-          {/* LOGIN PIXEL BUTTON */}
           <div className="mt-2 w-full">
             <PixelButton
               colorA={loading ? "#ccc" : "#ffcc00"}
@@ -150,10 +157,8 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
             </PixelButton>
           </div>
 
-          {/* ERROR MESSAGE */}
           {error && <div className="mt-3 text-[#ff8ea8]">{error}</div>}
 
-          {/* SIGNUP LINK */}
           <div className="mt-6 text-sm text-[#ffffff]">
             No account?{" "}
             <Link to="/signup" className="font-bold text-[#ffcc00]">

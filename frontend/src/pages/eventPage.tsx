@@ -23,9 +23,10 @@ const mapForeground = ASSETS.MAP.FOREGROUND;
 // MAP CONSTANTS
 const MAP_WIDTH = 20;
 const MAP_HEIGHT = 34;
-const TILE_SIZE = 64;
-const VIEW_WIDTH = 10;
-const VIEW_HEIGHT = 10;
+const TILE_SIZE = 84;
+const VIEW_WIDTH = window.innerWidth / TILE_SIZE;
+const VIEW_HEIGHT = window.innerHeight / TILE_SIZE;
+
 
 // PROPS
 interface EventPageProps {
@@ -46,6 +47,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
     mapHeight: MAP_HEIGHT,
     collision: mapData.map,
     charPref: avatarData?.characterOption ?? 0,
+    freeze: false,
   });
 
   // SOCKET
@@ -211,94 +213,42 @@ export default function EventPage({ avatarData }: EventPageProps) {
   // RENDER
   // -------------------
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        background: "#000",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        position: "relative",
-      }}
-    >
+    <div className="w-screen h-screen bg-black flex items-center justify-center relative">
 
+      {/* START TIMER */}
       {eventStartAt && timeLeft > 0 && (
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          left: 60,
-          background: "#fff",
-          border: "3px solid #000",
-          padding: "6px 10px",
-          fontFamily: "monospace",
-          zIndex: 50,
-        }}
-      >
-        Event starts in: {Math.ceil(timeLeft / 1000)}s
-      </div>
-    )}
+        <div className="absolute top-4 left-[60px] bg-white border-[3px] border-black px-3 py-1 font-mono z-50">
+          Event starts in: {Math.ceil(timeLeft / 1000)}s
+        </div>
+      )}
 
       {/* SCORE */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          right: 60,
-          background: "#fff",
-          border: "3px solid #000",
-          padding: "8px 12px",
-          fontFamily: "monospace",
-          zIndex: 50,
-        }}
-      >
+      <div className="absolute top-4 right-[60px] bg-white border-[3px] border-black px-4 py-2 font-mono z-50">
         Catch count: {catchCount}
       </div>
 
+      {/* BACK BUTTON */}
       <button
         onClick={() => navigate("/")}
-        style={{
-          position: "absolute",
-          top: 60,
-          left: 60,
-          zIndex: 110,
-          background: "#fff",
-          border: "3px solid #000",
-          padding: "6px 10px",
-          fontFamily: "monospace",
-          cursor: "pointer",
-        }}
+        className="absolute top-[60px] left-[60px] z-[110] bg-white border-[3px] border-black px-3 py-1 font-mono cursor-pointer hover:bg-gray-200 active:translate-y-[2px]"
       >
         ← Back
       </button>
 
-
       {/* EVENT FINISHED OVERLAY */}
       {eventFinished && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0,0,0,0.8)",
-            zIndex: 100,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            color: "#fff",
-            fontFamily: "monospace",
-          }}
-        >
-          <div style={{ background: "#111", padding: 24, border: "4px solid #fff" }}>
-            <h2>🏆 Event Finished</h2>
+        <div className="absolute inset-0 bg-black/80 z-[100] flex items-center justify-center text-white font-mono">
+          <div className="bg-[#111] p-6 border-4 border-white">
+            <h2 className="text-xl mb-2">🏆 Event Finished</h2>
+
             <p>
               Winner:{" "}
-              <strong style={{ color: "#ffd700" }}>
+              <strong className="text-yellow-400">
                 {winnerId + " 🎉"}
               </strong>
             </p>
 
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-3 space-y-1">
               {finalScores
                 .sort((a, b) => b.catchCount - a.catchCount)
                 .map((p) => (
@@ -312,19 +262,23 @@ export default function EventPage({ avatarData }: EventPageProps) {
       )}
 
       {/* MAP VIEW */}
-      <div style={{ width: viewPixelWidth, height: viewPixelHeight, overflow: "hidden", position: "relative" }}>
-        <img
-          src={mapImage}
-          alt="map"
+      <div
+        className="relative overflow-hidden"
+        style={{ width: viewPixelWidth, height: viewPixelHeight }}
+      >
+        {/* MAP IMAGE */}
+        <div
+          className="absolute z-0 bg-cover bg-no-repeat"
           style={{
-            position: "absolute",
             left: -offsetX,
             top: -offsetY,
             width: MAP_WIDTH * TILE_SIZE,
             height: MAP_HEIGHT * TILE_SIZE,
+            backgroundImage: `url(${mapImage})`
           }}
         />
 
+        {/* EVENT POKEMON */}
         {eventPokemons.map(
           (p) =>
             !p.caught && (
@@ -339,6 +293,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
             )
         )}
 
+        {/* OTHER PLAYERS */}
         {otherPlayers.map((p) => (
           <Player
             key={p.id}
@@ -353,6 +308,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
           />
         ))}
 
+        {/* LOCAL PLAYER */}
         <Player
           x={player.x - offsetX}
           y={player.y - offsetY}
@@ -364,20 +320,17 @@ export default function EventPage({ avatarData }: EventPageProps) {
           zIndex={5}
         />
 
-        <img
-          src={mapForeground}
-          alt="foreground"
-          style={{
-            position: "absolute",
-            left: -offsetX,
-            top: -offsetY,
+        {/* FOREGROUND */}
+        <div className="absolute pointer-events-none z-10 bg-cover bg-no-repeat" 
+          style={{ left: -offsetX, 
+            top: -offsetY, 
             width: MAP_WIDTH * TILE_SIZE,
-            height: MAP_HEIGHT * TILE_SIZE,
-            pointerEvents: "none",
-            zIndex: 10,
-          }}
+            height: MAP_HEIGHT * TILE_SIZE, 
+            backgroundImage: `url(${mapForeground})`
+          }} 
         />
       </div>
     </div>
   );
+
 }
