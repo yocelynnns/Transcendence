@@ -9,7 +9,7 @@ interface CatchDialogProps {
 
 export default function CatchDialog({ onYes, onNo, scale }: CatchDialogProps) {
   const BASE_WIDTH = 400; // base width of the banner
-  const IMAGE_RATIO = 3414 / 1574; // original image width / height
+  const IMAGE_RATIO = 2221 / 1050; // original image width / height
 
   const width = BASE_WIDTH * scale;
   const height = width / IMAGE_RATIO;
@@ -33,7 +33,7 @@ export default function CatchDialog({ onYes, onNo, scale }: CatchDialogProps) {
         {/* Overlay text & buttons */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <div
-            className="text-center text-[#ab7b81]"
+            className="text-center text-[#ffffff]"
             style={{ fontSize: `${1.6 * scale}rem` }}
           >
             Catch this Pokemon?
@@ -42,9 +42,9 @@ export default function CatchDialog({ onYes, onNo, scale }: CatchDialogProps) {
           <div className="flex gap-6">
             <PixelButton
               height={45 * scale}
-              colorA="#dea8a3"
-              colorB="#ab7b81"
-              colorText="#8f6b70"
+              colorA="#a5b6dd"
+              colorB="#384071"
+              colorText="#677fb4"
               textSize={`${1.2 * scale}rem`}
               onClick={onNo}
               hoverScale={1.1}
@@ -55,9 +55,9 @@ export default function CatchDialog({ onYes, onNo, scale }: CatchDialogProps) {
 
             <PixelButton
               height={45 * scale}
-              colorA="#ab7b81"
-              colorB="#8f6b70"
-              colorText="#ecc2be"
+              colorA="#ffcc00"
+              colorB="#d4a500"
+              colorText="#333333"
               textSize={`${1.2 * scale}rem`}
               onClick={onYes}
               hoverScale={1.1}

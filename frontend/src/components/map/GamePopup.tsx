@@ -1,4 +1,6 @@
 import React from "react";
+import PixelButton from "../elements/PixelButton";
+import { ASSETS } from "../../assets";
 
 type GamePopupProps = {
   title: string;
@@ -9,6 +11,8 @@ type GamePopupProps = {
 
   button2Text?: string;
   onButton2?: () => void;
+
+  scale: number;
 };
 
 export default function GamePopup({
@@ -18,60 +22,102 @@ export default function GamePopup({
   onButton1,
   button2Text,
   onButton2,
+  scale,
 }: GamePopupProps) {
+  const BASE_WIDTH = 400;
+  const BASE_HEIGHT = 200;
+
+  const buttonWidth = Math.floor(BASE_WIDTH / 3);
+  const buttonHeight = 65;
+
   return (
     <div
+      className="absolute left-1/2 bottom-6 z-50"
       style={{
-        position: "absolute",
-        bottom: 200,
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "#fff",
-        border: "2px solid #000",
-        padding: 16,
-        borderRadius: 8,
+        width: BASE_WIDTH,
+        height: BASE_HEIGHT,
+        transform: `translateX(-50%) scale(${scale})`,
+        transformOrigin: "bottom center",
         fontFamily: "monospace",
-        textAlign: "center",
-        minWidth: 220,
-        zIndex: 100,
       }}
     >
-      {/* ❌ Close Button */}
-      <div
-        style={{
-          position: "absolute",
-          top: 6,
-          right: 10,
-          cursor: "pointer",
-          fontWeight: "bold",
-        }}
-        onClick={onClose}
-      >
-        ✕
-      </div>
+      <div className="relative w-full h-full">
 
-      <div style={{ marginBottom: 16 }}>{title}</div>
+        {/* ✅ Background (non-interactive) */}
+        <PixelButton
+          width={BASE_WIDTH}
+          height={BASE_HEIGHT}
+          colorA="#677fb4"
+          colorB="#384071"
+          colorText="#000"
+          textSize="10px"
+          cursorPointer={false}
+          style={{ pointerEvents: "none" }}   // 🔥 critical fix
+        />
 
-      <div>
-        {/* Button 1 (optional) */}
-        {button1Text && onButton1 && (
-          <button
-            style={{ padding: "6px 12px", marginRight: 8 }}
-            onClick={onButton1}
+        {/* ✅ Overlay Content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+
+          {/* Close */}
+          <div
+            className="absolute top-2 right-3 text-white font-bold cursor-pointer hover:scale-110"
+            onClick={onClose}
           >
-            {button1Text}
-          </button>
-        )}
+            <button
+              onClick={onClose}
+            >
+              <img
+                src={ASSETS.ICONS.BLUEX}
+                alt="X"
+                className="w-8 h-8 object-contain image-rendering-pixelated hover:scale-102"
+              />
+            </button>
+          </div>
 
-        {/* Button 2 (optional) */}
-        {button2Text && onButton2 && (
-          <button
-            style={{ padding: "6px 12px" }}
-            onClick={onButton2}
+          {/* Title */}
+          <div
+            className="text-white text-center"
+            style={{ fontSize: "1.4rem" }}
           >
-            {button2Text}
-          </button>
-        )}
+            {title}
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-center gap-8 px-4">
+            {button1Text && onButton1 && (
+              <PixelButton
+                width={buttonWidth}
+                height={buttonHeight}
+                colorA="#ffcc00"
+                colorB="#d4a500"
+                colorText="#000"
+                textSize="1rem"
+                onClick={onButton1}
+                cursorPointer={true}
+                hoverScale={1.1}
+              >
+                {button1Text}
+              </PixelButton>
+            )}
+
+            {button2Text && onButton2 && (
+              <PixelButton
+                width={buttonWidth}
+                height={buttonHeight}
+                colorA="#ffcc00"
+                colorB="#d4a500"
+                colorText="#000"
+                textSize="1rem"
+                onClick={onButton2}
+                cursorPointer={true}
+                hoverScale={1.1}
+              >
+                {button2Text}
+              </PixelButton>
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   );

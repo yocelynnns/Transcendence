@@ -112,6 +112,7 @@ import xicon from "./elements/icons/x.png"
 import backicon from "./elements/icons/back.png"
 import sendicon from "./elements/icons/send.png"
 import battleicon from "./elements/icons/battle.png"
+import bluexicon from "./elements/icons/bluex.png"
 
 // EXPORT CENTRAL ASSETS
 export const ASSETS = {
@@ -177,6 +178,7 @@ export const ASSETS = {
     GUILD: guildicon,
     EVENT: eventicon,
     X: xicon,
+    BLUEX: bluexicon,
     BACK: backicon,
     SEND: sendicon,
     BATTLE: battleicon,
