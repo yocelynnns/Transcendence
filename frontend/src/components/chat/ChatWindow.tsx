@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { ASSETS } from "../../assets";
 import PublicProfilePopup from "../profile/PublicProfilePopup";
@@ -36,6 +36,22 @@ interface ChatWindowProps {
   friend: Friend;
   onClose: () => void;
   onChallenge?: (avatarId: string) => void; 
+}
+
+interface PartnerTypingEvent {
+  avatarId: string;
+  isTyping: boolean;
+}
+
+interface MessagesReadEvent {
+  byAvatarId: string;
+}
+
+interface MessageRejectedEvent {
+  receiverId: string;
+  reason: string;
+  blockedBy: string;
+  timestamp: string;
 }
 
 const styles = {
@@ -139,7 +155,7 @@ const styles = {
 const getRoomId = (id1: string, id2: string) => [id1, id2].sort().join("_");
 
 export default function ChatWindow({
-  token, myAvatarId, myUserName, myAvatarImage, friend, onClose, onChallenge
+  token, myAvatarId, friend, onClose, onChallenge
 }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -152,55 +168,95 @@ export default function ChatWindow({
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
   
   const roomId = getRoomId(myAvatarId, friend.avatarId);
   const friendId = friend.avatarId;
 
-  const fetchMessages = async (pageNum: number = 1) => {
-    if (loading) return;
-    setLoading(true);
+  // const fetchMessages = async (pageNum: number = 1) => {
+  //   if (loading) return;
+  //   setLoading(true);
     
-    try {
-      const res = await fetch(
-        `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  //   try {
+  //     const res = await fetch(
+  //       `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
       
-      if (!res.ok) {
-        console.log("Failed to fetch messages:", res.status);
+  //     if (!res.ok) {
+  //       console.log("Failed to fetch messages:", res.status);
+  //       setLoading(false);
+  //       return;
+  //     }
+      
+  //     const data = await res.json();
+  //     console.log("📚 Fetched", data.messages.length, "messages");
+      
+  //     if (pageNum === 1) {
+  //       setMessages(data.messages);
+  //     } else {
+  //       setMessages(prev => [...data.messages, ...prev]);
+  //     }
+      
+  //     setHasMore(data.pagination.hasMore);
+  //     setPage(pageNum);
+  //   } catch (err) {
+  //     console.log("Failed to fetch messages:", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+  const fetchMessages = useCallback(
+    async (pageNum: number = 1) => {
+      if (loading) return;
+      setLoading(true);
+
+      try {
+        const res = await fetch(
+          `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (!res.ok) {
+          console.log("Failed to fetch messages:", res.status);
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        console.log("📚 Fetched", data.messages.length, "messages");
+
+        if (pageNum === 1) {
+          setMessages(data.messages);
+        } else {
+          setMessages(prev => [...data.messages, ...prev]);
+        }
+
+        setHasMore(data.pagination.hasMore);
+        setPage(pageNum);
+      } catch (err) {
+        console.log("Failed to fetch messages:", err);
+      } finally {
         setLoading(false);
-        return;
       }
-      
-      const data = await res.json();
-      console.log("📚 Fetched", data.messages.length, "messages");
-      
-      if (pageNum === 1) {
-        setMessages(data.messages);
-      } else {
-        setMessages(prev => [...data.messages, ...prev]);
-      }
-      
-      setHasMore(data.pagination.hasMore);
-      setPage(pageNum);
-    } catch (err) {
-      console.log("Failed to fetch messages:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [friendId, token, loading] // dependencies used inside the function
+  );
+        
 
   useEffect(() => {
     console.log("🔵 ChatWindow mounted for:", friendId);
     
     emitEvent("joinChat", { friendAvatarId: friendId });
-    fetchMessages(1);
+    fetchMessages(1);// here
     emitEvent("markAsRead", { senderId: friendId });
 
-    const cleanupReceive = subscribeEvent<any>("receiveMessage", (msg) => {
+    const cleanupReceive = subscribeEvent<Message>("receiveMessage", (msg) => {
       console.log("📨 Received:", msg.content?.substring(0, 20));
       
       const msgRoomId = getRoomId(msg.senderId, msg.receiverId);
@@ -219,11 +275,11 @@ export default function ChatWindow({
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     });
 
-    const cleanupTyping = subscribeEvent<any>("partnerTyping", ({ avatarId, isTyping }) => {
+    const cleanupTyping = subscribeEvent<PartnerTypingEvent>("partnerTyping", ({ avatarId, isTyping }) => {
       if (avatarId === friendId) setIsTyping(isTyping);
     });
 
-    const cleanupRead = subscribeEvent<any>("messagesRead", ({ byAvatarId }) => {
+    const cleanupRead = subscribeEvent<MessagesReadEvent>("messagesRead", ({ byAvatarId }) => {
       if (byAvatarId === friendId) {
         setMessages(prev => prev.map(m => 
           m.senderId === myAvatarId ? { ...m, read: true } : m
@@ -231,7 +287,7 @@ export default function ChatWindow({
       }
     });
 
-    const cleanupRejected = subscribeEvent<any>("messageRejected", (data) => {
+    const cleanupRejected = subscribeEvent<MessageRejectedEvent>("messageRejected", (data) => {
       console.log("❌ Message rejected:", data);
       
       if (data.receiverId === friendId) {
@@ -270,7 +326,7 @@ export default function ChatWindow({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [friendId]);
+  }, [friendId, emitEvent, fetchMessages, myAvatarId,roomId, subscribeEvent ]);
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
@@ -371,7 +427,10 @@ export default function ChatWindow({
 
           <div ref={messagesContainerRef} style={styles.messagesContainer}>
             {hasMore && !loading && (
-              <div style={styles.loadMoreBtn} onClick={() => fetchMessages(page + 1)}>
+              <div
+                style={styles.loadMoreBtn as React.CSSProperties}
+                onClick={() => fetchMessages(page + 1)}
+              >
                 Load older messages ↑
               </div>
             )}
