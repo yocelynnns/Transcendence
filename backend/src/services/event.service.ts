@@ -8,18 +8,45 @@ export interface JoinCatchEventInput {
 }
 
 export async function joinCatchEvent({ eventId, avatarId, playerName }: JoinCatchEventInput) {
+  const updatedEvent = await CatchEventModel.findOneAndUpdate(
+    { 
+      eventId,
+      status: "running",
+      "players.playerId": { $ne: avatarId }
+    },
+    {
+      $push: {
+        players: { playerId: avatarId, playerName, catchCount: 0 }
+      }
+    },
+    { new: true }
+  );
+
+  if (updatedEvent) {
+    return {
+      status: updatedEvent.status,
+      eventDoc: updatedEvent,
+    };
+  }
+
   const event = await CatchEventModel.findOne({ eventId });
-  if (!event) throw new Error("Event not found");
+  
+  if (!event) {
+    throw new Error("Event not found");
+  }
 
   if (event.status === "waiting") {
-    return { status: "waiting", createdAt: event.createdAt };
+    return { 
+      status: "waiting", 
+      createdAt: event.createdAt 
+    };
   }
 
   if (event.status === "finished") {
     const winner = [...event.players].sort((a, b) => b.catchCount - a.catchCount)[0];
     return {
       status: "finished",
-      winnerId: winner.playerName,
+      winnerId: winner?.playerName,
       scores: event.players.map((p) => ({
         playerId: p.playerId,
         playerName: p.playerName,
@@ -28,26 +55,16 @@ export async function joinCatchEvent({ eventId, avatarId, playerName }: JoinCatc
     };
   }
 
-  const updatedEvent = await CatchEventModel.findOneAndUpdate(
-    { eventId, status: "running" },
-    {
-      $addToSet: {
-        players: { playerId: avatarId, playerName, catchCount: 0 }
-      }
-    },
-    { new: true }
-  );
-
-  if (!updatedEvent) {
-    throw new Error("Event not found or not running");
+  const alreadyJoined = event.players.some(p => p.playerId === avatarId);
+  if (alreadyJoined) {
+    return {
+      status: event.status,
+      eventDoc: event,
+      message: "Already joined"
+    };
   }
 
-  if (!updatedEvent) throw new Error("Failed to add player to event");
-
-  return {
-    status: updatedEvent.status,
-    eventDoc: updatedEvent,
-  };
+  throw new Error("Failed to join event");
 }
 
 // Attempt to catch pokemon
