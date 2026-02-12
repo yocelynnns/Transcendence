@@ -49,33 +49,12 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   const [loading, setLoading] = useState(true);
   const [totalWins, setTotalWins] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [scale, setScale] = useState(1);
 
   const achievements: Achievement[] = [
     { id: "first_win", title: "Level 1: First Victory", description: "Win your first race", requirement: 1, icon: "🏅" },
     { id: "five_wins", title: "Level 2: Speed Demon", description: "Win 5 races", requirement: 5, icon: "🔥" },
     { id: "ten_wins", title: "Level 3: Racing Legend", description: "Win 10 races", requirement: 10, icon: "👑" },
   ];
-
-  // Responsive scaling based on viewport
-  useEffect(() => {
-    const updateScale = () => {
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
-      
-      // Base scale on smaller dimension to ensure everything fits
-      const heightScale = viewportHeight / 1000; // Base: 1000px height
-      const widthScale = viewportWidth / 1400; // Base: 1400px width
-      
-      // Use smaller scale to ensure content fits
-      const newScale = Math.min(heightScale, widthScale, 1); // Cap at 1 (100%)
-      setScale(Math.max(newScale, 0.5)); // Minimum 50% scale
-    };
-
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -154,31 +133,24 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   };
 
   return (
-    <div className="fixed inset-0 p-5 font-sans bg-gradient-to-b from-sky-300 to-blue-50 overflow-y-auto flex items-center justify-center">
-      {/* Exit Button - Always visible */}
+    <div className="fixed inset-0 font-sans bg-gradient-to-b from-sky-300 to-blue-50 overflow-y-auto overflow-x-hidden">
+      {/* Exit Button - Always visible, responsive sizing */}
       <button
         onClick={handleExit}
-        className="fixed top-5 right-5 z-50 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all hover:scale-110 flex items-center gap-2"
+        className="fixed top-3 right-3 md:top-5 md:right-5 z-50 bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 px-3 md:py-2 md:px-4 rounded-lg shadow-lg transition-all hover:scale-110 flex items-center gap-1 md:gap-2 text-sm md:text-base"
         title="Return to Home"
       >
-        <span className="text-xl">←</span>
+        <span className="text-lg md:text-xl">←</span>
         <span>Exit</span>
       </button>
 
-      <div 
-        style={{ 
-          transform: `scale(${scale})`,
-          transformOrigin: 'center center',
-          transition: 'transform 0.3s ease',
-        }}
-        className="w-full"
-      >
+      <div className="w-full min-h-full p-5 flex items-start justify-center">
         {!joined ? (
-          <div className="w-full max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-            <h2 className="text-center text-3xl text-gray-800 mb-5">🏁 Eevee Race 🏁</h2>
+          <div className="w-full max-w-7xl mx-auto bg-white p-4 md:p-8 rounded-xl shadow-lg">
+            <h2 className="text-center text-2xl md:text-3xl text-gray-800 mb-4 md:mb-5">🏁 Eevee Race 🏁</h2>
 
-            {/* Two Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Two Column Layout - Responsive: 2 cols on desktop (md+), 1 col on mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* LEFT COLUMN - Instructions & Match History */}
               <div className="flex flex-col gap-5">
                 {/* Instructions */}
@@ -352,49 +324,50 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
             </button>
           </div>
         ) : (
-          <div className="w-full max-w-[1400px] mx-auto">
+          <div className="w-full max-w-7xl mx-auto">
             {!started && (
-              <div className="text-center text-lg text-gray-600 p-5 bg-white rounded-xl my-5">
+              <div className="text-center text-base md:text-lg text-gray-600 p-4 md:p-5 bg-white rounded-xl my-3 md:my-5">
                 ⏳ Waiting for another player to join...
               </div>
             )}
 
             {winner && (
-              <div className="text-center text-3xl text-yellow-300 bg-gradient-to-br from-purple-600 to-purple-800 p-5 rounded-xl my-5 animate-pulse">
+              <div className="text-center text-2xl md:text-3xl text-yellow-300 bg-gradient-to-br from-purple-600 to-purple-800 p-4 md:p-5 rounded-xl my-3 md:my-5 animate-pulse">
                 🎉 {winner} wins! 🏆
               </div>
             )}
 
             {started && !winner && (
-              <div className="text-center text-xl text-gray-800 bg-yellow-100 p-4 rounded-xl my-5 border-2 border-yellow-400">
-                Press <strong className="text-red-600 text-2xl">SPACEBAR</strong> to move! 🚀
+              <div className="text-center text-lg md:text-xl text-gray-800 bg-yellow-100 p-3 md:p-4 rounded-xl my-3 md:my-5 border-2 border-yellow-400">
+                Press <strong className="text-red-600 text-xl md:text-2xl">SPACEBAR</strong> to move! 🚀
               </div>
             )}
 
-            <div className="bg-white p-8 rounded-2xl shadow-xl mt-5">
+            <div className="bg-white p-4 md:p-8 rounded-2xl shadow-xl mt-3 md:mt-5">
               {players.map((p) => (
-                <div key={p.id} className="relative h-[100px] mb-5 bg-green-500 border-3 border-green-800 rounded-xl overflow-hidden">
-                  <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_48px,rgba(255,255,255,0.3)_48px,rgba(255,255,255,0.3)_50px)]" />
+                <div key={p.id} className="relative h-20 md:h-[100px] mb-3 md:mb-5 bg-green-500 border-2 md:border-3 border-green-800 rounded-lg md:rounded-xl overflow-visible">
+                  <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_48px,rgba(255,255,255,0.3)_48px,rgba(255,255,255,0.3)_50px)] rounded-lg md:rounded-xl" />
                   
                   {p.position < 100 && (
                     <div className="absolute left-[95%] top-1/2 -translate-y-1/2 flex items-center justify-center z-[15]">
-                      <img src="/assets/race/finish-line.png" alt="finish line" className="w-10 h-10 object-contain" />
+                      <img src="/assets/race/finish-line.png" alt="finish line" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
                     </div>
                   )}
 
-                  <div className="absolute left-2.5 top-1 font-bold text-base text-gray-800 bg-white/90 px-2 py-0.5 rounded z-[5]">
+                  <div className="absolute left-1 md:left-2.5 top-0.5 md:top-1 font-bold text-xs md:text-base text-gray-800 bg-white/90 px-1 md:px-2 py-0.5 rounded text-center z-[5]">
                     {p.name}
                   </div>
 
-                  <div className="absolute right-2.5 top-1 font-bold text-sm text-gray-600 bg-white/90 px-2 py-0.5 rounded z-[5]">
+                  <div className="absolute right-1 md:right-2.5 top-0.5 md:top-1 font-bold text-xs md:text-sm text-gray-600 bg-white/90 px-1 md:px-2 py-0.5 rounded z-[5]">
                     {Math.floor(p.position)}%
                   </div>
 
+                  {/* Sprite positioned with percentage, capped at 90% to prevent overflow */}
                   <div 
                     className="absolute top-1/2 -translate-y-1/2 transition-all duration-100 ease-out z-10 drop-shadow-lg"
-                    style={{ left: `${p.position * 0.95}%` }}
+                    style={{ left: `${Math.min(p.position * 0.90, 90)}%` }}
                   >
-                    <img src={p.sprite} alt={`${p.name}'s character`} className="w-20 h-20 object-contain block" />
+                    <img src={p.sprite} alt={`${p.name}'s character`} className="w-16 h-16 md:w-20 md:h-20 object-contain block" />
                   </div>
                 </div>
               ))}
