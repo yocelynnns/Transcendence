@@ -54,6 +54,104 @@ interface MessageRejectedEvent {
   timestamp: string;
 }
 
+const styles = {
+  overlay: {
+    position: "fixed" as const,
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: "rgba(0,0,0,0.5)",
+    display: "flex", justifyContent: "center", alignItems: "center",
+    zIndex: 200,
+  },
+  chatContainer: {
+    width: 400, height: 600, background: "white",
+    borderRadius: 12, boxShadow: "0 0 20px rgba(0,0,0,0.4)",
+    display: "flex", flexDirection: "column" as const,
+    fontFamily: "monospace", border: "4px solid #333",
+    overflow: "hidden",
+  },
+  header: {
+    display: "flex", alignItems: "center", gap: 12,
+    padding: 16, background: "#ffcc00", borderBottom: "2px solid #333",
+  },
+  avatar: {
+    width: 48, height: 48, borderRadius: "50%",
+    border: "2px solid #333", position: "relative" as const,
+    backgroundSize: "cover", backgroundPosition: "center",
+    cursor: "pointer",
+  },
+  onlineIndicator: (online: boolean) => ({
+    position: "absolute" as const, bottom: -2, right: -2,
+    width: 14, height: 14, borderRadius: "50%",
+    background: online ? "#4CAF50" : "#999",
+    border: "2px solid white",
+  }),
+  headerInfo: { flex: 1 },
+  friendName: { 
+    fontSize: 16, 
+    fontWeight: "bold" as const, 
+    color: "#333", 
+    margin: 0,
+    cursor: "pointer",
+  },
+  status: { fontSize: 12, color: "#666" },
+  typing: { fontSize: 12, color: "#4CAF50", fontStyle: "italic" as const },
+  closeBtn: {
+    background: "transparent", border: "none", fontSize: 20,
+    cursor: "pointer", color: "#333", width: 32, height: 32,
+    display: "flex", alignItems: "center", justifyContent: "center",
+  },
+  messagesContainer: {
+    flex: 1, overflowY: "auto" as const, padding: 16,
+    background: "#f5f5f5", display: "flex", flexDirection: "column" as const, gap: 12,
+  },
+  messageRow: (isMe: boolean, isRejected?: boolean) => ({
+    display: "flex", justifyContent: isMe ? "flex-end" : "flex-start",
+    alignItems: "flex-end", gap: 8,
+    opacity: isRejected ? 0.7 : 1,
+  }),
+  messageBubble: (isMe: boolean, isRejected?: boolean) => ({
+    maxWidth: "70%", padding: "10px 14px",
+    borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+    background: isRejected ? "#ff5555" : isMe ? "#4CAF50" : "white", 
+    color: isRejected ? "white" : isMe ? "white" : "#333",
+    border: `2px solid ${isRejected ? "#cc0000" : "#333"}`, 
+    fontSize: 14, lineHeight: 1.4, wordBreak: "break-word" as const,
+  }),
+  rejectedText: {
+    fontSize: 11, 
+    marginTop: 4, 
+    fontStyle: "italic" as const,
+    opacity: 0.9,
+  },
+  messageAvatar: {
+    width: 32, height: 32, borderRadius: "50%",
+    border: "2px solid #333", backgroundSize: "cover", backgroundPosition: "center", flexShrink: 0,
+  },
+  timestamp: { fontSize: 10, color: "#999", marginTop: 4, textAlign: "right" as const },
+  inputContainer: { display: "flex", gap: 8, padding: 12, background: "white", borderTop: "2px solid #333" },
+  input: {
+    flex: 1, padding: "10px 14px", fontSize: 14, fontFamily: "monospace",
+    border: "2px solid #333", borderRadius: 20, outline: "none", background: "#f9f9f9",
+  },
+  sendBtn: {
+    width: 44, height: 44, borderRadius: "50%", background: "#ffcc00",
+    border: "2px solid #333", cursor: "pointer", fontSize: 18,
+    display: "flex", alignItems: "center", justifyContent: "center",
+  },
+  emptyState: { textAlign: "center" as const, color: "#999", padding: 40, fontSize: 14 },
+  dateDivider: { textAlign: "center" as const, fontSize: 11, color: "#999", margin: "8px 0" },
+  loadingIndicator: { textAlign: "center" as const, padding: 10, color: "#666", fontSize: 12 },
+  loadMoreBtn: { textAlign: "center", padding: 10, cursor: "pointer", color: "#666", fontSize: 12 },
+  errorBanner: {
+    background: "#ff5555",
+    color: "white",
+    padding: "8px 12px",
+    fontSize: 12,
+    textAlign: "center" as const,
+    borderBottom: "2px solid #cc0000",
+  },
+};
+
 const getRoomId = (id1: string, id2: string) => [id1, id2].sort().join("_");
 
 export default function ChatWindow({
@@ -299,159 +397,76 @@ export default function ChatWindow({
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 z-200 bg-black/50 flex items-center justify-center"
-        onClick={onClose}
-      >
-        {/* Chat Container */}
-        <div
-          className="w-100 h-150 bg-white rounded-xl shadow-2xl flex flex-col border-4 border-[#333] overflow-hidden font-mono"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Error Banner */}
+      <div style={styles.overlay} onClick={onClose}>
+        <div style={styles.chatContainer} onClick={e => e.stopPropagation()}>
           {errorMessage && (
-            <div className="bg-red-500 text-white text-center text-xs px-3 py-2 border-b-2 border-red-700">
+            <div style={styles.errorBanner}>
               ❌ {errorMessage}
             </div>
           )}
-
-          {/* Header */}
-          <div className="flex items-center gap-3 p-4 bg-yellow-400 border-b-2 border-[#333]">
-            {/* Avatar */}
-            <div
-              className="relative w-12 h-12 rounded-full border-2 border-[#333] bg-cover bg-center cursor-pointer"
-              style={{
-                backgroundImage: `url(${friend.avatarImage || defaultAvatar})`,
-              }}
+          
+          <div style={styles.header}>
+            <div 
+              style={{...styles.avatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}}
               onClick={() => setShowProfile(true)}
             >
-              <div
-                className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                  friend.online ? "bg-green-500" : "bg-gray-400"
-                }`}
-              />
+              <div style={styles.onlineIndicator(!!friend.online)} />
             </div>
-
-            {/* Name + Status */}
-            <div className="flex-1">
-              <h3
-                className="text-sm font-bold text-[#333] cursor-pointer"
+            <div style={styles.headerInfo}>
+              <h3 
+                style={styles.friendName}
                 onClick={() => setShowProfile(true)}
               >
                 {friend.userName}
               </h3>
-
-              {isTyping ? (
-                <span className="text-xs text-green-500 italic">
-                  typing...
-                </span>
-              ) : (
-                <span className="text-xs text-gray-500">
-                  {friend.online ? "🟢 Online" : "⚫ Offline"}
-                </span>
-              )}
+              {isTyping ? <span style={styles.typing}>typing...</span> : 
+               <span style={styles.status}>{friend.online ? "🟢 Online" : "⚫ Offline"}</span>}
             </div>
-
-            {/* Close */}
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center text-lg hover:bg-black/10 rounded"
-            >
-              ✕
-            </button>
+            <button onClick={onClose} style={styles.closeBtn}>✕</button>
           </div>
 
-          {/* Messages */}
-          <div
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-4 bg-gray-100 flex flex-col gap-3"
-          >
+          <div ref={messagesContainerRef} style={styles.messagesContainer}>
             {hasMore && !loading && (
               <div
+                style={styles.loadMoreBtn as React.CSSProperties}
                 onClick={() => fetchMessages(page + 1)}
-                className="text-center text-xs text-gray-600 cursor-pointer hover:underline"
               >
                 Load older messages ↑
               </div>
             )}
-
-            {loading && (
-              <div className="text-center text-xs text-gray-500">
-                Loading...
-              </div>
-            )}
-
+            {loading && <div style={styles.loadingIndicator}>Loading...</div>}
+            
             {messages.length === 0 && !loading ? (
-              <div className="text-center text-gray-400 text-sm py-10">
-                No messages yet.
-                <br />
-                Say hello to {friend.userName}! 👋
-              </div>
+              <div style={styles.emptyState}>No messages yet.<br/>Say hello to {friend.userName}! 👋</div>
             ) : (
               Object.entries(grouped).map(([date, msgs]) => (
                 <div key={date}>
-                  <div className="text-center text-xs text-gray-400 my-2">
-                    {date}
-                  </div>
-
+                  <div style={styles.dateDivider}>{date}</div>
                   {msgs.map((msg, idx) => {
                     const isMe = msg.senderId === myAvatarId;
-                    const showAvatar =
-                      !isMe &&
-                      (idx === msgs.length - 1 ||
-                        msgs[idx + 1]?.senderId !== msg.senderId);
-
+                    const showAvatar = !isMe && (idx === msgs.length - 1 || msgs[idx + 1]?.senderId !== msg.senderId);
+                    
                     return (
-                      <div
-                        key={msg._id}
-                        className={`flex items-end gap-2 ${
-                          isMe ? "justify-end" : "justify-start"
-                        } ${msg.rejected ? "opacity-70" : ""}`}
-                      >
-                        {/* Avatar */}
+                      <div key={msg._id} style={styles.messageRow(isMe, msg.rejected)}>
                         {!isMe && showAvatar && (
-                          <div
-                            className="w-8 h-8 rounded-full border-2 border-[#333] bg-cover bg-center"
-                            style={{
-                              backgroundImage: `url(${friend.avatarImage || defaultAvatar})`,
-                            }}
-                          />
+                          <div style={{...styles.messageAvatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}} />
                         )}
-                        {!isMe && !showAvatar && <div className="w-8" />}
-
+                        {!isMe && !showAvatar && <div style={{width: 32}} />}
+                        
                         <div>
-                          <div
-                            className={`max-w-[70%] px-4 py-2 text-sm leading-snug wrap-break-word border-2 ${
-                              msg.rejected
-                                ? "bg-red-500 text-white border-red-700"
-                                : isMe
-                                ? "bg-green-500 text-white border-[#333] rounded-t-2xl rounded-bl-2xl"
-                                : "bg-white text-[#333] border-[#333] rounded-t-2xl rounded-br-2xl"
-                            }`}
-                          >
+                          <div style={styles.messageBubble(isMe, msg.rejected)}>
                             {msg.content}
-
                             {msg.rejected && (
-                              <div className="text-[11px] mt-1 italic opacity-90">
-                                Blocked:{" "}
-                                {msg.rejectedReason ||
-                                  "Message could not be delivered"}
+                              <div style={styles.rejectedText}>
+                                Blocked: {msg.rejectedReason || "Message could not be delivered"}
                               </div>
                             )}
                           </div>
-
-                          <div className="text-[10px] text-gray-400 mt-1 text-right">
+                          <div style={styles.timestamp}>
                             {formatTime(msg.createdAt)}
                             {isMe && (
-                              <span className="ml-1">
-                                {msg.rejected
-                                  ? "❌"
-                                  : msg.read
-                                  ? "✓✓"
-                                  : msg.isOptimistic
-                                  ? "⏳"
-                                  : "✓"}
+                              <span style={{marginLeft: 4}}>
+                                {msg.rejected ? "❌" : msg.read ? "✓✓" : msg.isOptimistic ? "⏳" : "✓"}
                               </span>
                             )}
                           </div>
@@ -462,30 +477,23 @@ export default function ChatWindow({
                 </div>
               ))
             )}
-
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="flex gap-2 p-3 bg-white border-t-2 border-[#333]">
+          <div style={styles.inputContainer}>
             <input
               type="text"
               value={inputValue}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type a message..."
+              style={styles.input}
               maxLength={1000}
-              className="flex-1 px-4 py-2 text-sm bg-gray-50 border-2 border-[#333] rounded-full outline-none"
             />
-
             <button
               onClick={handleSend}
               disabled={!inputValue.trim()}
-              className={`w-11 h-11 rounded-full border-2 border-[#333] flex items-center justify-center text-lg transition ${
-                inputValue.trim()
-                  ? "bg-yellow-400 hover:scale-105"
-                  : "bg-yellow-400 opacity-50 cursor-not-allowed"
-              }`}
+              style={{...styles.sendBtn, opacity: inputValue.trim() ? 1 : 0.5, cursor: inputValue.trim() ? "pointer" : "not-allowed"}}
             >
               📨
             </button>
@@ -499,10 +507,9 @@ export default function ChatWindow({
           myAvatarId={myAvatarId}
           targetAvatarId={friend.avatarId}
           onClose={() => setShowProfile(false)}
-          onChallenge={onChallenge}
+          onChallenge={onChallenge} 
         />
       )}
     </>
   );
-
 }
