@@ -42,7 +42,7 @@ export default function TeamSelectPage({
   // Get battle from navigation state or props
   const navBattle = location.state?.battle;
   const activeBattle = navBattle as Battle || currentBattle as Battle;
-  
+
   // Sync to parent state if we have nav state but no currentBattle
   useEffect(() => {
     if (navBattle && !currentBattle) {
@@ -58,8 +58,7 @@ export default function TeamSelectPage({
   const [timeLeft, setTimeLeft] = useState(30);
   const [battleReady, setBattleReady] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const { subscribeEvent, playerReadyMatch } = useGameSocket(() => {});
+  const { subscribeEvent, playerReadyMatch, emitEvent } = useGameSocket(() => {});
 
   const usedIds = useMemo(
     () => new Set(slots.filter(Boolean).map((p) => p!._id)),
@@ -256,6 +255,16 @@ export default function TeamSelectPage({
       offBattleError();
     };
   }, [battleId, subscribeEvent, navigate, setCurrentBattle]);
+
+  useEffect(() => {
+    if (battleReady && battleId && avatarData) {
+      emitEvent("friendBattleStarted", { 
+        battleId,
+        avatarId: avatarData._id 
+      });
+      navigate(`/battle/${battleId}`);
+    }
+  }, [battleReady, battleId, navigate, avatarData, emitEvent]);
 
   useEffect(() => {
     if (battleReady && battleId) {

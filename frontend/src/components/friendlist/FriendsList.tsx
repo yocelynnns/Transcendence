@@ -16,6 +16,7 @@ interface Friend {
   characterOption: number;
   online?: boolean;
   currentBattle?: string | null;
+  battleStatus?: "online" | "in_battle" | "viewing_results";
 }
 
 interface FriendRequest {
@@ -384,7 +385,7 @@ export default function FriendsList({
 
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
 
-  // FETCH FRIENDS
+  // FETCH FRIENDS - Updated to handle battleStatus
   const fetchFriends = async () => {
     try {
       const res = await fetch("http://localhost:5001/api/friends", {
@@ -457,6 +458,27 @@ export default function FriendsList({
     }
   };
 
+  // HANDLE VIEW RESULTS - NEW
+  const handleViewResults = async (friend: Friend) => {
+    if (!friend.currentBattle) return;
+    
+    try {
+      const res = await fetch(`http://localhost:5001/api/battle/${friend.currentBattle}`);
+      if (!res.ok) throw new Error("Failed to fetch battle");
+
+      const battleData: Battle = await res.json();
+      
+      // Navigate to battle page to view ended battle
+      if (setSpectatingBattle) {
+        setSpectatingBattle(battleData);
+      }
+      navigate(`/spectating/${friend.currentBattle}`);
+      setShowPanel(false);
+    } catch (err) {
+      console.error("Failed to view results:", err);
+    }
+  };
+
   // HANDLE CHALLENGE FRIEND TO BATTLE
   const handleChallengeFriend = (friend: Friend) => {
     if (!friend.online) {
@@ -497,7 +519,6 @@ export default function FriendsList({
         setBlockedFriends(prev => new Set([...prev, friend.avatarId]));
         setMessage(`🔇 Messages blocked from ${friend.userName}`);
         
-        // Close chat if open with this friend
         if (selectedFriend?.avatarId === friend.avatarId) {
           setSelectedFriend(null);
         }
@@ -676,7 +697,6 @@ export default function FriendsList({
 
       if (res.ok) {
         setFriends((prev) => prev.filter((f) => f.avatarId !== friendAvatarId));
-        // Also remove from blocked list if they were blocked
         setBlockedFriends(prev => {
           const next = new Set(prev);
           next.delete(friendAvatarId);
@@ -693,41 +713,64 @@ export default function FriendsList({
     }
   };
 
-  // SOCKET LISTENERS
+  // SOCKET LISTENERS - Combined and organized
   useEffect(() => {
     emitEvent("userOnline", myAvatarId);
 
-    const cleanupStatusUpdate = subscribeEvent<{ avatarId: string; online: boolean }[]>(
+    // Status updates - combined into single handler where possible
+    const cleanupStatusUpdate = subscribeEvent<{ avatarId: string; online: boolean; battleStatus?: string; currentBattle?: string | null }[]>(
       "friendsStatusUpdate",
       (statuses) => {
         setFriends((prev) =>
           prev.map((friend) => {
             const status = statuses.find((s) => s.avatarId === friend.avatarId);
-            return status ? { ...friend, online: status.online } : friend;
+            return status ? { 
+              ...friend, 
+              online: status.online,
+              battleStatus: status.battleStatus || friend.battleStatus,
+              currentBattle: status.currentBattle !== undefined ? status.currentBattle : friend.currentBattle,
+            } : friend;
           })
         );
       }
     );
 
-    const cleanupBattleStatusUpdate = subscribeEvent<{ avatarId: string; currentBattle: string | null }[]>(
+    const cleanupStatusChange = subscribeEvent<{ 
+      avatarId: string; 
+      online: boolean;
+      battleStatus?: string;
+      currentBattle?: string | null;
+    }>(
+      "userStatusChange",
+      ({ avatarId, online, battleStatus, currentBattle }) => {
+        setFriends((prev) =>
+          prev.map((friend) =>
+            friend.avatarId === avatarId 
+              ? { 
+                  ...friend, 
+                  online,
+                  ...(battleStatus && { battleStatus }),
+                  ...(currentBattle !== undefined && { currentBattle }),
+                } 
+              : friend
+          )
+        );
+      }
+    );
+
+    // Battle status updates - combined
+    const cleanupBattleStatusUpdate = subscribeEvent<{ avatarId: string; currentBattle: string | null; battleStatus?: string }[]>(
       "friendsBattleStatusUpdate",
       (statuses) => {
         setFriends((prev) =>
           prev.map((friend) => {
             const status = statuses.find((s) => s.avatarId === friend.avatarId);
-            return status ? { ...friend, currentBattle: status.currentBattle } : friend;
+            return status ? { 
+              ...friend, 
+              currentBattle: status.currentBattle,
+              battleStatus: status.battleStatus || (status.currentBattle ? "in_battle" : "online"),
+            } : friend;
           })
-        );
-      }
-    );
-
-    const cleanupStatusChange = subscribeEvent<{ avatarId: string; online: boolean }>(
-      "userStatusChange",
-      ({ avatarId, online }) => {
-        setFriends((prev) =>
-          prev.map((friend) =>
-            friend.avatarId === avatarId ? { ...friend, online } : friend
-          )
         );
       }
     );
@@ -737,7 +780,11 @@ export default function FriendsList({
       ({ avatarId, battleId }) => {
         setFriends((prev) =>
           prev.map((friend) =>
-            friend.avatarId === avatarId ? { ...friend, currentBattle: battleId } : friend
+            friend.avatarId === avatarId ? { 
+              ...friend, 
+              currentBattle: battleId,
+              battleStatus: "in_battle",
+            } : friend
           )
         );
       }
@@ -745,40 +792,43 @@ export default function FriendsList({
 
     const cleanupBattleEnded = subscribeEvent<{ avatarId: string; battleId: string }>(
       "friendBattleEnded",
-      ({ avatarId }) => {
+      ({ avatarId, battleId  }) => {
         setFriends((prev) =>
           prev.map((friend) =>
-            friend.avatarId === avatarId ? { ...friend, currentBattle: null } : friend
+            friend.avatarId === avatarId ? { 
+              ...friend, 
+              currentBattle: battleId,
+              battleStatus: "viewing_results",
+            } : friend
           )
         );
       }
     );
 
-    const cleanupDirectMatchReady = subscribeEvent<{ battle: any }>(
-      "directMatchReady",
-      ({ battle }) => {
-        console.log("🎮 FRONTEND: directMatchReady received!", battle);
-        console.log("🎮 Battle ID:", battle?._id);
-        console.log("🎮 Setting current battle and navigating...");
-        setCurrentBattle(battle);
-        navigate(`/teamSelect/${battle._id}`, { state: { battle } });
-        setShowPanel(false);
-        console.log("🎮 Navigation called to:", `/teamSelect/${battle._id}`);
+    // NEW: Handle friend returned home (viewing results -> online)
+    const cleanupReturnedHome = subscribeEvent<{ avatarId: string }>(
+      "friendReturnedHome",
+      ({ avatarId }) => {
+        setFriends((prev) =>
+          prev.map((friend) =>
+            friend.avatarId === avatarId ? { 
+              ...friend, 
+              currentBattle: null,
+              battleStatus: "online",
+            } : friend
+          )
+        );
       }
     );
 
-
-    // BATTLE INVITE LISTENERS
+    // Battle invites - combined
     const cleanupMatchInviteReceived = subscribeEvent<{
       inviteId: string;
       senderId: string;
       senderName: string;
       senderAvatar: string;
     }>("matchInviteReceived", (data) => {
-      setBattleInvites((prev) => [
-        ...prev,
-        { ...data, createdAt: new Date() },
-      ]);
+      setBattleInvites((prev) => [...prev, { ...data, createdAt: new Date() }]);
       setMessage(`⚔️ Battle challenge from ${data.senderName}!`);
       setTimeout(() => setMessage(""), 5000);
     });
@@ -791,6 +841,16 @@ export default function FriendsList({
       }
     );
 
+    const cleanupDirectMatchReady = subscribeEvent<{ battle: any }>(
+      "directMatchReady",
+      ({ battle }) => {
+        setCurrentBattle(battle);
+        navigate(`/teamSelect/${battle._id}`, { state: { battle } });
+        setShowPanel(false);
+      }
+    );
+
+    // Friend management - combined
     const cleanupAvatarUpdate = subscribeEvent<{
       avatarId: string;
       avatarImage: string;
@@ -835,7 +895,6 @@ export default function FriendsList({
       "removedByFriend",
       (data) => {
         setFriends((prev) => prev.filter((f) => f.avatarId !== data.removerAvatarId));
-        // Also clean up blocked status if they removed us
         setBlockedFriends(prev => {
           const next = new Set(prev);
           next.delete(data.removerAvatarId);
@@ -878,23 +937,25 @@ export default function FriendsList({
       }
     );
 
+    // Cleanup function - all unsubscribes
     return () => {
       cleanupStatusUpdate();
-      cleanupBattleStatusUpdate?.();
       cleanupStatusChange();
-      cleanupBattleStarted?.();
-      cleanupBattleEnded?.();
-      cleanupMatchInviteReceived?.();
-      cleanupMatchInviteDeclined?.();
+      cleanupBattleStatusUpdate();
+      cleanupBattleStarted();
+      cleanupBattleEnded();
+      cleanupReturnedHome();
+      cleanupMatchInviteReceived();
+      cleanupMatchInviteDeclined();
+      cleanupDirectMatchReady();
       cleanupAvatarUpdate();
       cleanupAutoAccept();
       cleanupRemovedByFriend();
       cleanupFriendRequestReceived();
       cleanupRequestAccepted();
-      cleanupDirectMatchReady?.();
-      cleanupMatchInviteError?.();
+      cleanupMatchInviteError();
     };
-  }, [emitEvent, subscribeEvent, myAvatarId]);
+  }, [emitEvent, subscribeEvent, myAvatarId, navigate, setCurrentBattle]);
 
   // INITIAL FETCH
   useEffect(() => {
@@ -907,7 +968,6 @@ export default function FriendsList({
 
   const isSuccessMessage = message.startsWith("✅") || message.startsWith("⚔️") || message.startsWith("🔔");
 
-  // Get total notification count
   const totalNotifications = requests.length + battleInvites.length;
 
   return (
@@ -1011,8 +1071,10 @@ export default function FriendsList({
                             background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
                           }}
                         >
-                          {friend.currentBattle ? (
-                            <div style={styles.battleIndicator}>⚔️</div>
+                          {friend.battleStatus === "in_battle" || friend.battleStatus === "viewing_results" ? (
+                            <div style={styles.battleIndicator}>
+                              {friend.battleStatus === "in_battle" ? "⚔️" : "📊"}
+                            </div>
                           ) : (
                             <div style={styles.onlineIndicator(!!friend.online)} />
                           )}
@@ -1025,11 +1087,13 @@ export default function FriendsList({
                           <div style={styles.friendStatus}>
                             {isBlocked 
                               ? "🔇 Messages Blocked" 
-                              : friend.currentBattle 
-                                ? "🔴 In Battle" 
-                                : friend.online 
-                                  ? "🟢 Online" 
-                                  : "⚫ Offline"
+                              : friend.battleStatus === "in_battle"
+                                ? "🔴 In Battle"
+                                : friend.battleStatus === "viewing_results"
+                                  ? "📊 Viewing Results"
+                                  : friend.online 
+                                    ? "🟢 Online" 
+                                    : "⚫ Offline"
                             }
                           </div>
                         </div>
@@ -1051,8 +1115,8 @@ export default function FriendsList({
                             </button>
                           )}
 
-                          {/* SPECTATE BUTTON */}
-                          {friend.currentBattle && (
+                          {/* SPECTATE BUTTON - Only for in_battle */}
+                          {friend.battleStatus === "in_battle" && (
                             <button
                               onClick={() => handleSpectate(friend)}
                               style={styles.iconBtn("#9c27b0")}
@@ -1062,7 +1126,18 @@ export default function FriendsList({
                             </button>
                           )}
 
-                          {/* CHALLENGE BUTTON - Disabled if blocked */}
+                          {/* VIEW RESULTS BUTTON - Only for viewing_results */}
+                          {friend.battleStatus === "viewing_results" && (
+                            <button
+                              onClick={() => handleViewResults(friend)}
+                              style={styles.iconBtn("#2196F3")}
+                              title="View Results"
+                            >
+                              📊
+                            </button>
+                          )}
+
+                          {/* CHALLENGE BUTTON - Disabled if blocked or in battle */}
                           {!friend.currentBattle && friend.online && (
                             <button
                               onClick={() => !isBlocked && handleChallengeFriend(friend)}
@@ -1194,11 +1269,11 @@ export default function FriendsList({
                 <div style={{ ...styles.sectionTitle, color: "#333", marginBottom: 10 }}>
                   👁️ Spectate Friends
                 </div>
-                {friends.filter(f => f.currentBattle).length === 0 ? (
+                {friends.filter(f => f.battleStatus === "in_battle").length === 0 ? (
                   <div style={styles.emptyText}>No friends in battle</div>
                 ) : (
                   friends
-                    .filter(f => f.currentBattle)
+                    .filter(f => f.battleStatus === "in_battle")
                     .map((friend) => (
                       <div key={friend.avatarId} style={{ ...styles.friendItem, borderColor: "#9c27b0" }}>
                         <div
@@ -1224,6 +1299,41 @@ export default function FriendsList({
                     ))
                 )}
               </div>
+
+              {/* FRIENDS VIEWING RESULTS */}
+              {friends.filter(f => f.battleStatus === "viewing_results").length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ ...styles.sectionTitle, color: "#2196F3", marginBottom: 10 }}>
+                    📊 Viewing Results
+                  </div>
+                  {friends
+                    .filter(f => f.battleStatus === "viewing_results")
+                    .map((friend) => (
+                      <div key={friend.avatarId} style={{ ...styles.friendItem, borderColor: "#2196F3" }}>
+                        <div
+                          style={{
+                            ...styles.avatar,
+                            background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
+                          }}
+                        >
+                          <div style={{...styles.battleIndicator, background: "#2196F3"}}>📊</div>
+                        </div>
+                        <div style={styles.friendInfo}>
+                          <div style={styles.friendName}>{friend.userName}</div>
+                          <div style={styles.friendStatus}>📊 Viewing Results</div>
+                        </div>
+                        <button
+                          onClick={() => handleViewResults(friend)}
+                          style={styles.iconBtn("#2196F3")}
+                          title="View Results"
+                        >
+                          📊
+                        </button>
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1239,11 +1349,8 @@ export default function FriendsList({
           friend={selectedFriend}
           onClose={() => setSelectedFriend(null)}
           onChallenge={(avatarId) => {
-            // Find the friend and challenge them
             const friend = friends.find(f => f.avatarId === avatarId);
-            if (friend) {
-              handleChallengeFriend(friend);
-            }
+            if (friend) handleChallengeFriend(friend);
           }}
         />
       )}
