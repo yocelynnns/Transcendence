@@ -125,6 +125,7 @@ export default function HomePage({
 
           {/* MENU BAR */}
           <div className="absolute top-25 left-46 flex items-center gap-2 z-60">
+            {/* FRIENDS BUTTON */}
             <div className="transform transition-transform duration-200 hover:scale-110">
               <button onClick={() => setShowFriendsPanel(true)}>
                 <img
@@ -186,20 +187,15 @@ export default function HomePage({
 
       {/* FRIENDS PANEL */}
       {showFriendsPanel && avatarData && (
-        <div
-          className={`fixed top-0 right-0 h-screen border-l-2 border-gray-300 z-50
-            ${isMobile ? "w-full max-w-full" : "w-1/3 min-w-90 max-w-130"}`}
-        >
-          <FriendsList
-            token={token}
-            myAvatarId={avatarData._id}
-            myAvatarData={avatarData}
-            setSpectatingBattle={setSpectatingBattle}
-            setCurrentBattle={setCurrentBattle}
-            // isOpen={showFriendsPanel}
-            // onClosePanel={() => setShowFriendsPanel(false)}
-          />
-        </div>
+        <FriendsList
+          token={token}
+          myAvatarId={avatarData._id}
+          myAvatarData={avatarData}
+          setSpectatingBattle={setSpectatingBattle}
+          setCurrentBattle={setCurrentBattle}
+          onClosePanel={() => setShowFriendsPanel(false)}
+          // isOpen={showFriendsPanel}
+        />
       )}
 
       {/* GUILD PANEL */}

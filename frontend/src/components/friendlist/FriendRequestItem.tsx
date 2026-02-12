@@ -4,51 +4,6 @@ import { ASSETS } from "../../assets";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 
-const styles = {
-  container: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: 10,
-    background: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 8,
-    border: "2px solid #ffcc00",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: "50%",
-    border: "2px solid #333",
-  },
-  info: { flex: 1, minWidth: 0 },
-  name: {
-    fontSize: 13,
-    fontWeight: "bold" as const,
-    color: "#333",
-    marginBottom: 2,
-    whiteSpace: "nowrap" as const,
-    overflow: "hidden" as const,
-    textOverflow: "ellipsis" as const,
-  },
-  email: { fontSize: 11, color: "#666" },
-  actions: { display: "flex", gap: 4 },
-  btn: (bg: string): React.CSSProperties => ({
-    width: 28,
-    height: 28,
-    borderRadius: "50%",
-    background: bg,
-    color: "white",
-    border: "2px solid #333",
-    cursor: "pointer",
-    fontSize: 14,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-  }),
-};
-
 interface FriendRequestItemProps {
   request: FriendRequest;
   onAccept: () => void;
@@ -57,20 +12,32 @@ interface FriendRequestItemProps {
 
 export function FriendRequestItem({ request, onAccept, onReject }: FriendRequestItemProps) {
   return (
-    <div style={styles.container}>
+    <div className="flex items-center gap-2.5 p-2.5 bg-gray-100 border-2 border-yellow-400 rounded mb-2">
       <div
-        style={{
-          ...styles.avatar,
-          background: `url(${request.avatarImage || defaultAvatar}) center/cover`,
-        }}
+        className="w-10 h-10 rounded-full border-2 border-gray-800 bg-center bg-cover"
+        style={{ backgroundImage: `url(${request.avatarImage || defaultAvatar})` }}
       />
-      <div style={styles.info}>
-        <div style={styles.name}>{request.userName}</div>
-        <div style={styles.email}>{request.email}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-bold text-gray-800 mb-0.5 overflow-hidden whitespace-nowrap text-ellipsis">
+          {request.userName}
+        </div>
+        <div className="text-[11px] text-gray-500">
+          {request.email}
+        </div>
       </div>
-      <div style={styles.actions}>
-        <button onClick={onAccept} style={styles.btn("#4CAF50")}>✓</button>
-        <button onClick={onReject} style={styles.btn("#ff5555")}>✕</button>
+      <div className="flex gap-1">
+        <button 
+          onClick={onAccept}
+          className="w-7 h-7 rounded-full bg-green-500 text-white border-2 border-gray-800 flex items-center justify-center text-sm cursor-pointer"
+        >
+          ✓
+        </button>
+        <button
+          onClick={onReject}
+          className="w-7 h-7 rounded-full bg-red-500 text-white border-2 border-gray-800 flex items-center justify-center text-sm cursor-pointer"
+        >
+          ✕
+        </button>
       </div>
     </div>
   );

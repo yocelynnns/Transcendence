@@ -37,13 +37,18 @@ export function useFriends({
   // Data fetching
   const loadFriends = useCallback(async () => {
     try {
-      const data = await fetchFriends(token);
-      setFriends(data);
-      if (data.length > 0) {
-        emitEvent("requestFriendsStatus", data.map((f) => f.avatarId));
+      // 1️⃣ Fetch friends
+      const friendsData = await fetchFriends(token);
+      setFriends(friendsData);
+      if (friendsData.length > 0) {
+        emitEvent("requestFriendsStatus", friendsData.map((f) => f.avatarId));
       }
+
+      // 2️⃣ Fetch friend requests
+      const requestsData = await fetchPendingRequests(token); // <-- new API call
+      setRequests(requestsData);
     } catch (err) {
-      console.log("Failed to fetch friends:", err);
+      console.log("Failed to fetch friends or requests:", err);
     }
   }, [token, emitEvent]);
 

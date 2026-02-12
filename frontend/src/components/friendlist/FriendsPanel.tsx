@@ -5,69 +5,6 @@ import { FriendItem } from "./FriendItem";
 import { FriendRequestItem } from "./FriendRequestItem";
 import { BattleInviteItem } from "./BattleInviteItem";
 
-const styles = {
-  panel: {
-    position: "absolute" as const,
-    top: 20,
-    left: 20,
-    width: 320,
-    maxHeight: "80vh",
-    overflowY: "auto" as const,
-    padding: 20,
-    background: "white",
-    borderRadius: 12,
-    boxShadow: "0 0 10px rgba(0,0,0,0.3)",
-    zIndex: 100,
-    fontFamily: "monospace",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 10,
-    borderBottom: "2px solid #333",
-  },
-  title: { fontSize: 20, fontWeight: "bold" as const, color: "#333", margin: 0 },
-  closeBtn: {
-    background: "transparent",
-    border: "none",
-    fontSize: 18,
-    cursor: "pointer",
-    color: "#333",
-  },
-  message: (isSuccess: boolean) => ({
-    marginTop: 8,
-    marginBottom: 8,
-    fontSize: 12,
-    color: isSuccess ? "#4CAF50" : "#ff5555",
-    fontWeight: "bold" as const,
-    textAlign: "center" as const,
-  }),
-  emptyText: {
-    textAlign: "center" as const,
-    color: "#666",
-    fontSize: 14,
-    padding: 20,
-  },
-  section: {
-    marginBottom: 16,
-    padding: 12,
-    background: "#fff8e1",
-    borderRadius: 8,
-    border: "2px solid #ff9800",
-  },
-  sectionTitle: (color: string) => ({
-    margin: "0 0 10px 0",
-    fontSize: 14,
-    color,
-    fontWeight: "bold" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-  }),
-};
-
 interface FriendsPanelProps {
   // State
   friends: Friend[];
@@ -127,11 +64,11 @@ export function FriendsPanel({
   onRemove,
 }: FriendsPanelProps) {
   return (
-    <div style={styles.panel}>
+    <div className="absolute inset-0 p-5 bg-white shadow-lg z-50 font-mono overflow-auto">
       {/* Header */}
-      <div style={styles.header}>
-        <h2 style={styles.title}>Friends</h2>
-        <button onClick={onClose} style={styles.closeBtn}>✕</button>
+      <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-gray-800">
+        <h2 className="text-lg font-bold text-gray-800 m-0">Friends</h2>
+        <button onClick={onClose} className="text-gray-800 text-xl cursor-pointer bg-transparent border-none">✕</button>
       </div>
 
       {/* Tabs */}
@@ -144,7 +81,14 @@ export function FriendsPanel({
       />
 
       {/* Message */}
-      {message && <div style={styles.message(isSuccessMessage)}>{message}</div>}
+      {message && 
+        <div 
+          className={`my-2 text-sm font-bold text-center ${
+            isSuccessMessage ? "text-green-500" : "text-red-500"
+          }`}
+        >
+          {message}
+        </div>}
 
       {/* FRIENDS TAB */}
       {activeTab === "friends" && (
@@ -159,7 +103,9 @@ export function FriendsPanel({
 
           <div>
             {friends.length === 0 ? (
-              <div style={styles.emptyText}>No friends yet. Add some!</div>
+              <div className="text-center text-gray-500 text-sm p-5">
+                No friends yet. Add some!
+              </div>
             ) : (
               friends.map((friend) => {
                 const isBlocked = blockedFriends.has(friend.avatarId);
@@ -186,7 +132,9 @@ export function FriendsPanel({
       {activeTab === "requests" && (
         <div>
           {requests.length === 0 ? (
-            <div style={styles.emptyText}>No pending requests</div>
+            <div className="text-center text-gray-500 text-sm p-5">
+              No pending requests
+            </div>
           ) : (
             requests.map((request) => (
               <FriendRequestItem
@@ -205,8 +153,10 @@ export function FriendsPanel({
         <div>
           {/* Battle Invites */}
           {battleInvites.length > 0 && (
-            <div style={styles.section}>
-              <div style={styles.sectionTitle("#e65100")}>⚔️ Challenges Received</div>
+            <div className="mb-4 p-3 bg-yellow-100 border-2 border-orange-500 rounded-lg">
+              <div className="flex items-center gap-1 mb-2 text-orange-800 font-bold text-sm">
+                ⚔️ Challenges Received
+              </div>
               {battleInvites.map((invite) => (
                 <BattleInviteItem
                   key={invite.inviteId}
@@ -220,76 +170,36 @@ export function FriendsPanel({
 
           {/* Friends In Battle */}
           <div>
-            <div style={{ ...styles.sectionTitle("#333"), marginBottom: 10 }}>
+            <div className="flex items-center gap-1 mb-2 text-gray-800 font-bold text-sm">
               👁️ Spectate Friends
             </div>
             {friends.filter((f) => f.battleStatus === "in_battle").length === 0 ? (
-              <div style={styles.emptyText}>No friends in battle</div>
+              <div className="text-center text-gray-500 text-sm p-5">
+                No friends in battle
+              </div>
             ) : (
               friends
                 .filter((f) => f.battleStatus === "in_battle")
                 .map((friend) => (
                   <div
                     key={friend.avatarId}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: 10,
-                      background: "#f9f9f9",
-                      borderRadius: 8,
-                      marginBottom: 8,
-                      border: "2px solid #9c27b0",
-                    }}
+                    className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg mb-2 border-2 border-purple-600"
                   >
                     <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "50%",
-                        border: "2px solid #333",
-                        background: `url(${friend.avatarImage}) center/cover`,
-                        position: "relative",
-                      }}
+                      className="w-10 h-10 rounded-full border-2 border-gray-800 relative bg-cover bg-center"
+                      style={{ backgroundImage: `url(${friend.avatarImage})` }}
                     >
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: -2,
-                          right: -2,
-                          width: 14,
-                          height: 14,
-                          borderRadius: "50%",
-                          background: "#ff9800",
-                          border: "2px solid white",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 8,
-                        }}
-                      >
+                      <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center text-[8px]">
                         ⚔️
                       </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: "bold" }}>{friend.userName}</div>
-                      <div style={{ fontSize: 11, color: "#666" }}>🔴 In Battle</div>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold">{friend.userName}</div>
+                      <div className="text-xs text-gray-500">🔴 In Battle</div>
                     </div>
                     <button
                       onClick={() => onSpectate(friend)}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: "#9c27b0",
-                        color: "white",
-                        border: "2px solid #333",
-                        cursor: "pointer",
-                        fontSize: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
+                      className="w-7 h-7 rounded-full bg-purple-600 text-white border-2 border-gray-800 flex items-center justify-center text-xs"
                       title="Spectate"
                     >
                       👁️
@@ -301,8 +211,8 @@ export function FriendsPanel({
 
           {/* Friends Viewing Results */}
           {friends.filter((f) => f.battleStatus === "viewing_results").length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ ...styles.sectionTitle("#2196F3"), marginBottom: 10 }}>
+            <div className="mt-4">
+              <div className="flex items-center gap-1 mb-2 text-blue-600 font-bold text-sm">
                 📊 Viewing Results
               </div>
               {friends
@@ -310,65 +220,23 @@ export function FriendsPanel({
                 .map((friend) => (
                   <div
                     key={friend.avatarId}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: 10,
-                      background: "#f9f9f9",
-                      borderRadius: 8,
-                      marginBottom: 8,
-                      border: "2px solid #2196F3",
-                    }}
+                    className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg mb-2 border-2 border-blue-500"
                   >
                     <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "50%",
-                        border: "2px solid #333",
-                        background: `url(${friend.avatarImage}) center/cover`,
-                        position: "relative",
-                      }}
+                      className="w-10 h-10 rounded-full border-2 border-gray-800 relative bg-cover bg-center"
+                      style={{ backgroundImage: `url(${friend.avatarImage})` }}
                     >
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: -2,
-                          right: -2,
-                          width: 14,
-                          height: 14,
-                          borderRadius: "50%",
-                          background: "#2196F3",
-                          border: "2px solid white",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 8,
-                        }}
-                      >
+                      <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-[8px]">
                         📊
                       </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: "bold" }}>{friend.userName}</div>
-                      <div style={{ fontSize: 11, color: "#666" }}>📊 Viewing Results</div>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold">{friend.userName}</div>
+                      <div className="text-xs text-gray-500">📊 Viewing Results</div>
                     </div>
                     <button
                       onClick={() => onViewResults(friend)}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: "#2196F3",
-                        color: "white",
-                        border: "2px solid #333",
-                        cursor: "pointer",
-                        fontSize: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
+                      className="w-7 h-7 rounded-full bg-blue-500 text-white border-2 border-gray-800 flex items-center justify-center text-xs"
                       title="View Results"
                     >
                       📊

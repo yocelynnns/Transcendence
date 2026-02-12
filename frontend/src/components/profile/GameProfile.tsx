@@ -4,6 +4,8 @@ import { getPokemonFrontSprite, getPokemonGifPath } from "../../assets/helpers";
 import { ASSETS } from "../../assets";
 import { AvatarData } from "../../types/avatarTypes";
 import { useGameSocket } from "../../ws/useGameSocket";
+import TermsOfServicePage from "../../pages/TermsOfServicePage";
+import PrivacyPolicyPage from "../../pages/PrivacyPolicypage";
 
 const playerSprite = ASSETS.PLAYER.DEFAULT;
 
@@ -47,6 +49,8 @@ export default function ProfilePage({
   const [selectedIndex, setSelectedIndex] = useState(avatarData.characterOption);
   const [battles, setBattles] = useState<BattleHistory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showTOS, setShowTOS] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   const options = [
     { x: 64, y: 72 },
@@ -184,28 +188,28 @@ export default function ProfilePage({
             </div>
 
             {/* Username */}
-          <div className="flex justify-center gap-2 mb-6 w-full">
-            {me ? (
-              <>
-                <input
-                  type="text"
-                  value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  className="text-center px-2 py-1 bg-[#fff1ef] rounded-md w-2/3"
-                />
-                <button
-                  onClick={handleNameSubmit}
-                  className="px-3 py-1 bg-[#fff1ef] rounded-md"
-                >
-                  Change
-                </button>
-              </>
-            ) : (
-              <span className="px-3 py-1 bg-[#fff1ef] rounded-md text-center w-2/3">
-                {avatarData.userName}
-              </span>
-            )}
-          </div>
+            <div className="flex justify-center gap-2 mb-6 w-full">
+              {me ? (
+                <>
+                  <input
+                    type="text"
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    className="text-center px-2 py-1 bg-[#fff1ef] rounded-md w-2/3"
+                  />
+                  <button
+                    onClick={handleNameSubmit}
+                    className="px-3 py-1 bg-[#fff1ef] rounded-md hover:scale-102 hover:text-[#fff1ef] hover:bg-[#ab7b81]"
+                  >
+                    Change
+                  </button>
+                </>
+              ) : (
+                <span className="px-3 py-1 bg-[#fff1ef] rounded-md text-center w-2/3">
+                  {avatarData.userName}
+                </span>
+              )}
+            </div>
 
             {/* Character Selection */}
             {me && (
@@ -258,7 +262,7 @@ export default function ProfilePage({
                     className="bg-[#fff1ef] rounded-md flex flex-col items-center justify-center p-2 text-xs"
                   >
                     <img
-                      src={getPokemonFrontSprite(p.name)}
+                      src={getPokemonFrontSprite(p.name) ?? undefined}
                       alt={p.name}
                       width={40}
                       height={40}
@@ -282,7 +286,49 @@ export default function ProfilePage({
                 </button>
               </div>
             )}
+
+            <div className="flex gap-4 justify-center mt-4">
+              <button
+                onClick={() => setShowTOS(true)}
+                className="text-[1rem] text-blue-500 underline hover:text-blue-700"
+              >
+                Terms of Service
+              </button>
+
+              <button
+                onClick={() => setShowPrivacyPolicy(true)}
+                className="text-[1rem] text-blue-500 underline hover:text-blue-700"
+              >
+                Privacy Policy
+              </button>
+            </div>
+
           </div>
+
+          {showTOS && (
+            <div className="fixed inset-0 z-60 bg-white overflow-auto">
+              <TermsOfServicePage />
+              <button
+                onClick={() => setShowTOS(false)}
+                className="absolute top-6 right-6 text-2xl font-bold p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {showPrivacyPolicy && (
+          <div className="fixed inset-0 z-60 bg-white overflow-auto">
+            <PrivacyPolicyPage />
+            <button
+              onClick={() => setShowPrivacyPolicy(false)}
+              className="absolute top-6 right-6 text-2xl font-bold p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         </div>
 
         {/* RIGHT PANEL */}
@@ -352,7 +398,6 @@ export default function ProfilePage({
             ))}
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -370,7 +415,7 @@ const StatBox = ({
   suffix?: string;
 }) => (
   <div
-    className="rounded-lg text-center text-white px-3 py-1 min-w-[60px]"
+    className="rounded-lg text-center text-white px-3 py-1 min-w-15"
     style={{ background: color }}
   >
     <div className="text-xs">{title}</div>
