@@ -14,6 +14,8 @@ import { ASSETS } from "../../assets";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlayerState } from "../../types/avatarTypes";
 import CatchDialog from "../elements/CatchDialog";
+import GamePopup from "./GamePopup";
+import { useNavigate } from "react-router-dom";
 
 //ASSETS
 const mapImage = ASSETS.MAP.DEFAULT;
@@ -42,6 +44,8 @@ interface GameMapProps {
 
 //MAIN COMPONENT
 export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) {
+  const navigate = useNavigate();
+  
   //POKEMON HOOK
   const { pokemonList, setPokemonList } = usePokemonSpawner();
   const safePokemonList: MapPokemon[] = Array.isArray(pokemonList) ? pokemonList : [];
@@ -82,8 +86,11 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
   useEffect(() => {
     if (player.currentTiles === 2) {
       setShowPopUpOne(true);
-    } else if (player.currentTiles === 3)
+      setShowPopUpTwo(false);
+    } else if (player.currentTiles === 3) {
       setShowPopUpTwo(true);
+      setShowPopUpOne(false);
+    }
   }, [player.currentTiles]);
   
   // DESIGN HOOK
@@ -218,35 +225,34 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
       <div className="absolute pointer-events-none z-10 bg-cover bg-no-repeat" style={{ left: -offsetX, top: -offsetY, width: MAP_WIDTH * TILE_SIZE, height: MAP_HEIGHT * TILE_SIZE, backgroundImage: `url(${mapForeground})` }} />
 
       {showPopupOne && (
-      <GamePopup
-        title="Choose Mode"
-        onClose={() => setShowPopUpOne(false)}
-        button1Text="Battle Match"
-        onButton1={() => {
-          console.log("Battle Match clicked");
-          setShowPopUpOne(false);
-        }}
-        button2Text="Training Ground"
-        onButton2={() => {
-          console.log("Training Ground clicked");
-          setShowPopUpOne(false);
-        }}
-      />
-    )}
+        <GamePopup
+          title="Choose Mode"
+          onClose={() => setShowPopUpOne(false)}
+          button1Text="Battle Match"
+          onButton1={() => {
+            setShowPopUpOne(false);
+            navigate("/matching");
+          }}
+          button2Text="Training Ground"
+          onButton2={() => {
+            setShowPopUpOne(false);
+            navigate(`/aibattle`);
+          }}
+        />
+      )}
 
-    {showPopupTwo && (
-      <GamePopup
-        title="Mini Game"
-        onClose={() => setShowPopUpTwo(false)}
-        button1Text="Eevee Race"
-        onButton1={() => {
-          console.log("Eeveed Race clicked");
-          setShowPopUpTwo(false);
-        }}
-      />
-    )}
-
-
+      {showPopupTwo && (
+        <GamePopup
+          title="Mini Game"
+          onClose={() => setShowPopUpTwo(false)}
+          button1Text="Eevee Race"
+          onButton1={() => {
+            console.log("Eeveed Race clicked");
+            setShowPopUpTwo(false);
+            navigate("/race");
+          }}
+        />
+      )}
 
       {/* ENCOUNTER DIALOG */}
       {showDialog && encounterPokemon && (
