@@ -26,6 +26,15 @@ function App() {
   const [currentBattle, setCurrentBattle] = useState<Battle | null>(null); 
   const [spectatingBattle, setSpectatingBattle] = useState<Battle | null>(null); 
 
+  // handle log out
+  function handleLogOut() {
+    setToken(null);
+    setAvatarId(null);
+    setBattleId(null);
+    setCurrentBattle(null);
+    setSpectatingBattle(null);
+  }
+
   // --- stable refetchUser ---
   const refetchUser = useCallback(async () => {
     if (!token) return;
@@ -207,7 +216,7 @@ function App() {
           element={
             token
               ? avatarId
-                ? <HomePage setToken={setToken} avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle} setCurrentBattle={setCurrentBattle}/>
+                ? <HomePage avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle} setCurrentBattle={setCurrentBattle} handleLogOut={handleLogOut}/>
                 : <Navigate to="/profile" />
               : <Navigate to="/login" />
           }

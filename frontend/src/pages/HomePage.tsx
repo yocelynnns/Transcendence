@@ -16,11 +16,11 @@ const maxScale = 1;
 const minScale = 0.5;
 
 interface HomePageProps {
-  setToken: (token: string | null) => void;
   avatarData: AvatarData | null | undefined;
   token: string;
   setSpectatingBattle: Dispatch<React.SetStateAction<Battle | null>>;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
+  handleLogOut: () => void;
 }
 
 // Hook to detect mobile & portrait orientation
@@ -44,11 +44,11 @@ function useMobileLandscape() {
 }
 
 export default function HomePage({
-  setToken,
   avatarData,
   token,
   setSpectatingBattle,
   setCurrentBattle,
+  handleLogOut,
 }: HomePageProps) {
   const navigate = useNavigate();
   const { updateAvatar } = useAvatar(avatarData?._id ?? null);
@@ -177,9 +177,9 @@ export default function HomePage({
       {/* PROFILE PANEL */}
       {showProfilePanel && (
         <AvatarProfile
+          handleLogOut={handleLogOut}
           avatarData={avatarData}
           updateAvatar={updateAvatar}
-          setToken={setToken}
           onClose={() => setShowProfilePanel(false)}
           me={true}
         />

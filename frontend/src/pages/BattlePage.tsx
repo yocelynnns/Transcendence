@@ -1,4 +1,3 @@
-// src/pages/BattlePage.tsx
 import { useEffect, useState, Dispatch } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameSocket } from "../ws/useGameSocket";

@@ -30,17 +30,17 @@ interface BattleHistory {
 interface ProfilePageProps {
   avatarData: AvatarData;
   updateAvatar: (fields: Partial<AvatarData>) => void;
-  setToken: (token: string | null) => void;
   onClose: () => void;
   me?: boolean;
+  handleLogOut: () => void;
 }
 
 export default function ProfilePage({
   avatarData,
   updateAvatar,
-  setToken,
   onClose,
-  me
+  me,
+  handleLogOut,
 }: ProfilePageProps) {
   const navigate = useNavigate();
   const { signOut, emitEvent } = useGameSocket(() => undefined);
@@ -119,7 +119,7 @@ export default function ProfilePage({
   const handleSignOut = () => {
     signOut();
     sessionStorage.removeItem("token");
-    setToken(null);
+    handleLogOut();
     navigate("/login");
   };
 
