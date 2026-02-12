@@ -194,6 +194,7 @@ export default function HomePage({
           setSpectatingBattle={setSpectatingBattle}
           setCurrentBattle={setCurrentBattle}
           onClosePanel={() => setShowFriendsPanel(false)}
+          scale={finalGuildScale}
           // isOpen={showFriendsPanel}
         />
       )}

@@ -1,4 +1,5 @@
 import React from "react";
+import PixelButton from "../elements/PixelButton";
 
 interface FriendsTabsProps {
   activeTab: "friends" | "requests" | "battles";
@@ -16,36 +17,48 @@ export function FriendsTabs({
   battleInvitesCount,
 }: FriendsTabsProps) {
 
-  const baseTabClasses =
-    "flex-1 px-2 py-1 text-xs font-mono border-2 rounded-md cursor-pointer text-center";
+  const buttonHeight = 45;
+  const buttonWidth = 130;
 
-  const getTabClasses = (tab: "friends" | "requests" | "battles") =>
-  `${baseTabClasses} ${
+  const getColors = (tab: "friends" | "requests" | "battles") =>
     activeTab === tab
-      ? "bg-yellow-400 font-bold border-gray-800"
-      : "bg-white font-normal border-gray-800"
-  }`;
+      ? { colorA: "#ffcc00", colorB: "#d4a500", colorText: "#000000" } // active: yellow gradient
+      : { colorA: "#677fb4", colorB: "#384071", colorText: "#ffffff" }; // inactive: normal pinkish
 
   return (
-    <div className="flex gap-1 mb-4">
-      <button 
+    <div className="flex justify-between mb-4">
+      <PixelButton
         onClick={() => setActiveTab("friends")}
-        className={getTabClasses("friends")}
+        width={buttonWidth}
+        height={buttonHeight}
+        textSize="14px"
+        cursorPointer={true}
+        {...getColors("friends")}
       >
         Friends ({friendsCount})
-      </button>
-      <button 
+      </PixelButton>
+
+      <PixelButton
         onClick={() => setActiveTab("requests")}
-        className={getTabClasses("requests")}
+        width={buttonWidth}
+        height={buttonHeight}
+        textSize="14px"
+        cursorPointer={true}
+        {...getColors("requests")}
       >
         Requests{requestsCount > 0 && ` (${requestsCount})`}
-      </button>
-      <button 
+      </PixelButton>
+
+      <PixelButton
         onClick={() => setActiveTab("battles")}
-        className={getTabClasses("battles")}
+        width={buttonWidth}
+        height={buttonHeight}
+        textSize="14px"
+        cursorPointer={true}
+        {...getColors("battles")}
       >
         Battles{battleInvitesCount > 0 && ` (${battleInvitesCount})`}
-      </button>
+      </PixelButton>
     </div>
   );
 }

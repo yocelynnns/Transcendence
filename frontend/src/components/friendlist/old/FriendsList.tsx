@@ -476,7 +476,7 @@ export default function FriendsList({
             });
           }
         } else {
-          setMessage("✅ Friend request sent!");
+          setMessage("Friend request sent!");
           setFriendEmail("");
           if (data.targetAvatarId) {
             emitEvent("friendRequestSent", {

@@ -230,7 +230,7 @@ export default function GuildProfile({
 
       {isLeader && (
         <form onSubmit={handleUpdateGuild} className="flex flex-col gap-2">
-          <div className="relative w-full h-[52px]">
+          <div className="relative w-full h-13">
             <PixelButton {...beigeBtn} height={52} width="100%" textSize="1rem" />
             <input
               type="text"
@@ -241,7 +241,7 @@ export default function GuildProfile({
             />
           </div>
 
-          <div className="relative w-full h-[120px]">
+          <div className="relative w-full h-30">
             <PixelButton {...beigeBtn} height={120} width="100%" textSize="1rem" />
             <textarea
               value={editDescription}
@@ -251,7 +251,7 @@ export default function GuildProfile({
             />
           </div>
 
-          <div className="relative w-full h-[52px]">
+          <div className="relative w-full h-13">
             <PixelButton {...grayBtn} height={52} width="100%" textSize="1rem" />
             <input
               type="file"
@@ -264,7 +264,7 @@ export default function GuildProfile({
             </div>
           </div>
 
-          <div className="relative w-full h-[52px] text-white">
+          <div className="relative w-full h-13 text-white">
             <PixelButton {...greenBtn} height={52} width="100%" textSize="1rem" />
             <button
               type="submit"
@@ -352,7 +352,7 @@ export default function GuildProfile({
       )} */}
 
       {isMember && !isLeader && (
-        <div className="relative w-full h-[52px]">
+        <div className="relative w-full h-13">
           <PixelButton {...redBtn} height={52} width="100%" textSize="1rem" />
           <button onClick={handleLeaveGuild} disabled={leaving} className="absolute inset-0 text-lg text-[#ffffff]">
             {leaving ? "Leaving..." : "Leave Guild"}
@@ -361,7 +361,7 @@ export default function GuildProfile({
       )}
 
       {isLeader && (
-        <div className="relative w-full h-[52px]">
+        <div className="relative w-full h-13">
           <PixelButton {...redBtn} height={52} width="100%" textSize="1rem" />
           <button onClick={handleDisbandGuild} disabled={disbanding} className="absolute inset-0 text-lg text-[#ffffff]">
             {disbanding ? "Disbanding..." : "Disband Guild"}
