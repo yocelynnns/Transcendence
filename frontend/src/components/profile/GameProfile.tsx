@@ -263,7 +263,7 @@ export default function ProfilePage({
                       width={40}
                       height={40}
                     />
-                    <span className="w-full text-center text-[#ab7b81] text-[10px] sm:text-xs wrap-break-words">
+                    <span className="w-full text-center text-[#ab7b81] text-[10px] sm:text-xs wrap-break-word">
                       {p.name}
                     </span>
                   </div>
