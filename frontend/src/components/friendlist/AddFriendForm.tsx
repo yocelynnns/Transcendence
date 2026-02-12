@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { sendFriendRequest } from "../../services/friendsApi";
 import { FriendRequestResult } from "../../types/friends.types";
+import PixelButton from "../elements/PixelButton";
 
 interface AddFriendFormProps {
   token: string;
@@ -37,24 +38,38 @@ export function AddFriendForm({ token, onSuccess, onError }: AddFriendFormProps)
   };
 
   return (
-    <div className="bg-gray-100 p-3 rounded-lg mb-4 border-2 border-gray-800">
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="friend@email.com"
-        className="w-full p-2 text-sm font-mono border-2 border-gray-800 rounded mb-2 box-border"
-        onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
+    <div className="relative mb-4 h-35">
+      {/* PixelButton background for form */}
+      <PixelButton
+        colorA="#a5b6dd"
+        colorB="#384071"
+        colorText="#384071"
+        textSize="16px"
+        height="100%"
+        width="100%"
+        cursorPointer={false} // just background
       />
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className={`w-full p-2 text-sm font-mono bg-green-500 text-white border-2 border-gray-800 rounded ${
-          loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
-        }`}
-      >
-        {loading ? "..." : "Add Friend"}
-      </button>
+
+      {/* Form content overlay */}
+      <div className="absolute inset-0 p-3 pt-1 px-5 flex flex-col justify-center">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="friend@email.com"
+          className="w-full p-2 text-sm font-mono rounded mb-2 bg-[#ffffff] text-[#384071]"
+          onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className={`w-full p-2 text-sm font-mono bg-[#3fb174] text-white rounded ${
+            loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+          }`}
+        >
+          {loading ? "..." : "Add Friend"}
+        </button>
+      </div>
     </div>
   );
 }

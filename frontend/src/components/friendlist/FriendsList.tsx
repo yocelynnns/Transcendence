@@ -1,7 +1,7 @@
 import React from "react";
 import { useEffect } from "react";
 import { useFriends } from "../../hooks/useFriends";
-import { FriendsButton } from "./FriendsButton";
+// import { FriendsButton } from "./FriendsButton";
 import { FriendsPanel } from "./FriendsPanel";
 import ChatWindow from "../chat/ChatWindow"; // Existing component
 import { Battle } from "../../types/battleTypes";
@@ -23,7 +23,7 @@ export interface FriendsListProps {
   setCurrentBattle: React.Dispatch<React.SetStateAction<Battle | null>>;
 
   onClosePanel: () => void;
-  // scale: number;
+  scale: number;
 }
 
 export default function FriendsList(props: FriendsListProps) {
@@ -32,7 +32,7 @@ export default function FriendsList(props: FriendsListProps) {
     myAvatarId,
     myAvatarData,
     onClosePanel, 
-    // scale
+    scale
   } = props;
 
   const BASE_WIDTH = 520;
@@ -43,8 +43,8 @@ export default function FriendsList(props: FriendsListProps) {
     friends,
     requests,
     battleInvites,
-    showPanel,
-    setShowPanel,
+    // showPanel,
+    // setShowPanel,
     activeTab,
     setActiveTab,
     blockedFriends,
@@ -63,7 +63,7 @@ export default function FriendsList(props: FriendsListProps) {
     handleDeclineBattleInvite,
     
     // Derived
-    totalNotifications,
+    // totalNotifications,
     isSuccessMessage,
     setRequests,  // ADDED
   } = useFriends(props);
@@ -144,7 +144,7 @@ export default function FriendsList(props: FriendsListProps) {
 
   useEffect(() => {
     if (token) loadFriends();
-  }, [token]);
+  }, [token, loadFriends]);
 
   return (
     <>
@@ -153,53 +153,60 @@ export default function FriendsList(props: FriendsListProps) {
         style={{
           width: BASE_WIDTH,              // original width
           height: BASE_HEIGHT,
-          // transform: `scale(${scale})`,   // scales width proportionally
+          transform: `scale(${scale})`,   // scales width proportionally
           transformOrigin: 'top right',
         }}
       >
-        {/* {showPanel && ( */}
-        <FriendsPanel
-          friends={friends}
-          requests={requests}
-          battleInvites={battleInvites}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          blockedFriends={blockedFriends}
-          message={message}
-          isSuccessMessage={isSuccessMessage}
-          token={token}
-          myAvatarId={myAvatarId}
-          myAvatarData={myAvatarData}
-          onClose={onClosePanel}
-          onAddFriendSuccess={handleAddFriendSuccess}
-          onAddFriendError={handleAddFriendError}
-          onAcceptRequest={handleAcceptRequest}
-          onRejectRequest={handleRejectRequest}
-          onAcceptBattleInvite={handleAcceptBattleInvite}
-          onDeclineBattleInvite={handleDeclineBattleInvite}
-          onChat={setSelectedFriend}
-          onSpectate={handleSpectate}
-          onViewResults={handleViewResults}
-          onChallenge={handleChallengeFriend}
-          onBlockToggle={handleBlockToggle}
-          onRemove={handleRemove}
-        />
-        {/* )} */}
+        <div className="flex flex-col h-full">
+          <div className="border-12 h-full" style={{ borderColor: "#384071" }}>
+            {/* Inner border with background */}
+            <div className="border-12 flex flex-col h-full" style={{ borderColor: "#677fb4", backgroundColor: "#a5b6dd" }}>
+              {/* {showPanel && ( */}
+              <FriendsPanel
+                friends={friends}
+                requests={requests}
+                battleInvites={battleInvites}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                blockedFriends={blockedFriends}
+                message={message}
+                isSuccessMessage={isSuccessMessage}
+                token={token}
+                myAvatarId={myAvatarId}
+                myAvatarData={myAvatarData}
+                onClose={onClosePanel}
+                onAddFriendSuccess={handleAddFriendSuccess}
+                onAddFriendError={handleAddFriendError}
+                onAcceptRequest={handleAcceptRequest}
+                onRejectRequest={handleRejectRequest}
+                onAcceptBattleInvite={handleAcceptBattleInvite}
+                onDeclineBattleInvite={handleDeclineBattleInvite}
+                onChat={setSelectedFriend}
+                onSpectate={handleSpectate}
+                onViewResults={handleViewResults}
+                onChallenge={handleChallengeFriend}
+                onBlockToggle={handleBlockToggle}
+                onRemove={handleRemove}
+              />
+              {/* )} */}
 
-        {selectedFriend && myAvatarData && !selectedFriend.currentBattle && (
-          <ChatWindow
-            token={token}
-            myAvatarId={myAvatarId}
-            myUserName={myAvatarData.userName}
-            myAvatarImage={myAvatarData.avatar}
-            friend={selectedFriend}
-            onClose={() => setSelectedFriend(null)}
-            onChallenge={(avatarId) => {
-              const friend = friends.find((f) => f.avatarId === avatarId);
-              if (friend) handleChallengeFriend(friend);
-            }}
-          />
-        )}
+              {selectedFriend && myAvatarData && !selectedFriend.currentBattle && (
+                <ChatWindow
+                  token={token}
+                  myAvatarId={myAvatarId}
+                  myUserName={myAvatarData.userName}
+                  myAvatarImage={myAvatarData.avatar}
+                  friend={selectedFriend}
+                  onClose={() => setSelectedFriend(null)}
+                  onChallenge={(avatarId) => {
+                    const friend = friends.find((f) => f.avatarId === avatarId);
+                    if (friend) handleChallengeFriend(friend);
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
