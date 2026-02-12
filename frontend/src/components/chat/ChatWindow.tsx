@@ -176,77 +176,77 @@ export default function ChatWindow({
   const roomId = getRoomId(myAvatarId, friend.avatarId);
   const friendId = friend.avatarId;
 
-  // const fetchMessages = async (pageNum: number = 1) => {
-  //   if (loading) return;
-  //   setLoading(true);
+  const fetchMessages = async (pageNum: number = 1) => {
+    if (loading) return;
+    setLoading(true);
     
-  //   try {
-  //     const res = await fetch(
-  //       `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
+    try {
+      const res = await fetch(
+        `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       
-  //     if (!res.ok) {
-  //       console.log("Failed to fetch messages:", res.status);
-  //       setLoading(false);
-  //       return;
-  //     }
-      
-  //     const data = await res.json();
-  //     console.log("📚 Fetched", data.messages.length, "messages");
-      
-  //     if (pageNum === 1) {
-  //       setMessages(data.messages);
-  //     } else {
-  //       setMessages(prev => [...data.messages, ...prev]);
-  //     }
-      
-  //     setHasMore(data.pagination.hasMore);
-  //     setPage(pageNum);
-  //   } catch (err) {
-  //     console.log("Failed to fetch messages:", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-  const fetchMessages = useCallback(
-    async (pageNum: number = 1) => {
-      if (loading) return;
-      setLoading(true);
-
-      try {
-        const res = await fetch(
-          `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (!res.ok) {
-          console.log("Failed to fetch messages:", res.status);
-          setLoading(false);
-          return;
-        }
-
-        const data = await res.json();
-        console.log("📚 Fetched", data.messages.length, "messages");
-
-        if (pageNum === 1) {
-          setMessages(data.messages);
-        } else {
-          setMessages(prev => [...data.messages, ...prev]);
-        }
-
-        setHasMore(data.pagination.hasMore);
-        setPage(pageNum);
-      } catch (err) {
-        console.log("Failed to fetch messages:", err);
-      } finally {
+      if (!res.ok) {
+        console.log("Failed to fetch messages:", res.status);
         setLoading(false);
+        return;
       }
-    },
-    [friendId, token, loading] // dependencies used inside the function
-  );
+      
+      const data = await res.json();
+      console.log("📚 Fetched", data.messages.length, "messages");
+      
+      if (pageNum === 1) {
+        setMessages(data.messages);
+      } else {
+        setMessages(prev => [...data.messages, ...prev]);
+      }
+      
+      setHasMore(data.pagination.hasMore);
+      setPage(pageNum);
+    } catch (err) {
+      console.log("Failed to fetch messages:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // const fetchMessages = useCallback(
+  //   async (pageNum: number = 1) => {
+  //     if (loading) return;
+  //     setLoading(true);
+
+  //     try {
+  //       const res = await fetch(
+  //         `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       );
+
+  //       if (!res.ok) {
+  //         console.log("Failed to fetch messages:", res.status);
+  //         setLoading(false);
+  //         return;
+  //       }
+
+  //       const data = await res.json();
+  //       console.log("📚 Fetched", data.messages.length, "messages");
+
+  //       if (pageNum === 1) {
+  //         setMessages(data.messages);
+  //       } else {
+  //         setMessages(prev => [...data.messages, ...prev]);
+  //       }
+
+  //       setHasMore(data.pagination.hasMore);
+  //       setPage(pageNum);
+  //     } catch (err) {
+  //       console.log("Failed to fetch messages:", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   },
+  //   [friendId, token, loading] // dependencies used inside the function
+  // );
         
 
   useEffect(() => {
@@ -326,7 +326,7 @@ export default function ChatWindow({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [friendId, emitEvent, fetchMessages, myAvatarId,roomId, subscribeEvent ]);
+  }, [friendId, emitEvent, subscribeEvent ]);
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
