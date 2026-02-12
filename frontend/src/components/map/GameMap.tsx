@@ -28,7 +28,8 @@ const TILE_SIZE = 84;
 // const VIEW_HEIGHT = 10;
 
 // DESIGN CONSTANTS
-const DESIGN_WIDTH = 1680 / 2;
+const DESIGN_WIDTH = 2856 / 2;
+const DESIGN_HEIGHT = 1680 / 2;
 const MIN_SCALE = 0.8;
 const MAX_SCALE = 1;
 
@@ -163,9 +164,17 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
 
   useEffect(() => {
     const handleResize = () => {
-      const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, window.innerWidth / DESIGN_WIDTH));
+      const scaleWidth = window.innerWidth / DESIGN_WIDTH;
+      const scaleHeight = window.innerHeight / DESIGN_HEIGHT;
+
+      const scale = Math.min(
+        MAX_SCALE,
+        Math.max(MIN_SCALE, Math.min(scaleWidth, scaleHeight))
+      );
+
       setUiScale(scale);
     };
+
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);

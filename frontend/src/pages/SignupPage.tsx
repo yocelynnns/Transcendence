@@ -1,57 +1,66 @@
-// IMPORTS
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signup, getUserInfo } from "../services/authService";
 import PixelButton from "../components/elements/PixelButton";
 
-// PROPS
 interface SignupPageProps {
   setToken: (token: string | null) => void;
   setAvatarId?: (id: string | null) => void;
 }
 
+// DESIGN SIZE (like profile screenshot)
+const designWidth = 450;
+const designHeight = 480;
+const padding = 32;
+const maxScale = 1;
+const minScale = 0.5;
+
 export default function SignupPage({ setToken, setAvatarId }: SignupPageProps) {
+  const navigate = useNavigate();
+
   // STATE
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [scale, setScale] = useState(1);
 
-  const navigate = useNavigate();
+  // SCALE WRAPPER ONLY
+  useEffect(() => {
+    const handleResize = () => {
+      const scaleX = (window.innerWidth - padding * 2) / designWidth;
+      const scaleY = (window.innerHeight - padding * 2) / designHeight;
+      const newScale = Math.min(
+        maxScale,
+        Math.max(minScale, Math.min(scaleX, scaleY))
+      );
+      setScale(newScale);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  // HANDLE SIGNUP
+  // SIGNUP
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
-    if (!email || !password || !confirm)
-      return setError("All fields are required!");
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return setError("Invalid email format!");
-
+    if (!email || !password || !confirm) return setError("All fields are required!");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Invalid email format!");
     if (!/^(?=.*[A-Z])(?=.*\d).{6,}$/.test(password))
-      return setError(
-        "Password must be 6+ chars, include 1 uppercase letter and 1 number!"
-      );
-
-    if (password !== confirm)
-      return setError("Passwords do not match!");
+      return setError("Password must be 6+ chars, include 1 uppercase letter and 1 number!");
+    if (password !== confirm) return setError("Passwords do not match!");
 
     try {
       setLoading(true);
-
       const data = await signup(email, password);
-
       sessionStorage.setItem("token", data.token);
       setToken(data.token);
 
       const userData = await getUserInfo(data.token);
-
-      if (userData._id) {
-        sessionStorage.setItem("userId", userData._id);
-      }
+      if (userData._id) sessionStorage.setItem("userId", userData._id);
 
       setAvatarId?.(null);
       navigate("/profile");
@@ -63,9 +72,17 @@ export default function SignupPage({ setToken, setAvatarId }: SignupPageProps) {
   };
 
   return (
-    <div className="flex items-center justify-center w-screen h-screen bg-blue-200 font-mono">
-      <div className="relative w-100">
-        {/* PIXEL PANEL BACKGROUND */}
+    <div className="fixed inset-0 flex items-center justify-center bg-blue-200">
+      <div
+        style={{
+          width: designWidth,
+          height: designHeight,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+        }}
+        className="relative w-full"
+      >
+        {/* PIXEL BACKGROUND */}
         <PixelButton
           colorA="#677fb4"
           colorB="#384071"
@@ -81,12 +98,10 @@ export default function SignupPage({ setToken, setAvatarId }: SignupPageProps) {
           onSubmit={handleSignup}
           className="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center p-10 text-center"
         >
-          {/* HEADER */}
-          <h1 className="text-3xl mb-5 pixelify-sans text-white">
+          <h1 className="text-3xl mb-8 pixelify-sans text-white">
             Pokemon Signup
           </h1>
 
-          {/* EMAIL */}
           <div className="relative mb-3 w-full">
             <PixelButton
               colorA="#a5b6dd"
@@ -107,7 +122,6 @@ export default function SignupPage({ setToken, setAvatarId }: SignupPageProps) {
             />
           </div>
 
-          {/* PASSWORD */}
           <div className="relative mb-3 w-full">
             <PixelButton
               colorA="#a5b6dd"
@@ -128,7 +142,6 @@ export default function SignupPage({ setToken, setAvatarId }: SignupPageProps) {
             />
           </div>
 
-          {/* CONFIRM PASSWORD */}
           <div className="relative mb-3 w-full">
             <PixelButton
               colorA="#a5b6dd"
@@ -149,7 +162,6 @@ export default function SignupPage({ setToken, setAvatarId }: SignupPageProps) {
             />
           </div>
 
-          {/* SIGNUP BUTTON */}
           <div className="mt-2 w-full">
             <PixelButton
               colorA={loading ? "#ccc" : "#ffcc00"}
@@ -157,22 +169,16 @@ export default function SignupPage({ setToken, setAvatarId }: SignupPageProps) {
               colorText="#000"
               height={50}
               width="100%"
-              textSize="10px"
+              textSize="1rem"
               cursorPointer={!loading}
-              onClick={() =>
-                document.querySelector("form")?.requestSubmit()
-              }
+              onClick={() => document.querySelector("form")?.requestSubmit()}
             >
               {loading ? "Signing Up..." : "Sign Up"}
             </PixelButton>
           </div>
 
-          {/* ERROR */}
-          {error && (
-            <div className="mt-3 text-[#ff8ea8] text-sm">{error}</div>
-          )}
+          {error && <div className="mt-3 text-[#ff8ea8] text-sm">{error}</div>}
 
-          {/* LOGIN LINK */}
           <div className="mt-6 text-sm text-white">
             Already have an account?{" "}
             <Link to="/login" className="font-bold text-[#ffcc00]">
