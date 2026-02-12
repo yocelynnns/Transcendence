@@ -18,7 +18,7 @@ router.post("/block-messages/:friendAvatarId", authMiddleware, async (req: AuthR
     const result = await MessageBlockService.blockMessagesFromFriend(req.userId, friendAvatarId);
     return res.status(201).json(result);
   } catch (err: any) {
-    console.error("[POST /block-messages/:friendAvatarId]", err);
+    console.log("[POST /block-messages/:friendAvatarId]", err);
 
     switch (err.message) {
       case "AVATAR_NOT_FOUND":
@@ -48,7 +48,7 @@ router.delete("/block-messages/:friendAvatarId", authMiddleware, async (req: Aut
     const result = await MessageBlockService.unblockMessagesFromFriend(req.userId, friendAvatarId);
     return res.status(200).json(result);
   } catch (err: any) {
-    console.error("[DELETE /block-messages/:friendAvatarId]", err);
+    console.log("[DELETE /block-messages/:friendAvatarId]", err);
 
     switch (err.message) {
       case "AVATAR_NOT_FOUND":
@@ -69,7 +69,7 @@ router.get("/blocked-messages", authMiddleware, async (req: AuthRequest, res) =>
     const blockedFriends = await MessageBlockService.getBlockedMessageFriends(req.userId);
     return res.status(200).json({ count: blockedFriends.length, blockedFriends });
   } catch (err: any) {
-    console.error("[GET /blocked-messages]", err);
+    console.log("[GET /blocked-messages]", err);
 
     if (err.message === "AVATAR_NOT_FOUND") {
       return res.status(404).json({ message: "Avatar not found" });

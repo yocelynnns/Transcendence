@@ -19,7 +19,7 @@ export default function Pokemon({ x, y, name, tileSize, zIndex = 1 }: PokemonPro
   //RENDER
   return (
     <img
-      src={sprite}
+      src={sprite || ""}
       alt={name}
       style={{
         position: "absolute",

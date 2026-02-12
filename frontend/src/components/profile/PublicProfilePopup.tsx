@@ -180,9 +180,6 @@ export default function PublicProfilePopup({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProfile();
-  }, [targetAvatarId]);
-
   const fetchProfile = async () => {
     try {
       setLoading(true);
@@ -193,18 +190,47 @@ export default function PublicProfilePopup({
         }
       );
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch profile");
-      }
+      if (!res.ok) throw new Error("Failed to fetch profile");
 
       const data = await res.json();
       setProfile(data);
-    } catch (err) {
+    } catch {
       setError("Could not load profile");
     } finally {
       setLoading(false);
     }
   };
+
+  fetchProfile();
+}, [targetAvatarId, token]); // only run when these change
+
+
+  // useEffect(() => {
+  //   fetchProfile();
+  // }, [targetAvatarId]);
+
+  // const fetchProfile = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await fetch(
+  //       `http://localhost:5001/api/friends/profile/${targetAvatarId}`,
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+
+  //     if (!res.ok) {
+  //       throw new Error("Failed to fetch profile");
+  //     }
+
+  //     const data = await res.json();
+  //     setProfile(data);
+  //   } catch (err) {
+  //     setError("Could not load profile");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const calculateWinRate = (wins: number, losses: number) => {
     const total = wins + losses;

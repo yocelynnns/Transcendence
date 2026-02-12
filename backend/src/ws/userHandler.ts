@@ -76,7 +76,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
         }
       }
     } catch (err) {
-      console.error("Failed to rejoin battle room:", err);
+      console.log("Failed to rejoin battle room:", err);
     }
 
     // Send current players & Pokemon to this socket
@@ -85,7 +85,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
       const currentPokemons = await PokemonService.fetchAvailablePokemon({ limit: 50 });
       socket.emit("pokemonUpdate", currentPokemons);
     } catch (err) {
-      console.error("ERROR FETCHING POKEMON:", err);
+      console.log("ERROR FETCHING POKEMON:", err);
     }
 
     // Notify others
@@ -139,10 +139,10 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
           console.log(`✅ Broadcasted battle status (${battleId ? 'in battle' : 'not in battle'}) to ${friendAvatarIds.length} friends`);
         }
       } catch (err) {
-        console.error(`Failed to broadcast battle status for ${avatarId}:`, err);
+        console.log(`Failed to broadcast battle status for ${avatarId}:`, err);
       }
     } catch (err) {
-      console.error(`Failed to update online status for avatar ${avatarId}:`, err);
+      console.log(`Failed to update online status for avatar ${avatarId}:`, err);
     }
   });
 
@@ -217,7 +217,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
           isInBattle = !!(battle && !battle.endedAt);
         }
       } catch (err) {
-        console.error(`Failed to check battle status for ${avatarId}:`, err);
+        console.log(`Failed to check battle status for ${avatarId}:`, err);
       }
 
       if (!isInBattle) {
@@ -242,7 +242,7 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
         });
         console.log(`✅ Avatar ${avatarId} DB updated (online: ${!isInBattle})`);
       } catch (err) {
-        console.error(`Failed to update avatar status in DB:`, err);
+        console.log(`Failed to update avatar status in DB:`, err);
       }
     } else {
       console.log(`⚠️ No avatarId found for socket ${socket.id} on disconnect`);

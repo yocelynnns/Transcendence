@@ -174,7 +174,7 @@ export function startBattleTimeout(battleId: string, io: any) {
 
       delete battleTimers[battleId];
     } catch (err) {
-      console.error("Error in battle timeout:", err);
+      console.log("Error in battle timeout:", err);
       delete battleTimers[battleId];
     }
   }, BATTLE_TIMEOUT);

@@ -21,7 +21,7 @@ router.get('/avatar/:avatarId', async (req, res) => {
       userName: avatar.userName
     });
   } catch (error) {
-    console.error('Error fetching avatar:', error);
+    console.log('Error fetching avatar:', error);
     return res.status(500).json({ error: 'Failed to fetch avatar' });
   }
 });
@@ -67,7 +67,7 @@ router.get('/history/:avatarId', async (req, res) => {
     // console.log("Sending", formattedMatches.length, "formatted matches");
     return res.json(formattedMatches);
   } catch (error) {
-    console.error('❌ Error fetching race history:', error);
+    console.log('❌ Error fetching race history:', error);
     return res.status(500).json({ error: 'Failed to fetch race history' });
   }
 });
@@ -93,7 +93,7 @@ router.get('/stats/:avatarId', async (req, res) => {
         : 0
     });
   } catch (error) {
-    console.error('Error fetching race stats:', error);
+    console.log('Error fetching race stats:', error);
     return res.status(500).json({ error: 'Failed to fetch race stats' });
   }
 });
@@ -121,7 +121,7 @@ router.get('/leaderboard', async (_req, res) => {
     
     return res.json(leaderboard);
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
+    console.log('Error fetching leaderboard:', error);
     return res.status(500).json({ error: 'Failed to fetch leaderboard' });
   }
 });

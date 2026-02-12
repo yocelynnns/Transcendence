@@ -1,4 +1,4 @@
-import { Battle } from "../../../types/battleTypes";
+import { Battle } from "./battleTypes";
 
 export interface Friend {
   avatarId: string;
@@ -28,7 +28,7 @@ export interface BattleInvite {
   createdAt: Date;
 }
 
-export interface AvatarData {
+export interface AvatarDataFriend {
   _id: string;
   userName: string;
   avatar: string;
@@ -38,7 +38,24 @@ export interface AvatarData {
 export interface FriendsListProps {
   token: string;
   myAvatarId: string;
-  myAvatarData?: AvatarData;
+  myAvatarData?: AvatarDataFriend;
   setSpectatingBattle?: React.Dispatch<React.SetStateAction<Battle | null>>;
   setCurrentBattle: React.Dispatch<React.SetStateAction<Battle | null>>;
+}
+
+export interface FriendRequestResult {
+  autoAccepted: boolean;
+  friendId?: string;
+  userName?: string;
+}
+
+export interface BlockedFriend {
+  avatarId: string;
+  userName?: string;
+  email?: string;
+}
+
+export interface BlockedListResponse {
+  count: number;
+  blockedFriends: BlockedFriend[];
 }

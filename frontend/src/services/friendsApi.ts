@@ -1,4 +1,5 @@
-import { Friend, FriendRequest } from "../types/friends.types";
+import { Battle } from "../types/battleTypes";
+import { BlockedListResponse, Friend, FriendRequest } from "../types/friends.types";
 
 const API_URL = "http://localhost:5001/api";
 
@@ -15,8 +16,9 @@ export async function fetchBlockedList(token: string): Promise<string[]> {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to fetch blocked list");
-  const data = await res.json();
-  return data.blockedFriends.map((f: any) => f.avatarId);
+  const data: BlockedListResponse = await res.json();
+
+  return data.blockedFriends.map(f => f.avatarId);
 }
 
 export async function fetchPendingRequests(token: string): Promise<FriendRequest[]> {
@@ -80,7 +82,7 @@ export async function unblockMessages(token: string, friendAvatarId: string) {
   if (!res.ok) throw new Error("Failed to unblock messages");
 }
 
-export async function fetchBattle(battleId: string): Promise<any> {
+export async function fetchBattle(battleId: string): Promise<Battle> {
   const res = await fetch(`${API_URL}/battle/${battleId}`);
   if (!res.ok) throw new Error("Failed to fetch battle");
   return res.json();

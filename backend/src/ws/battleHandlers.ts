@@ -43,7 +43,7 @@ export function setupBattleHandlers(
         }
       });
     } catch (err) {
-      console.error("Error notifying friends battle started:", err);
+      console.log("Error notifying friends battle started:", err);
     }
   }
 
@@ -146,7 +146,7 @@ export function setupBattleHandlers(
         return;
       }
     } catch (err) {
-      console.error("Error processing playerReady:", err);
+      console.log("Error processing playerReady:", err);
     }
   });
 
@@ -181,7 +181,7 @@ export function setupBattleHandlers(
         winnerReason: battle.winnerReason,
       });
     } catch (err) {
-      console.error("Error processing player action:", err);
+      console.log("Error processing player action:", err);
       socket.emit("playerActionError", { message: err instanceof Error ? err.message : "Unknown error" });
     }
   });
@@ -256,7 +256,7 @@ export function setupBattleHandlers(
       socket.emit("matchInviteSent", { inviteId: invite._id });
       return;
     } catch (err) {
-      console.error("Error sending match invite:", err);
+      console.log("Error sending match invite:", err);
       const message = err instanceof Error ? err.message : "Unknown error";
       socket.emit("matchInviteError", { error: message });
       return;
@@ -323,7 +323,7 @@ export function setupBattleHandlers(
         await notifyFriendsBattleStarted(io, battle.player2.toString(), battle._id.toString());
         
       } catch (err) {
-        console.error("Error responding to match invite:", err);
+        console.log("Error responding to match invite:", err);
         const message = err instanceof Error ? err.message : "Unknown error";
         socket.emit("matchInviteError", { error: message });
       }
