@@ -21,6 +21,44 @@ interface BattlePageProps {
 
 const MOVE_TIMEOUT = 30_000;
 
+// Helper function to get battle end message
+function getBattleEndMessage(
+  isWinner: boolean,
+  isDraw: boolean,
+  winnerReason?: string,
+  myRole?: "player1" | "player2" | null
+): string {
+  if (isDraw) return "Battle ended in a draw!";
+  
+  if (isWinner) {
+    if (winnerReason?.includes("did not move in time")) {
+      return "You won! Opponent did not move in time.";
+    }
+    if (winnerReason?.includes("disconnected")) {
+      return "You won! Opponent disconnected.";
+    }
+    if (winnerReason?.includes("Surrender")) {
+      return "You won! Opponent surrendered.";
+    }
+    if (winnerReason?.includes("fainted")) {
+      return `You won! ${winnerReason}`;
+    }
+    return "Victory!";
+  }
+  
+  // Loser messages
+  if (winnerReason?.includes("did not move in time")) {
+    return "You lost! You did not move in time.";
+  }
+  if (winnerReason?.includes("disconnected")) {
+    return "You lost due to disconnection.";
+  }
+  if (winnerReason?.includes("fainted")) {
+    return `You lost! ${winnerReason}`;
+  }
+  return "Defeat!";
+}
+
 export default function BattlePage({ avatarData, currentBattle, setCurrentBattle, refetchBattle }: BattlePageProps) {
   const navigate = useNavigate();
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
@@ -29,6 +67,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
   const [battleId, setBattleId] = useState(currentBattle?._id ?? null);
   const [battleData, setBattleData] = useState<Battle | null>(null);
   const [moveTimeLeft, setMoveTimeLeft] = useState<number>(MOVE_TIMEOUT);
+  const [battleEndMessage, setBattleEndMessage] = useState<string | null>(null);
   const token = sessionStorage.getItem("token");
 
   const avatarIdRef = useRef(myAvatarId);
@@ -93,18 +132,30 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
   useEffect(() => {
     if (!subscribeEvent || !battleId) return;
-    
+
     const unsubUpdateState = subscribeEvent<Battle>("updateBattleState", (updatedBattle) => {
       if (updatedBattle._id !== battleId) return;
 
-      // Check if battle just ended due to timeout
-      if (updatedBattle.endedAt && !battleData?.endedAt) {
-        // Battle just ended - if we didn't click home yet, we're viewing results
-        // The status will be updated by the backend's "battleEnded" event
+      // Check if battle just ended
+      const wasEnded = battleData?.endedAt;
+      const isNowEnded = updatedBattle.endedAt;
+      
+      if (isNowEnded && !wasEnded && myRole) {
+        // Battle just ended - determine message
+        const isWinner = updatedBattle.winner === myRole;
+        const isDraw = updatedBattle.winner === "draw";
         
-        // But we should emit viewingResults to be safe
-        if (myAvatarId && updatedBattle.winner === myRole) {
-          // We won due to opponent timeout - we're now viewing results
+        const message = getBattleEndMessage(
+          isWinner,
+          isDraw,
+          updatedBattle.winnerReason,
+          myRole
+        );
+        
+        setBattleEndMessage(message);
+        
+        // Emit viewing results status
+        if (myAvatarId) {
           emitEvent("viewingResults", { 
             avatarId: myAvatarId, 
             battleId: updatedBattle._id 
@@ -138,23 +189,28 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       });
     });
 
+    // REMOVED: battleError handler - we now handle everything through updateBattleState
+    // If you need to keep it for other errors, make it emit playerReturnedHome:
+    /*
     const unsubBattleError = subscribeEvent<{ battleId: string; message: string }>(
       "battleError",
       (err) => {
-        alert(err.message);
+        // Emit that we're leaving to update friend statuses
         if (myAvatarId) {
           emitEvent("playerReturnedHome", { avatarId: myAvatarId });
         }
+        alert(err.message);
         setCurrentBattle(null);
         navigate("/");
       }
     );
+    */
 
     return () => {
       unsubUpdateState?.();
-      unsubBattleError?.();
+      // unsubBattleError?.();
     };
-  }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent]);
+  }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent, myAvatarId, battleData?.endedAt]);
 
   useEffect(() => {
     if (!battleData || !myRole || battleData.endedAt) return;
@@ -174,7 +230,24 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
     }, 250);
 
     return () => clearInterval(interval);
-  }, [battleData, myRole, emitEvent, battleId]);
+  }, [battleData, myRole]);
+
+  // Handle return home - emit event to update friend statuses
+  const handleReturnHome = () => {
+    if (myAvatarId) {
+      emitEvent("playerReturnedHome", { avatarId: myAvatarId });
+    }
+    setCurrentBattle(null);
+    navigate("/");
+  };
+
+  const handlePlayAgain = () => {
+    if (myAvatarId) {
+      emitEvent("playerReturnedHome", { avatarId: myAvatarId });
+    }
+    setCurrentBattle(null);
+    navigate("/matching");
+  };
 
   if (!battleId) return <p style={{ color: "#fff", textAlign: "center" }}>Invalid battle</p>;
   if (!battleData || !myRole) return <p style={{ color: "#fff", textAlign: "center" }}>Loading battle…</p>;
@@ -315,28 +388,13 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
         disabled={!isMyTurn || !!battleResult || activePlayerIsDead}
       />
 
-      {/* Battle result overlay */}
+      {/* Battle result overlay - with custom message */}
       {battleResult && (
         <div className="battle-result-overlay">
           <h1>{battleResult === "win" ? "You Won!" : "You Lost!"}</h1>
-          <p>{battleData.winnerReason ?? ""}</p>
-          <button
-            onClick={() => {
-              emitEvent("playerReturnedHome", { avatarId: myAvatarId });
-              setCurrentBattle(null);
-              navigate("/");
-            }}
-          >
-            Home
-          </button>
-          <button
-            onClick={() => {
-              setCurrentBattle(null);
-              navigate("/matching");
-            }}
-          >
-            Play (Random Matching)
-          </button>
+          <p>{battleEndMessage || battleData.winnerReason}</p>
+          <button onClick={handleReturnHome}>Home</button>
+          <button onClick={handlePlayAgain}>Play (Random Matching)</button>
         </div>
       )}
     </div>
