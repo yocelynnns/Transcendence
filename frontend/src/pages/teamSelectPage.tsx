@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, Dispatch } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import TeamSelectLayout from "../components/teamSelect/teamSelectLayout";
 import { AvatarData } from "../types/avatarTypes";
 import { useGameSocket } from "../ws/useGameSocket";
@@ -38,19 +38,31 @@ export default function TeamSelectPage({
 }: TeamSelectPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { battleId: urlBattleId } = useParams(); // Get battleId from URL
   
   // Get battle from navigation state or props
   const navBattle = location.state?.battle;
-  const activeBattle = navBattle as Battle || currentBattle as Battle;
+  
+  // CRITICAL: Only use navBattle if its _id matches the URL battleId
+  // This prevents using stale battle data from navigation state
+  const activeBattle = useMemo(() => {
+    if (navBattle && navBattle._id === urlBattleId) {
+      return navBattle as Battle;
+    }
+    if (currentBattle && currentBattle._id === urlBattleId) {
+      return currentBattle as Battle;
+    }
+    return null;
+  }, [navBattle, currentBattle, urlBattleId]);
 
   // Sync to parent state if we have nav state but no currentBattle
   useEffect(() => {
-    if (navBattle && !currentBattle) {
+    if (navBattle && navBattle._id === urlBattleId && !currentBattle) {
       setCurrentBattle(navBattle);
     }
-  }, [navBattle, currentBattle, setCurrentBattle]);
+  }, [navBattle, currentBattle, setCurrentBattle, urlBattleId]);
 
-  // Use activeBattle for everything instead of currentBattle
+  // State declarations
   const [slots, setSlots] = useState<(PlayerPokemon | null)[]>(
     Array.from({ length: TEAM_SIZE }, () => null)
   );
@@ -58,6 +70,12 @@ export default function TeamSelectPage({
   const [timeLeft, setTimeLeft] = useState(30);
   const [battleReady, setBattleReady] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // State for battle result acknowledgment
+  const [battleEnded, setBattleEnded] = useState(false);
+  const [playerWon, setPlayerWon] = useState<boolean | null>(null);
+  const [endReason, setEndReason] = useState<string>("");
+
   const { subscribeEvent, playerReadyMatch, emitEvent } = useGameSocket(() => {});
 
   const usedIds = useMemo(
@@ -65,55 +83,221 @@ export default function TeamSelectPage({
     [slots]
   );
 
-  const battleId = activeBattle?._id;
+  const battleId = activeBattle?._id || urlBattleId;
   const avatarId = avatarData?._id;
 
+  // CRITICAL FIX: Reset all states immediately when URL battleId changes
   useEffect(() => {
-    if (!activeBattle) return;
+    if (!urlBattleId) return;
+    
+    console.log(`🔄 New battle URL detected: ${urlBattleId}, resetting all states`);
+    
+    // Reset all states immediately
+    setSlots(Array.from({ length: TEAM_SIZE }, () => null));
+    setActiveSlot(0);
+    setTimeLeft(30);
+    setBattleReady(false);
+    setSaving(false);
+    setBattleEnded(false);
+    setPlayerWon(null);
+    setEndReason("");
+  }, [urlBattleId]);
+
+  // Listen for battleEnded event (from timeout resolution)
+  useEffect(() => {
+    if (!battleId || !avatarId) return;
+
+    const offBattleEnded = subscribeEvent(
+      "battleEnded",
+      (data: { 
+        battleId: string; 
+        silent?: boolean; 
+        winner?: string; 
+        isPlayer1?: boolean;
+        reason?: string;
+      }) => {
+        // Only process if this event is for our current battle
+        if (data.battleId !== battleId) {
+          console.log(`Ignoring battleEnded for ${data.battleId}, current is ${battleId}`);
+          return;
+        }
+        
+        // If silent mode (loser disconnected), immediately go home without UI
+        if (data.silent) {
+          console.log("Silent battle end - redirecting home");
+          setCurrentBattle(null);
+          navigate("/", { replace: true });
+          return;
+        }
+        
+        // Normal battle end - show result UI
+        console.log("Normal battle end - showing result UI");
+        setBattleEnded(true);
+        setSaving(false);
+        
+        // Determine if current player won
+        const isPlayer1 = data.isPlayer1 ?? (activeBattle ? getPlayerId(activeBattle.player1) === avatarId : false);
+        
+        let won: boolean | null = null;
+        if (data.winner === "player1") {
+          won = isPlayer1;
+        } else if (data.winner === "player2") {
+          won = !isPlayer1;
+        } else {
+          won = null; // draw
+        }
+        
+        setPlayerWon(won);
+        setEndReason(data.reason || "Battle ended");
+        
+        // Clear local timer since battle is over
+        setTimeLeft(0);
+      }
+    );
+
+    return () => {
+      offBattleEnded();
+    };
+  }, [battleId, subscribeEvent, avatarId, setCurrentBattle, navigate, activeBattle]);
+
+  // Listen for battle state updates via updateBattleState
+  useEffect(() => {
+    if (!battleId) return;
+
+    const offBattleState = subscribeEvent(
+      "updateBattleState",
+      (data: Battle) => {
+        // Only process if this update is for our current battle
+        if (data._id !== battleId) {
+          console.log(`Ignoring updateBattleState for ${data._id}, current is ${battleId}`);
+          return;
+        }
+        
+        console.log(`Received updateBattleState for battle ${data._id}, endedAt: ${data.endedAt}`);
+        
+        // Update current battle state
+        setCurrentBattle(data);
+        
+        // Check if battle just ended
+        if (data.endedAt && !battleEnded) {
+          console.log(`Battle ${data._id} has ended, showing result`);
+          setBattleEnded(true);
+          setSaving(false);
+          
+          // Determine if current player won
+          const player1Id = getPlayerId(data.player1);
+          const isPlayer1 = player1Id === avatarId;
+          
+          let won: boolean | null = null;
+          if (data.winner === "player1") {
+            won = isPlayer1;
+          } else if (data.winner === "player2") {
+            won = !isPlayer1;
+          } else {
+            won = null; // draw
+          }
+          
+          setPlayerWon(won);
+          setEndReason(data.winnerReason || "Battle ended");
+          
+          // Clear local timer since battle is over
+          setTimeLeft(0);
+        }
+      }
+    );
+
+    return () => {
+      offBattleState();
+    };
+  }, [battleId, subscribeEvent, avatarId, setCurrentBattle, battleEnded]);
+
+  // Fetch battle data on mount and check if already ended
+  useEffect(() => {
+    if (!urlBattleId) return;
+    
     const fetchAndCheck = async () => {
-     const updatedBattle = await refetchBattle();
-      if (updatedBattle?.endedAt) navigate(`/matching`);
-      if (!updatedBattle) return;
+      console.log(`Fetching battle data for ${urlBattleId}`);
+      const updatedBattle = await refetchBattle();
+      
+      if (!updatedBattle) {
+        console.log(`No battle found for ${urlBattleId}`);
+        return;
+      }
+      
+      console.log(`Fetched battle ${updatedBattle._id}, endedAt: ${updatedBattle.endedAt}`);
+      
+      // Only process if this is the battle we're currently viewing
+      if (updatedBattle._id !== urlBattleId) {
+        console.log(`Battle ID mismatch: fetched ${updatedBattle._id}, expected ${urlBattleId}`);
+        return;
+      }
+      
+      if (updatedBattle.endedAt) {
+        // Battle already ended - show result
+        console.log(`Battle ${urlBattleId} already ended, showing result`);
+        setCurrentBattle(updatedBattle);
+        setBattleEnded(true);
+        
+        const player1Id = getPlayerId(updatedBattle.player1);
+        const isPlayer1 = player1Id === avatarId;
+        
+        if (updatedBattle.winner === "player1") {
+          setPlayerWon(isPlayer1);
+        } else if (updatedBattle.winner === "player2") {
+          setPlayerWon(!isPlayer1);
+        } else {
+          setPlayerWon(null);
+        }
+        setEndReason(updatedBattle.winnerReason || "Battle ended");
+        return;
+      }
+      
+      // Battle is active, set timer
       const createdAt = new Date(updatedBattle.createdAt).getTime();
-        const endTime = createdAt + 35_000;
-        const now = Date.now();
-        setTimeout(
-          () =>
-            setTimeLeft(
-              Math.max(Math.ceil((endTime - now) / 1000), 0)
-            ),
-          0
-        );
+      const endTime = createdAt + 35_000;
+      const now = Date.now();
+      const remainingTime = Math.max(Math.ceil((endTime - now) / 1000), 0);
+      console.log(`Setting timer to ${remainingTime}s`);
+      setTimeLeft(remainingTime);
     };
 
     fetchAndCheck();
-  }, [refetchBattle, navigate, activeBattle]);
+  }, [refetchBattle, urlBattleId, setCurrentBattle, avatarId]);
 
+  // Check activeBattle data and initialize slots if needed
   useEffect(() => {
     if (!activeBattle || !avatarId) return;
 
+    console.log(`Processing activeBattle ${activeBattle._id}, endedAt: ${activeBattle.endedAt}`);
+
     // Handle both populated objects and string IDs
     const player1Id = getPlayerId(activeBattle.player1);
-
     const isPlayer1 = player1Id === avatarId;
 
-    const me = isPlayer1
-      ? activeBattle.pokemon1
-      : activeBattle.pokemon2;
+    // If battle ended, show result (should be caught by fetch effect, but double-check)
+    if (activeBattle.endedAt) {
+      console.log(`Active battle ${activeBattle._id} has endedAt set`);
+      // Only set if not already set to avoid loops
+      if (!battleEnded) {
+        setBattleEnded(true);
+      }
+      return;
+    }
 
-    const enemy = isPlayer1
-      ? activeBattle.pokemon2
-      : activeBattle.pokemon1;
+    const me = isPlayer1 ? activeBattle.pokemon1 : activeBattle.pokemon2;
+    const enemy = isPlayer1 ? activeBattle.pokemon2 : activeBattle.pokemon1;
 
+    // If both have picked, go to battle page
     if (me.length > 0 && enemy.length > 0) {
+      console.log(`Both players ready, navigating to battle`);
       navigate(`/battle/${activeBattle._id}`);
       return;
     }
 
-    const myPicked = isPlayer1 ? activeBattle.pokemon1 : activeBattle.pokemon2;
-
-    if (myPicked.length > 0) {
-      const mySlots: (PlayerPokemon | null)[] = myPicked.map((b) => ({
+    // If I already picked, restore my slots
+    if (me.length > 0) {
+      console.log(`Restoring my picked pokemon`);
+      const mySlots: (PlayerPokemon | null)[] = me.map((b) => ({
           _id: b.pokemonId,
           name: b.name,
           type: b.type,
@@ -123,26 +307,19 @@ export default function TeamSelectPage({
         }));
 
       while (mySlots.length < TEAM_SIZE) mySlots.push(null);
-
-      setTimeout(() => {
-        setSlots(mySlots);
-        setSaving(true);
-      }, 0);
+      setSlots(mySlots);
+      setSaving(true);
     }
 
+    // Set timer from battle data
     if (activeBattle.createdAt) {
       const createdAt = new Date(activeBattle.createdAt).getTime();
       const endTime = createdAt + 35_000;
       const now = Date.now();
-      setTimeout(
-        () =>
-          setTimeLeft(
-            Math.max(Math.ceil((endTime - now) / 1000), 0)
-          ),
-        0
-      );
+      const remainingTime = Math.max(Math.ceil((endTime - now) / 1000), 0);
+      setTimeLeft(remainingTime);
     }
-  }, [activeBattle, avatarId, navigate, playerReadyMatch]);
+  }, [activeBattle, avatarId, navigate, battleEnded]);
 
   const handleReady = useCallback(
     (currentSlots = slots) => {
@@ -170,12 +347,15 @@ export default function TeamSelectPage({
     [avatarData, slots, playerReadyMatch, activeBattle]
   );
 
+  // Countdown timer
   useEffect(() => {
+    if (battleEnded) return;
+    
     const timer = window.setInterval(() => {
       setTimeLeft((s) => {
         if (s > 1) return s - 1;
 
-        if (s === 1 && avatarData) {
+        if (s === 1 && avatarData && !battleEnded) {
           const available =
             avatarData.pokemonInventory.filter(
               (p) => !slots.some((s) => s?._id === p._id)
@@ -202,10 +382,10 @@ export default function TeamSelectPage({
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [avatarData, slots, handleReady]);
+  }, [avatarData, slots, handleReady, battleEnded]);
 
   const pickPokemon = (p: PlayerPokemon) => {
-    if (saving) return;
+    if (saving || battleEnded) return;
     if (timeLeft === 0) return;
     if (usedIds.has(p._id)) return;
 
@@ -219,7 +399,7 @@ export default function TeamSelectPage({
   };
 
   const removeSlot = (idx: number) => {
-    if (saving) return;
+    if (saving || battleEnded) return;
     setSlots((prev) => {
       const next = [...prev];
       next[idx] = null;
@@ -228,6 +408,7 @@ export default function TeamSelectPage({
     setActiveSlot(idx);
   };
 
+  // Listen for battleReady and errors
   useEffect(() => {
     if (!battleId) return;
 
@@ -256,21 +437,12 @@ export default function TeamSelectPage({
     };
   }, [battleId, subscribeEvent, navigate, setCurrentBattle]);
 
+  // Navigate when battle is ready
   useEffect(() => {
-    if (battleReady && battleId && avatarData) {
-      emitEvent("friendBattleStarted", { 
-        battleId,
-        avatarId: avatarData._id 
-      });
+    if (battleReady && battleId && !battleEnded) {
       navigate(`/battle/${battleId}`);
     }
-  }, [battleReady, battleId, navigate, avatarData, emitEvent]);
-
-  useEffect(() => {
-    if (battleReady && battleId) {
-      navigate(`/battle/${battleId}`);
-    }
-  }, [battleReady, battleId, navigate, avatarData]);
+  }, [battleReady, battleId, navigate, battleEnded]);
 
   if (!avatarData) {
     return (
@@ -292,6 +464,53 @@ export default function TeamSelectPage({
     );
   }
 
+  // Render battle ended UI
+  if (battleEnded) {
+    const isWin = playerWon === true;
+    const isDraw = playerWon === null;
+    
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: isWin ? "#1e3a1e" : isDraw ? "#3a3a1e" : "#3a1e1e",
+          color: "#fff",
+          fontFamily: "monospace",
+        }}
+      >
+        <div style={{ fontSize: 64, marginBottom: 20 }}>
+          {isWin ? "🎉" : isDraw ? "🤝" : "😞"}
+        </div>
+        <h1 style={{ fontSize: 32, marginBottom: 16 }}>
+          {isWin ? "Victory!" : isDraw ? "Draw" : "Defeat"}
+        </h1>
+        <p style={{ fontSize: 16, marginBottom: 32, opacity: 0.8 }}>
+          {endReason}
+        </p>
+        <button
+          onClick={() => navigate("/", { replace: true })}
+          style={{
+            padding: "12px 24px",
+            fontSize: 16,
+            fontFamily: "monospace",
+            background: "#ffcc00",
+            border: "2px solid #333",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Return Home
+        </button>
+      </div>
+    );
+  }
+
   return (
     <TeamSelectLayout
       inventory={avatarData.pokemonInventory}
@@ -304,7 +523,7 @@ export default function TeamSelectPage({
       timeLeft={timeLeft}
       playerName={avatarData.userName}
       avatarSrc={avatarData.avatar}
-      canReady={slots.every(Boolean) && timeLeft > 0}
+      canReady={slots.every(Boolean) && timeLeft > 0 && !battleEnded}
       onReady={() => handleReady()}
       msg={null}
       saving={saving}

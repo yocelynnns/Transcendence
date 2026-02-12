@@ -30,13 +30,22 @@ function App() {
     if (!token) return;
     try {
       const user = await getUserInfo(token);
-      setAvatarId(user.avatar?._id ?? null);
-      setBattleId(user.avatar?.currentBattle?.toString() ?? null);
+      const newAvatarId = user.avatar?._id ?? null;
+      const newBattleId = user.avatar?.currentBattle?.toString() ?? null;
+      
+      setAvatarId(newAvatarId);
+      setBattleId(newBattleId);
+      
+      // CRITICAL: If server says no current battle, ALWAYS clear frontend state
+      if (!newBattleId && currentBattle) {
+        console.log('Server reports no battle, clearing frontend currentBattle');
+        setCurrentBattle(null);
+      }
     } catch (err) {
       setToken(null);
       console.log("Failed to fetch user info:", err);
     }
-  }, [token]);
+  }, [token, currentBattle]);
 
   // --- stable refetchBattle ---
   const refetchBattle = useCallback(
@@ -71,10 +80,17 @@ function App() {
   // ---- auto fetch on mount or currentBattle change ----
   useEffect(() => {
     if (!token) return;
-    if (!currentBattle) {
-      refetchUser();
+    // Run whenever token changes OR when we need to refresh battle status
+    refetchUser();
+  }, [token, refetchUser]);
+
+  // Clear currentBattle whenever battleId becomes null
+  useEffect(() => {
+    if (!battleId && currentBattle) {
+      console.log('battleId is null, clearing currentBattle');
+      setCurrentBattle(null);
     }
-  }, [token, currentBattle, refetchUser]);
+  }, [battleId, currentBattle]);
 
   // ---- auto fetch battle when avatarId or battleId changes ----
   useEffect(() => {
