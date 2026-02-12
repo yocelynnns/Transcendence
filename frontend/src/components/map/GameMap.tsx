@@ -40,10 +40,11 @@ interface GameMapProps {
   avatarData: AvatarData | null;
   avatarId: string | null;
   freeze: boolean; /* ADD */
+  battleLatest: (avatarId?: string) => Promise<void>;
 }
 
 //MAIN COMPONENT
-export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) {
+export default function GameMap({ avatarData, avatarId, freeze, battleLatest }: GameMapProps) {
   const navigate = useNavigate();
   
   //POKEMON HOOK
@@ -81,6 +82,17 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
   const [showPopupOne, setShowPopUpOne] = useState(false);
   const [showPopupTwo, setShowPopUpTwo] = useState(false);
 
+  // Inside a component
+  const handleBattleLatestAndNavigate = async () => {
+    if (!avatarData?._id) return;
+
+    try {
+      await battleLatest(avatarData._id);
+      navigate("/matching");
+    } catch (err) {
+      console.error("Failed to update battle and navigate:", err);
+    }
+  };
 
   // Show popup when player.currentTiles === 2
   useEffect(() => {
@@ -237,7 +249,7 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
           button1Text="Trainer Battle"
           onButton1={() => {
             setShowPopUpOne(false);
-            navigate("/matching");
+            handleBattleLatestAndNavigate();
           }}
           button2Text="Training Ground"
           onButton2={() => {

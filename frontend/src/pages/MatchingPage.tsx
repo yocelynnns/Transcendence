@@ -1,4 +1,4 @@
-// src/pages/MatchingPage.tsx
+// src/pages/matchingpage.tsx
 import { useEffect, useState, useMemo, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AvatarData } from "../types/avatarTypes";

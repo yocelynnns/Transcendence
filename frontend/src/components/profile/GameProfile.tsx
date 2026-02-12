@@ -30,17 +30,17 @@ interface BattleHistory {
 interface ProfilePageProps {
   avatarData: AvatarData;
   updateAvatar: (fields: Partial<AvatarData>) => void;
-  setToken: (token: string | null) => void;
   onClose: () => void;
   me?: boolean;
+  handleLogOut: () => void;
 }
 
 export default function ProfilePage({
   avatarData,
   updateAvatar,
-  setToken,
   onClose,
-  me
+  me,
+  handleLogOut,
 }: ProfilePageProps) {
   const navigate = useNavigate();
   const { signOut, emitEvent } = useGameSocket(() => undefined);
@@ -119,7 +119,7 @@ export default function ProfilePage({
   const handleSignOut = () => {
     signOut();
     sessionStorage.removeItem("token");
-    setToken(null);
+    handleLogOut();
     navigate("/login");
   };
 
@@ -129,18 +129,41 @@ export default function ProfilePage({
     return `${Math.floor(diff / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`;
   };
 
-  const getBattleBg = (winner?: string, playerId?: string) => {
+  const getBattleBg = (winner?: string, isPlayerOne?: boolean) => {
     if (winner === "draw") return "#fff9e6";
-    if (winner === "player1" && playerId === avatarData._id) return "#ecfdf3";
-    if (winner === "player2" && playerId === avatarData._id) return "#fdecec";
-    return "#fff"; // default
+
+    if (winner === "player1") {
+      return isPlayerOne ? "#ecfdf3" : "#fdecec";
+    }
+
+    if (winner === "player2") {
+      return !isPlayerOne ? "#ecfdf3" : "#fdecec";
+    }
+    return "#fff";
   };
 
+
   // Battle stats
-  const totalGames = battles.length;
-  const wins = battles.filter((b) => b.winner === "player1" && b.player1._id === avatarData._id).length;
-  const losses = battles.filter((b) => b.winner === "player2" && b.player2._id === avatarData._id).length;
-  const draws = battles.filter((b) => b.winner === "draw").length;
+  const totalGames = battles.filter(
+    (b) =>
+      b.player1?._id?.toString() === avatarData._id.toString() ||
+      b.player2?._id?.toString() === avatarData._id.toString()
+  ).length;
+
+  const wins = battles.filter(
+    (b) =>
+      (b.winner === "player1" && b.player1?._id?.toString() === avatarData._id.toString()) ||
+      (b.winner === "player2" && b.player2?._id?.toString() === avatarData._id.toString())
+  ).length;
+
+  const draws = battles.filter(
+    (b) =>
+      b.winner === "draw" &&
+      (b.player1?._id?.toString() === avatarData._id.toString() ||
+        b.player2?._id?.toString() === avatarData._id.toString())
+  ).length;
+
+  const losses = totalGames - wins - draws;
 
   // NEW: compute win rate
   const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
@@ -359,7 +382,7 @@ export default function ProfilePage({
                 style={{
                   background: getBattleBg(
                     b.winner,
-                    avatarData._id === b.player1._id ? b.player1._id : b.player2._id
+                    (avatarData._id.toString() == b.player1._id.toString())
                   ),
                 }}
               >

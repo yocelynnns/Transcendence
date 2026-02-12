@@ -25,7 +25,7 @@ type Props = {
   saving: boolean;
   onReady: () => void;
 
-  waitingForEnemy: boolean;
+  waitingForEnemy?: boolean;
 };
 
 export default function TeamSelectLayout({
