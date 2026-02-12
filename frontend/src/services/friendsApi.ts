@@ -38,6 +38,14 @@ export async function sendFriendRequest(token: string, friendEmail: string) {
     },
     body: JSON.stringify({ friendEmail: friendEmail.trim() }),
   });
+  
+  // Check if response is not OK
+  if (!res.ok) {
+    // Parse the error JSON and throw the message
+    const errorData = await res.json();
+    throw new Error(errorData.message || "Failed to send request");
+  }
+  
   return res.json();
 }
 
