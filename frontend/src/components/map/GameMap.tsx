@@ -116,8 +116,7 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
   useEffect(() => {
     sendPlayerMove(player.x, player.y, player.direction, player.frame, player.charIndex);
   }, [player.x, player.y, player.direction, player.frame, player.charIndex, sendPlayerMove]);
-
-
+  
   //HANDLE CATCH
   const queryClient = useQueryClient();
 
@@ -168,6 +167,13 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
       }
     );
   };
+
+  useEffect(() => {
+    if (showDialog) {
+      setShowPopUpOne(false);
+      setShowPopUpTwo(false);
+    }
+  }, [showDialog]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -228,7 +234,7 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
         <GamePopup
           title="Choose Mode"
           onClose={() => setShowPopUpOne(false)}
-          button1Text="Battle Match"
+          button1Text="Trainer Battle"
           onButton1={() => {
             setShowPopUpOne(false);
             navigate("/matching");
@@ -238,6 +244,7 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
             setShowPopUpOne(false);
             navigate(`/aibattle`);
           }}
+          scale={uiScale}
         />
       )}
 
@@ -251,6 +258,7 @@ export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) 
             setShowPopUpTwo(false);
             navigate("/race");
           }}
+          scale={uiScale}
         />
       )}
 

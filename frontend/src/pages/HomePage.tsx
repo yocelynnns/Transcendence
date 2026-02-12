@@ -9,8 +9,6 @@ import Guild from "../components/guild/GuildMain";
 import { AvatarData } from "../types/avatarTypes";
 import { Battle } from "../types/battleTypes";
 import FriendsList from "../components/friendlist/FriendsList";
-import MatchingButton from "../components/matching/matchingButton";
-import AiButton from "../components/ai/aiButton";
 
 const designWidth = 1512;
 const designHeight = 851; // added explicit design height
@@ -213,14 +211,6 @@ export default function HomePage({
           scale={finalGuildScale}
         />
       )}
-
-      {/* {showDialog && encounterPokemon && (
-        <CatchDialog
-          scale={1}
-          onYes={() => handleCatchPokemon(encounterPokemon)}
-          onNo={handleCatchNo}
-        />
-      )} */}
 
     </div>
   );
