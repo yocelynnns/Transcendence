@@ -13,8 +13,8 @@ interface BattlePokemon {
 
 interface BattleHistory {
   _id: string;
-  player1: { userName: string, _id: string };
-  player2: { userName: string, _id: string };
+  player1: { userName: string; _id: string };
+  player2: { userName: string; _id: string };
   pokemon1: BattlePokemon[];
   pokemon2: BattlePokemon[];
   winner?: "player1" | "player2" | "draw";
@@ -45,7 +45,6 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
               `http://localhost:5001/api/battle/${battleId.toString()}`
             );
             const data = await res.json();
-
             return {
               ...data,
               createdAt: new Date(data.createdAt),
@@ -55,6 +54,7 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
         );
 
         setBattles(results.reverse());
+        if (results.length > 0) console.log("Latest battle:", results[0]);
       } catch {
         setBattles([]);
       } finally {
@@ -66,8 +66,12 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
   }, [avatarData]);
 
   const totalGames = battles.length;
-  const wins = battles.filter((b) => b.winner === "player1").length;
-  const losses = battles.filter((b) => b.winner === "player2").length;
+
+  const isPlayer1 = (b: BattleHistory) =>
+    avatarData._id.toString() === b.player1._id;
+
+  const wins = battles.filter((b) => b.winner === (isPlayer1(b) ? "player1" : "player2")).length;
+  const losses = battles.filter((b) => b.winner === (isPlayer1(b) ? "player2" : "player1")).length;
   const draws = battles.filter((b) => b.winner === "draw").length;
 
   const formatDuration = (start: Date, end?: Date) => {
@@ -76,29 +80,31 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
     return `${Math.floor(diff / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`;
   };
 
-  const getBattleBg = (winner?: string, isPlayer1?: boolean) => {
-    if (winner === "draw") return "#fff9e6";
-    if (winner === "player1" && isPlayer1) 
-      return "#ecfdf3";
-    else 
-      return "#fdecec";
+  const getBattleBg = (battle: BattleHistory) => {
+    if (battle.winner === "draw") return "#fff9e6";
+    return isPlayer1(battle)
+      ? battle.winner === "player1"
+        ? "#ecfdf3" // green → you won
+        : "#fdecec" // red → you lost
+      : battle.winner === "player2"
+      ? "#ecfdf3"
+      : "#fdecec";
+  };
+
+  const getResultText = (battle: BattleHistory) => {
+    if (battle.winner === "draw") return "Draw";
+    if (isPlayer1(battle)) return battle.winner === "player1" ? "Win" : "Loss";
+    return battle.winner === "player2" ? "Win" : "Loss";
   };
 
   return (
     <>
-      { (
-        <div
-          onClick={() => setPanelOpen(!panelOpen)}
-          style={{
-            cursor: "pointer",
-            zIndex: 100,
-            width: 48,
-            height: 48,
-          }}
-        >
-          <img src={logo} style={{ width: "100%" }} />
-        </div>
-      )}
+      <div
+        onClick={() => setPanelOpen(!panelOpen)}
+        style={{ cursor: "pointer", zIndex: 100, width: 48, height: 48 }}
+      >
+        <img src={logo} style={{ width: "100%" }} />
+      </div>
 
       {panelOpen && (
         <div
@@ -161,17 +167,14 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
             {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
 
             {!loading && battles.length === 0 && (
-              <p style={{ textAlign: "center", color: "#777" }}>
-                No battles yet
-              </p>
+              <p style={{ textAlign: "center", color: "#777" }}>No battles yet</p>
             )}
 
             {battles.map((b) => (
               <div
                 key={b._id}
                 style={{
-                  background: getBattleBg(b.winner, 
-                    avatarData._id.toString() == b.player1._id),
+                  background: getBattleBg(b),
                   borderRadius: 14,
                   padding: 14,
                   marginBottom: 14,
@@ -213,6 +216,10 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
                   {b.player1.userName} vs {b.player2.userName}
                 </p>
 
+                <p style={{ textAlign: "center", fontWeight: 600 }}>
+                  Result: {getResultText(b)}
+                </p>
+
                 <p style={{ fontSize: 12, textAlign: "center" }}>
                   {b.winnerReason ?? "—"}
                 </p>
@@ -229,15 +236,7 @@ export default function HistoryMain({ avatarData }: HistoryMainProps) {
   );
 }
 
-const StatBox = ({
-  title,
-  value,
-  color,
-}: {
-  title: string;
-  value: number;
-  color: string;
-}) => (
+const StatBox = ({ title, value, color }: { title: string; value: number; color: string }) => (
   <div
     style={{
       background: color,
