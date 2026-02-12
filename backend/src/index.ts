@@ -1,7 +1,8 @@
-import express, { Express } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import http from "http";
 import mongoSanitize from "express-mongo-sanitize";
+
 import authRoutes from "./routes/auth";
 import pokemonRoutes from "./routes/pokemon";
 import avatarRoutes from "./routes/avatar";
@@ -12,11 +13,13 @@ import friendRoutes from "./routes/friends";
 import chatRoutes from "./routes/chat";
 import raceRoutes from "./routes/race";
 import messageBlockRoutes from "./routes/messageBlock";
+
 import { setupSocket } from "./ws/server";
 import { connectDB } from "./db/connection";
 
 const app: Express = express();
 
+// CORS
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -24,14 +27,14 @@ app.use(
   })
 );
 
+// Body parsers
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
-app.use((req, _res, next) => {
+// Mongo sanitize middleware with types
+app.use((req: Request, _res: Response, next: NextFunction) => {
   if (req.body) mongoSanitize.sanitize(req.body, { replaceWith: "_" });
-
   if (req.params) mongoSanitize.sanitize(req.params, { replaceWith: "_" });
-
   next();
 });
 
@@ -47,16 +50,17 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/race", raceRoutes);
 app.use("/api", messageBlockRoutes);
 
+// Port
 const PORT: number = Number(process.env.PORT) || 5001;
 
-// Create http server
+// Create HTTP server
 const server = http.createServer(app);
 
-// Set up socket
+// Setup Socket.io
 setupSocket(server);
 
-// Connect MongoDB
-connectDB().catch(err => console.log("FAILED TO CONNECT DB:", err));
+// Connect to MongoDB
+connectDB().catch((err) => console.log("FAILED TO CONNECT DB:", err));
 
 // Start server
 server.listen(PORT, () => {

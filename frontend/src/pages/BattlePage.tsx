@@ -154,7 +154,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       unsubUpdateState?.();
       unsubBattleError?.();
     };
-  }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent]);
+  }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent, battleData?.endedAt, myAvatarId]);
 
   useEffect(() => {
     if (!battleData || !myRole || battleData.endedAt) return;
