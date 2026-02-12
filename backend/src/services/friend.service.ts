@@ -1,6 +1,7 @@
 import Friend from "../db/friend";
 import User from "../db/user";
 import Avatar from "../db/avatar";
+import Battle from "../db/battle"; // ✅ Added import
 import { Types } from "mongoose";
 
 // Add socket io instance
@@ -202,7 +203,7 @@ export const removeFriend = async ({ userId, friendAvatarId }: RemoveFriendInput
   return;
 };
 
-// Get all user friends
+// Get all user friends - ✅ FIXED to include battleStatus
 export const getAllFriendsWithAvatars = async (userId: string) => {
   const friendships = await Friend.find({
     userId,
@@ -219,8 +220,30 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
 
       if (friendUser.avatar) {
         avatar = await Avatar.findById(friendUser.avatar).select(
-          "userName avatar characterOption"
+          "userName avatar characterOption currentBattle"
         );
+      }
+
+      // ✅ NEW: Determine battleStatus based on currentBattle and battle state
+      let battleStatus: "online" | "in_battle" | "viewing_results" = "online";
+      let currentBattle = avatar?.currentBattle?.toString() || null;
+      
+      if (currentBattle) {
+        try {
+          const battle = await Battle.findById(currentBattle).select("endedAt");
+          if (battle) {
+            battleStatus = battle.endedAt ? "viewing_results" : "in_battle";
+          } else {
+            // Battle doesn't exist anymore, clear the stale reference
+            currentBattle = null;
+            battleStatus = "online";
+            // Optionally: update avatar to clear currentBattle
+            await Avatar.findByIdAndUpdate(friendUser.avatar, { currentBattle: null });
+          }
+        } catch (err) {
+          console.error(`Failed to check battle status for ${currentBattle}:`, err);
+          battleStatus = "online";
+        }
       }
 
       return {
@@ -229,7 +252,8 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
         userName: avatar?.userName || "Unknown",
         avatarImage: avatar?.avatar || "",
         characterOption: avatar?.characterOption || 0,
-        currentBattle: avatar?.currentBattle?.toString() || null, // For spectating!
+        currentBattle, // ✅ Now properly set (null if battle doesn't exist)
+        battleStatus, // ✅ NEW: Now included!
       };
     })
   );
