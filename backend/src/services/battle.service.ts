@@ -16,15 +16,14 @@ export function setSocketIo(io: any) {
 function emitBattleEnded(battle: any) {
   if (!ioInstance) return;
   
-  // Extract player IDs safely
   const player1Id = battle.player1?._id?.toString?.() || battle.player1?.toString?.();
   const player2Id = battle.player2?._id?.toString?.() || battle.player2?.toString?.();
   
   if (player1Id) {
-    ioInstance.emit("battleEnded", { avatarId: player1Id, battleId: battle._id });
+    ioInstance.emit("friendBattleEnded", { avatarId: player1Id, battleId: battle._id }); // Changed from "battleEnded"
   }
   if (player2Id) {
-    ioInstance.emit("battleEnded", { avatarId: player2Id, battleId: battle._id });
+    ioInstance.emit("friendBattleEnded", { avatarId: player2Id, battleId: battle._id }); // Changed from "battleEnded"
   }
 }
 
