@@ -1,4 +1,4 @@
-// src/pages/matchingpage.tsx
+// src/pages/MatchingPage.tsx
 import { useEffect, useState, useMemo, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AvatarData } from "../types/avatarTypes";
@@ -11,6 +11,12 @@ interface MatchMakingProps {
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
 }
+
+const designWidth = 760;
+const designHeight = 520;
+const padding = 24;
+const maxScale = 1;
+const minScale = 0.45;
 
 export default function Matching({
   avatarData,
@@ -25,6 +31,20 @@ export default function Matching({
   const [countdown, setCountdown] = useState(5);
   const joinRef = useRef<boolean>(false);
 
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const handleResize = () => {
+      const scaleX = (window.innerWidth - padding * 2) / designWidth;
+      const scaleY = (window.innerHeight - padding * 2) / designHeight;
+      const newScale = Math.min(maxScale, Math.max(minScale, Math.min(scaleX, scaleY)));
+      setScale(newScale);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     if (!avatarData) return;
     const inventory = avatarData.pokemonInventory ?? [];
@@ -34,6 +54,7 @@ export default function Matching({
     }
   }, [avatarData, navigate]);
 
+  // opponent logic
   const opponentAvatar = useMemo(() => {
     if (!currentBattle || !currentId) return null;
     return currentBattle.player1._id === currentId
@@ -44,11 +65,11 @@ export default function Matching({
   const matchStarted = Boolean(currentBattle && opponentAvatar);
   const waiting = !matchStarted;
 
+  // countdown -> team select
   useEffect(() => {
     if (!currentBattle || !opponentAvatar) return;
 
-    const endTime =
-      new Date(currentBattle.createdAt ?? Date.now()).getTime() + 5_000;
+    const endTime = new Date(currentBattle.createdAt ?? Date.now()).getTime() + 5_000;
 
     const updateCountdown = () => {
       const secondsLeft = Math.max(Math.ceil((endTime - Date.now()) / 1000), 0);
@@ -64,6 +85,7 @@ export default function Matching({
     return () => clearInterval(timer);
   }, [currentBattle, opponentAvatar, navigate]);
 
+  // join + events
   useEffect(() => {
     if (!currentId || currentBattle) return;
 
@@ -80,9 +102,8 @@ export default function Matching({
       }
     );
 
-    const cleanupError = subscribeEvent(
-      "matchError",
-      (data: { message: string }) => alert(data.message)
+    const cleanupError = subscribeEvent("matchError", (data: { message: string }) =>
+      alert(data.message)
     );
 
     return () => {
@@ -108,61 +129,67 @@ export default function Matching({
 
   return (
     <div
-      className="w-screen h-screen flex flex-col items-center justify-center text-center px-4 pixelify-sans"
-      style={{
-        background: "linear-gradient(to bottom, #a9c0dc 0%, #7fa3c7 100%)",
-      }}
+      className="fixed inset-0 flex items-center justify-center pixelify-sans"
+      style={{ background: "linear-gradient(to bottom, #a9c0dc 0%, #7fa3c7 100%)" }}
     >
-      {/* TITLE PANEL */}
-      <div className="mb-6 px-8 py-4 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55]">
-        <h1 className="text-[24px] sm:text-[28px] text-white tracking-wide">
-          {title}
-        </h1>
-      </div>
-
-      {/* COUNTDOWN */}
-      {matchStarted && (
-        <div className="mb-6 px-6 py-3 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55] text-[16px] text-white">
-          Match starts in {countdown} second{countdown !== 1 ? "s" : ""}
-        </div>
-      )}
-
-      {/* AVATARS */}
-      <div className="flex flex-col sm:flex-row items-center gap-8 sm:gap-14">
-        <AvatarCard
-          avatar={avatarData.avatar || defaultAvatar}
-          name={avatarData.userName}
-        />
-
-        <div className="hidden sm:block text-[28px] font-bold text-white drop-shadow-[2px_2px_0_#2b3d55]">
-          VS
-        </div>
-
-        <AvatarCard
-          avatar={opponentAvatar?.avatar}
-          name={waiting ? "Searching..." : opponentAvatar?.userName || ""}
-          loading={waiting}
-        />
-      </div>
-
-      {/* RETURN BUTTON */}
-      <button
-        onClick={handleReturn}
-        className="
-          mt-10
-          px-8 py-3
-          bg-[#5f78a8]
-          border-4 border-black
-          text-white
-          text-[16px]
-          shadow-[6px_6px_0px_#2b3d55]
-          active:translate-x-0.5
-          active:translate-y-0.5
-          active:shadow-[3px_3px_0px_#2b3d55]
-        "
+      <div
+        style={{
+          width: designWidth,
+          height: designHeight,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+        }}
+        className="relative"
       >
-        ← Return
-      </button>
+        {/* CONTENT */}
+        <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
+          {/* TITLE PANEL */}
+          <div className="mb-6 px-8 py-4 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55]">
+            <h1 className="text-[28px] text-white tracking-wide">{title}</h1>
+          </div>
+
+          {/* COUNTDOWN */}
+          {matchStarted && (
+            <div className="mb-6 px-6 py-3 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55] text-[16px] text-white">
+              Match starts in {countdown} second{countdown !== 1 ? "s" : ""}
+            </div>
+          )}
+
+          {/* AVATARS */}
+          <div className="flex items-center justify-center gap-14">
+            <AvatarCard avatar={avatarData.avatar || defaultAvatar} name={avatarData.userName} />
+
+            <div className="text-[28px] font-bold text-white drop-shadow-[2px_2px_0_#2b3d55]">
+              VS
+            </div>
+
+            <AvatarCard
+              avatar={opponentAvatar?.avatar}
+              name={waiting ? "Searching..." : opponentAvatar?.userName || ""}
+              loading={waiting}
+            />
+          </div>
+
+          {/* RETURN BUTTON */}
+          <button
+            onClick={handleReturn}
+            className="
+              mt-10
+              px-8 py-3
+              bg-[#5f78a8]
+              border-4 border-black
+              text-white
+              text-[16px]
+              shadow-[6px_6px_0px_#2b3d55]
+              active:translate-x-0.5
+              active:translate-y-0.5
+              active:shadow-[3px_3px_0px_#2b3d55]
+            "
+          >
+            ← Return
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -180,8 +207,7 @@ function AvatarCard({
     <div className="text-center">
       <div
         className="
-          w-30 h-30
-          sm:w-35 sm:h-35
+          w-36 h-36
           border-4 border-black
           bg-[#5f78a8]
           shadow-[6px_6px_0px_#2b3d55]

@@ -9,8 +9,6 @@ import Guild from "../components/guild/GuildMain";
 import { AvatarData } from "../types/avatarTypes";
 import { Battle } from "../types/battleTypes";
 import FriendsList from "../components/friendlist/FriendsList";
-import MatchingButton from "../components/matching/matchingButton";
-import AiButton from "../components/ai/aiButton";
 
 const designWidth = 1512;
 const designHeight = 851; // added explicit design height
@@ -127,6 +125,7 @@ export default function HomePage({
 
           {/* MENU BAR */}
           <div className="absolute top-25 left-46 flex items-center gap-2 z-60">
+            {/* FRIENDS BUTTON */}
             <div className="transform transition-transform duration-200 hover:scale-110">
               <button onClick={() => setShowFriendsPanel(true)}>
                 <img
@@ -155,14 +154,6 @@ export default function HomePage({
                   className={`object-contain image-rendering-pixelated hover:scale-110 ${isMobile ? "w-10 h-10" : "w-14 h-14"}`}
                 />
               </button>
-            </div>
-
-            <div className="transform transition-transform duration-200 hover:scale-110">
-              <MatchingButton avatarData={avatarData} />
-            </div> 
-
-            <div className="transform transition-transform duration-200 hover:scale-110">
-                <AiButton />
             </div>
 
           </div>
@@ -196,20 +187,16 @@ export default function HomePage({
 
       {/* FRIENDS PANEL */}
       {showFriendsPanel && avatarData && (
-        <div
-          className={`fixed top-0 right-0 h-screen border-l-2 border-gray-300 z-50
-            ${isMobile ? "w-full max-w-full" : "w-1/3 min-w-90 max-w-130"}`}
-        >
-          <FriendsList
-            token={token}
-            myAvatarId={avatarData._id}
-            myAvatarData={avatarData}
-            setSpectatingBattle={setSpectatingBattle}
-            setCurrentBattle={setCurrentBattle}
-            // isOpen={showFriendsPanel}
-            // onClosePanel={() => setShowFriendsPanel(false)}
-          />
-        </div>
+        <FriendsList
+          token={token}
+          myAvatarId={avatarData._id}
+          myAvatarData={avatarData}
+          setSpectatingBattle={setSpectatingBattle}
+          setCurrentBattle={setCurrentBattle}
+          onClosePanel={() => setShowFriendsPanel(false)}
+          scale={finalGuildScale}
+          // isOpen={showFriendsPanel}
+        />
       )}
 
       {/* GUILD PANEL */}
@@ -221,14 +208,6 @@ export default function HomePage({
           scale={finalGuildScale}
         />
       )}
-
-      {/* {showDialog && encounterPokemon && (
-        <CatchDialog
-          scale={1}
-          onYes={() => handleCatchPokemon(encounterPokemon)}
-          onNo={handleCatchNo}
-        />
-      )} */}
 
     </div>
   );

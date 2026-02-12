@@ -113,7 +113,7 @@ export default function GuildList({
             const isHovered = hoveredGuildId === guild._id; // hover check
 
             return (
-              <div key={guild._id} className="relative w-full h-[100px] hover:scale-102 mb-3" 
+              <div key={guild._id} className="relative w-full h-25 hover:scale-102 mb-3" 
                 onMouseEnter={() => setHoveredGuildId(guild._id)}
                 onMouseLeave={() => setHoveredGuildId(null)}
               >
@@ -152,7 +152,7 @@ export default function GuildList({
                       {guild.description || "No description"}
                     </div>
 
-                    <div className="text-[0.8rem] mt-[2px] text-[#7a5a5e]"
+                    <div className="text-[0.8rem] mt-0.5 text-[#7a5a5e]"
                       // className={`text-[0.8rem] mt-[2px] ${
                       //   !isHovered ? "text-[#7a5a5e]" : "text-[#7a5a5e]"
                       // }`}

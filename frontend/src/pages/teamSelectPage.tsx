@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, useCallback, Dispatch } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TeamSelectLayout from "../components/teamSelect/teamSelectLayout";
-import type { AvatarData } from "../types/avatarTypes";
+import { AvatarData } from "../types/avatarTypes";
 import { useGameSocket } from "../ws/useGameSocket";
-import type { Battle, BattlePokemon } from "../types/battleTypes";
-import type { PlayerPokemon } from "../types/pokemonTypes";
+import { Battle, BattlePokemon } from "../types/battleTypes";
+import { PlayerPokemon } from "../types/pokemonTypes";
+import { useLocation } from "react-router-dom";
+import "./../styles/teamSelect.css";
 
 interface TeamSelectPageProps {
   avatarData?: AvatarData | null;
@@ -14,18 +16,19 @@ interface TeamSelectPageProps {
 }
 
 const TEAM_SIZE = 3;
-const PICK_WINDOW_MS = 35_000;
 
-// Normalize player id whether battle.player1 is populated object or raw id
-function getAvatarIdFromPlayer(player: any): string | null {
-  if (!player) return null;
-  if (typeof player === "string") return player;
-  if (typeof player === "object") {
-    // mongoose populated doc
-    if (player._id) return player._id.toString?.() ?? String(player._id);
-  }
-  return null;
-}
+type PlayerRef =
+  | string
+  | {
+      _id: string | { toString(): string };
+    };
+
+// Helper to get player ID from either string or populated object
+const getPlayerId = (player: PlayerRef): string => {
+  if (typeof player === 'string') return player;
+  if (player?._id) return player._id.toString();
+  return '';
+};
 
 export default function TeamSelectPage({
   avatarData,
@@ -65,10 +68,6 @@ export default function TeamSelectPage({
   );
   const [activeSlot, setActiveSlot] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-
-  const [msg, setMsg] = useState<string | null>(null);
-  const [waitingForEnemy, setWaitingForEnemy] = useState(false);
-
   const [battleReady, setBattleReady] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -264,7 +263,7 @@ export default function TeamSelectPage({
 
   // Check activeBattle data and initialize slots if needed
   useEffect(() => {
-    if (!currentBattle || !avatarId) return;
+    if (!activeBattle || !avatarId) return;
 
     console.log(`Processing activeBattle ${activeBattle._id}, endedAt: ${activeBattle.endedAt}`);
 
@@ -319,31 +318,30 @@ export default function TeamSelectPage({
     }
   }, [activeBattle, avatarId, navigate, battleEnded]);
 
-  // Convert slots -> BattlePokemon[] and send ready
   const handleReady = useCallback(
     (currentSlots = slots) => {
       if (!currentSlots.every(Boolean)) return;
-      if (!currentBattle || !avatarData) return;
-      if (readySentRef.current) return;
+      if (!activeBattle || !avatarData) return;
 
-      const selectedBattlePokemon: BattlePokemon[] = currentSlots.map((p) => ({
-        pokemonId: (p as PlayerPokemon)._id,
-        name: (p as PlayerPokemon).name,
-        type: (p as PlayerPokemon).type as "grass" | "water" | "fire" | "normal",
-        attack: (p as PlayerPokemon).attack,
-        maxHp: (p as PlayerPokemon).hp,
-        currentHp: (p as PlayerPokemon).hp,
-        isDead: false,
-        is_shiny: (p as PlayerPokemon).is_shiny ?? false,
-      }));
+      const selectedBattlePokemon: BattlePokemon[] =
+        currentSlots.map((p) => ({
+          pokemonId: p!._id,
+          name: p!.name,
+          type: p!.type as "grass" | "water" | "fire" | "normal",
+          attack: p!.attack,
+          maxHp: p!.hp,
+          currentHp: p!.hp,
+          isDead: false,
+          is_shiny: p!.is_shiny ?? false,
+        }));
 
-      readySentRef.current = true;
-      playerReadyMatch(currentBattle, selectedBattlePokemon);
-
+      playerReadyMatch(
+        activeBattle,
+        selectedBattlePokemon,
+      );
       setSaving(true);
-      startWaiting();
     },
-    [avatarData, slots, playerReadyMatch, currentBattle, startWaiting]
+    [avatarData, slots, playerReadyMatch, activeBattle]
   );
 
   // Countdown timer
@@ -360,15 +358,17 @@ export default function TeamSelectPage({
               (p) => !slots.some((s) => s?._id === p._id)
             );
 
-    const nextSlots = [...slots];
-    for (let i = 0; i < nextSlots.length; i++) {
-      if (!nextSlots[i] && available.length > 0) {
-        const idx = Math.floor(Math.random() * available.length);
-        nextSlots[i] = available.splice(idx, 1)[0];
-      }
-    }
+          const nextSlots = [...slots];
 
-    setSlots(nextSlots);
+          for (let i = 0; i < nextSlots.length; i++) {
+            if (!nextSlots[i] && available.length > 0) {
+              const idx = Math.floor(
+                Math.random() * available.length
+              );
+              nextSlots[i] = available.splice(idx, 1)[0];
+            }
+          }
+          setSlots(nextSlots);
 
           if (nextSlots.every(Boolean)) {
             handleReady(nextSlots);
@@ -381,7 +381,6 @@ export default function TeamSelectPage({
     return () => window.clearInterval(timer);
   }, [avatarData, slots, handleReady, battleEnded]);
 
-  // Pick/remove handlers
   const pickPokemon = (p: PlayerPokemon) => {
     if (saving || battleEnded) return;
     if (timeLeft === 0) return;
@@ -390,10 +389,8 @@ export default function TeamSelectPage({
     setSlots((prev) => {
       const next = [...prev];
       next[activeSlot] = p;
-
       const nextEmpty = next.findIndex((x) => x === null);
       if (nextEmpty !== -1) setActiveSlot(nextEmpty);
-
       return next;
     });
   };
@@ -405,35 +402,37 @@ export default function TeamSelectPage({
       next[idx] = null;
       return next;
     });
-
     setActiveSlot(idx);
-    readySentRef.current = false;
-    stopWaiting();
   };
 
   // Listen for battleReady and errors
   useEffect(() => {
     if (!battleId) return;
 
-    const offBattleReady = subscribeEvent("battleReady", (data: { battleId: string }) => {
-      if (data.battleId === battleId) {
-        setBattleReady(true);
-        stopWaiting();
+    const offBattleReady = subscribeEvent(
+      "battleReady",
+      (data: { battleId: string }) => {
+        if (data.battleId === battleId) {
+          setBattleReady(true);
+        }
       }
-    });
+    );
 
-    const offBattleError = subscribeEvent("TeamUpError", (data: { message: string }) => {
-      console.error("Battle error:", data.message);
-      alert("Enemy has disconnected from the battle!");
-      setCurrentBattle(null);
-      navigate("/", { replace: true });
-    });
+    const offBattleError = subscribeEvent(
+      "TeamUpError",
+      (data: { message: string }) => {
+        console.log("Battle error:", data.message);
+        alert(`enemy has disconnected from the battle!`);
+        setCurrentBattle(null);
+        navigate("/", { replace: true });
+      }
+    );
 
     return () => {
       offBattleReady();
       offBattleError();
     };
-  }, [battleId, subscribeEvent, navigate, setCurrentBattle, stopWaiting]);
+  }, [battleId, subscribeEvent, navigate, setCurrentBattle]);
 
   // Navigate when battle is ready
   useEffect(() => {
@@ -442,10 +441,21 @@ export default function TeamSelectPage({
     }
   }, [battleReady, battleId, navigate, battleEnded]);
 
-  // Loading states
   if (!avatarData) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-[#1e1e2f] text-white font-mono text-lg">
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#1e1e2f",
+          color: "#fff",
+          fontFamily: "monospace",
+          fontSize: 20,
+        }}
+      >
         Loading player data...
       </div>
     );
@@ -500,7 +510,7 @@ export default function TeamSelectPage({
 
   return (
     <TeamSelectLayout
-      inventory={avatarData.pokemonInventory ?? []}
+      inventory={avatarData.pokemonInventory}
       usedIds={usedIds}
       onPick={pickPokemon}
       slots={slots}
@@ -512,9 +522,8 @@ export default function TeamSelectPage({
       avatarSrc={avatarData.avatar}
       canReady={slots.every(Boolean) && timeLeft > 0 && !battleEnded}
       onReady={() => handleReady()}
-      msg={msg}
+      msg={null}
       saving={saving}
-      waitingForEnemy={waitingForEnemy}
     />
   );
 }
