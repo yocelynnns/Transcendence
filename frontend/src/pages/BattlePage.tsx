@@ -210,11 +210,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       unsubUpdateState?.();
       // unsubBattleError?.();
     };
-<<<<<<< HEAD
   }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent, myAvatarId, battleData?.endedAt]);
-=======
-  }, [subscribeEvent, battleId, myRole, navigate, setCurrentBattle, emitEvent, battleData?.endedAt, myAvatarId]);
->>>>>>> 7bfb51e83f21b7aecce178f9838eace71dbe2128
 
   useEffect(() => {
     if (!battleData || !myRole || battleData.endedAt) return;
