@@ -89,6 +89,7 @@ interface SendMessageInput {
   content?: string;
 }
 
+
 export const sendMessage = async ({
   userId,
   friendAvatarId,

@@ -86,8 +86,24 @@ export const sendFriendRequest = async ({ userId, friendEmail }: SendFriendReque
     status: "pending",
   });
 
+  // Declare these variables BEFORE using them in socket emit
   const requesterUser = await User.findById(userId).populate("avatar");
   const requesterAvatar = await Avatar.findById(requesterUser?.avatar);
+
+  // NEW: Emit to target user if they're online
+  if (ioInstance && friendUser.avatar) {
+    const targetAvatar = await Avatar.findById(friendUser.avatar);
+    if (targetAvatar?.currentSocket) {
+      ioInstance.to(targetAvatar.currentSocket).emit("friendRequestReceived", {
+        requestId: friendRequest._id,
+        avatarId: requesterUser?.avatar?._id?.toString(),
+        email: requesterUser?.email,
+        userName: requesterAvatar?.userName || "Unknown",
+        avatarImage: requesterAvatar?.avatar || "",
+        createdAt: friendRequest.createdAt,
+      });
+    }
+  }
 
   return {
     message: "Friend request sent",
@@ -139,6 +155,26 @@ export const acceptFriendRequest = async ({ userId, requestId }: AcceptFriendReq
 
   const requesterUser = await User.findById(friendRequest.userId).populate("avatar");
   const requesterAvatar = await Avatar.findById(requesterUser?.avatar);
+
+  // NEW: Notify the original requester that their request was accepted
+  if (ioInstance && requesterAvatar?.currentSocket) {
+    ioInstance.to(requesterAvatar.currentSocket).emit("friendRequestAcceptedByOther", {
+      avatarId: accepterUser?.avatar?._id?.toString(),
+      userName: accepterAvatar?.userName || "Unknown",
+      avatarImage: accepterAvatar?.avatar || "",
+      message: "accepted your friend request",
+    });
+  }
+
+  // NEW: Also notify the accepter's other online sessions/tabs
+  if (ioInstance && accepterAvatar?.currentSocket) {
+    ioInstance.to(accepterAvatar.currentSocket).emit("friendRequestAccepted", {
+      requestId: friendRequest._id.toString(),
+      friendId: requesterUser?.avatar?._id?.toString(),
+      userName: requesterAvatar?.userName || "Unknown",
+      avatarImage: requesterAvatar?.avatar || "",
+    });
+  }
 
   return {
     message: "Friend request accepted",
@@ -199,6 +235,20 @@ export const removeFriend = async ({ userId, friendAvatarId }: RemoveFriendInput
       { userId: friendUserId, friendId: userId },
     ],
   });
+
+  // NEW: Notify the removed friend in real-time
+  if (ioInstance) {
+    const removedFriendAvatar = await Avatar.findById(friendAvatarId);
+    if (removedFriendAvatar?.currentSocket) {
+      const removerUser = await User.findById(userId).populate("avatar");
+      const removerAvatar = await Avatar.findById(removerUser?.avatar);
+      
+      ioInstance.to(removedFriendAvatar.currentSocket).emit("removedByFriend", {
+        removerAvatarId: removerUser?.avatar?._id?.toString(),
+        removerName: removerAvatar?.userName || "Unknown",
+      });
+    }
+  }
 
   return;
 };
