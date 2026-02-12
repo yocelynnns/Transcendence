@@ -44,7 +44,7 @@ export default function StatusPanel({
       {/* Name */}
       <div
         className={[
-          "absolute top-[18%] text-[clamp(14px,0.9vw,18px)] text-[#222] pixelify-sans font-bold",
+          "absolute top-[18%] text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px] text-[#222] pixelify-sans font-bold",
           isPlayer ? "left-[15%]" : "left-[8%]",
         ].join(" ")}
       >
@@ -54,7 +54,7 @@ export default function StatusPanel({
       {/* ATK/HP */}
       <div
         className={[
-          "absolute top-[30%] text-[clamp(12px,0.8vw,16px)] text-[#666] text-right pixelify-sans font-semibold",
+          "absolute top-[30%] text-[11px] sm:text-[13px] md:text-[15px] lg:text-[17px] text-[#666] text-right pixelify-sans font-semibold",
           isPlayer ? "right-[8%]" : "right-[16%]",
         ].join(" ")}
       >
@@ -74,7 +74,7 @@ export default function StatusPanel({
           <img
             key={i}
             src={alive ? pokeballAlive : pokeballDead}
-            className="w-[clamp(14px,1.2vw,20px)] [image-rendering:pixelated]"
+            className="w-[14px] sm:w-[16px] md:w-[18px] lg:w-[22px] [image-rendering:pixelated]"
             draggable={false}
           />
         ))}
@@ -83,7 +83,7 @@ export default function StatusPanel({
       {/* HP bar */}
       <div
         className={[
-          "absolute top-[58%] h-[9.5%] overflow-hidden",
+          "absolute top-[58%] h-[8%] sm:h-[9%] md:h-[10%] overflow-hidden",
           isPlayer ? "left-[47%] w-[46.5%]" : "left-[39%] w-[46.5%]",
         ].join(" ")}
       >
