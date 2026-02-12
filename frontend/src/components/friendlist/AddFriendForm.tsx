@@ -10,37 +10,6 @@ interface AddFriendFormProps {
   onError: (msg: string) => void;
 }
 
-const styles = {
-  container: {
-    background: "#f9f9f9",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    border: "2px solid #333",
-  },
-  input: {
-    width: "100%",
-    padding: 8,
-    fontSize: 14,
-    fontFamily: "monospace",
-    border: "2px solid #333",
-    borderRadius: 4,
-    marginBottom: 8,
-    boxSizing: "border-box" as const,
-  },
-  button: {
-    width: "100%",
-    padding: 8,
-    fontSize: 14,
-    fontFamily: "monospace",
-    background: "#4CAF50",
-    color: "white",
-    border: "2px solid #333",
-    borderRadius: 4,
-    cursor: "pointer",
-  },
-};
-
 export function AddFriendForm({ token, onSuccess, onError }: AddFriendFormProps) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -68,23 +37,21 @@ export function AddFriendForm({ token, onSuccess, onError }: AddFriendFormProps)
   };
 
   return (
-    <div style={styles.container}>
+    <div className="bg-gray-100 p-3 rounded-lg mb-4 border-2 border-gray-800">
       <input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="friend@email.com"
-        style={styles.input}
+        className="w-full p-2 text-sm font-mono border-2 border-gray-800 rounded mb-2 box-border"
         onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
       />
       <button
         onClick={handleSubmit}
         disabled={loading}
-        style={{
-          ...styles.button,
-          opacity: loading ? 0.6 : 1,
-          cursor: loading ? "not-allowed" : "pointer",
-        }}
+        className={`w-full p-2 text-sm font-mono bg-green-500 text-white border-2 border-gray-800 rounded ${
+          loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+        }`}
       >
         {loading ? "..." : "Add Friend"}
       </button>

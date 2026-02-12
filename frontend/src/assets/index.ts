@@ -111,8 +111,14 @@ import eventicon from "./elements/icons/event.png"
 import xicon from "./elements/icons/x.png"
 import backicon from "./elements/icons/back.png"
 import sendicon from "./elements/icons/send.png"
-import battleicon from "./elements/icons/battle.png"
 import bluexicon from "./elements/icons/bluex.png"
+
+import spectateicon from "./elements/icons/spectate.png"
+import chaticon from "./elements/icons/chat.png"
+import blockicon from "./elements/icons/block.png"
+import unblockicon from "./elements/icons/unblock.png"
+import battleicon from "./elements/icons/battle.png"
+
 
 // EXPORT CENTRAL ASSETS
 export const ASSETS = {
@@ -182,5 +188,14 @@ export const ASSETS = {
     BACK: backicon,
     SEND: sendicon,
     BATTLE: battleicon,
+  },
+
+  CHATICONS: {
+    X: bluexicon,
+    SPECTATE: spectateicon,
+    CHAT: chaticon,
+    BLOCK : blockicon,
+    UNBLOCK: unblockicon,
+    BATTLE: battleicon
   }
 };

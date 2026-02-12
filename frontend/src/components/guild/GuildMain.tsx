@@ -159,7 +159,7 @@ export default function GuildMain({ avatarData, token, onClosePanel, scale }: Gu
 
             {/* CONTENT */}
             <div className="flex-1 overflow-visible">
-              <div className="relative h-18/20 w-7/8 left-1/16 top-[40px]">
+              <div className="relative h-18/20 w-7/8 left-1/16 top-10">
                 {/* Content banner background */}
                 <PixelButton
                   colorA="#dea8a3"   

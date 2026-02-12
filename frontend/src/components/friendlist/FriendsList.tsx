@@ -1,4 +1,5 @@
 import React from "react";
+import { useEffect } from "react";
 import { useFriends } from "../../hooks/useFriends";
 import { FriendsButton } from "./FriendsButton";
 import { FriendsPanel } from "./FriendsPanel";
@@ -20,6 +21,9 @@ export interface FriendsListProps {
   };
   setSpectatingBattle?: React.Dispatch<React.SetStateAction<Battle | null>>;
   setCurrentBattle: React.Dispatch<React.SetStateAction<Battle | null>>;
+
+  onClosePanel: () => void;
+  // scale: number;
 }
 
 export default function FriendsList(props: FriendsListProps) {
@@ -27,7 +31,12 @@ export default function FriendsList(props: FriendsListProps) {
     token,
     myAvatarId,
     myAvatarData,
+    onClosePanel, 
+    // scale
   } = props;
+
+  const BASE_WIDTH = 520;
+  const BASE_HEIGHT = 860;
 
   const {
     // State
@@ -133,16 +142,22 @@ export default function FriendsList(props: FriendsListProps) {
     }
   };
 
+  useEffect(() => {
+    if (token) loadFriends();
+  }, [token]);
+
   return (
     <>
-      {!showPanel && (
-        <FriendsButton
-          onClick={() => setShowPanel(true)}
-          notificationCount={totalNotifications}
-        />
-      )}
-
-      {showPanel && (
+      <div 
+        className="fixed top-0 right-0 z-50 h-screen"
+        style={{
+          width: BASE_WIDTH,              // original width
+          height: BASE_HEIGHT,
+          // transform: `scale(${scale})`,   // scales width proportionally
+          transformOrigin: 'top right',
+        }}
+      >
+        {/* {showPanel && ( */}
         <FriendsPanel
           friends={friends}
           requests={requests}
@@ -155,7 +170,7 @@ export default function FriendsList(props: FriendsListProps) {
           token={token}
           myAvatarId={myAvatarId}
           myAvatarData={myAvatarData}
-          onClose={() => setShowPanel(false)}
+          onClose={onClosePanel}
           onAddFriendSuccess={handleAddFriendSuccess}
           onAddFriendError={handleAddFriendError}
           onAcceptRequest={handleAcceptRequest}
@@ -169,22 +184,23 @@ export default function FriendsList(props: FriendsListProps) {
           onBlockToggle={handleBlockToggle}
           onRemove={handleRemove}
         />
-      )}
+        {/* )} */}
 
-      {selectedFriend && myAvatarData && !selectedFriend.currentBattle && (
-        <ChatWindow
-          token={token}
-          myAvatarId={myAvatarId}
-          myUserName={myAvatarData.userName}
-          myAvatarImage={myAvatarData.avatar}
-          friend={selectedFriend}
-          onClose={() => setSelectedFriend(null)}
-          onChallenge={(avatarId) => {
-            const friend = friends.find((f) => f.avatarId === avatarId);
-            if (friend) handleChallengeFriend(friend);
-          }}
-        />
-      )}
+        {selectedFriend && myAvatarData && !selectedFriend.currentBattle && (
+          <ChatWindow
+            token={token}
+            myAvatarId={myAvatarId}
+            myUserName={myAvatarData.userName}
+            myAvatarImage={myAvatarData.avatar}
+            friend={selectedFriend}
+            onClose={() => setSelectedFriend(null)}
+            onChallenge={(avatarId) => {
+              const friend = friends.find((f) => f.avatarId === avatarId);
+              if (friend) handleChallengeFriend(friend);
+            }}
+          />
+        )}
+      </div>
     </>
   );
 }
