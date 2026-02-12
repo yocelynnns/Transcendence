@@ -93,9 +93,24 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
 
   useEffect(() => {
     if (!subscribeEvent || !battleId) return;
-
+    
     const unsubUpdateState = subscribeEvent<Battle>("updateBattleState", (updatedBattle) => {
       if (updatedBattle._id !== battleId) return;
+
+      // Check if battle just ended due to timeout
+      if (updatedBattle.endedAt && !battleData?.endedAt) {
+        // Battle just ended - if we didn't click home yet, we're viewing results
+        // The status will be updated by the backend's "battleEnded" event
+        
+        // But we should emit viewingResults to be safe
+        if (myAvatarId && updatedBattle.winner === myRole) {
+          // We won due to opponent timeout - we're now viewing results
+          emitEvent("viewingResults", { 
+            avatarId: myAvatarId, 
+            battleId: updatedBattle._id 
+          });
+        }
+      }
 
       const safeTeam = (team: BattlePokemon[] = []) =>
         team.map((p) => ({ ...p, isDead: !!p.isDead }));
@@ -127,6 +142,9 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
       "battleError",
       (err) => {
         alert(err.message);
+        if (myAvatarId) {
+          emitEvent("playerReturnedHome", { avatarId: myAvatarId });
+        }
         setCurrentBattle(null);
         navigate("/");
       }
