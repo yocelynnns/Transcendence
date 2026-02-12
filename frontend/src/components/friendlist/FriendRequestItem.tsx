@@ -1,6 +1,6 @@
 import React from "react";
-import { FriendRequest } from "../types/friends.types";
-import { ASSETS } from "../../../assets";
+import { FriendRequest } from "../../types/friends.types";
+import { ASSETS } from "../../assets";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 

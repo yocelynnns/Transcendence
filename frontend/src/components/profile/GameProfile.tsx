@@ -300,7 +300,7 @@ export default function AvatarProfile({
                       height: 80,
                     }}
                   >
-                    <img src={sprite} alt={p.name ?? "unknown"} width={40} height={40} />
+                    <img src={sprite || ""} alt={p.name ?? "unknown"} width={40} height={40} />
                     <div
                       title={p.name}
                       style={{

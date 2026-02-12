@@ -1,10 +1,11 @@
 import React from "react";
-import { useFriends } from "./hooks/useFriends";
-import { FriendsButton } from "./components/FriendsButton";
-import { FriendsPanel } from "./components/FriendsPanel";
+import { useFriends } from "../../hooks/useFriends";
+import { FriendsButton } from "./FriendsButton";
+import { FriendsPanel } from "./FriendsPanel";
 import ChatWindow from "../chat/ChatWindow"; // Existing component
 import { Battle } from "../../types/battleTypes";
-import { acceptFriendRequest, rejectFriendRequest, removeFriend, blockMessages, unblockMessages } from "./services/friendsApi";
+import { acceptFriendRequest, rejectFriendRequest, removeFriend, blockMessages, unblockMessages } from "../../services/friendsApi";
+import { Friend, FriendRequestResult } from "../../types/friends.types";
 
 // export { FriendsListProps } from "./types/friends.types";
 
@@ -26,8 +27,6 @@ export default function FriendsList(props: FriendsListProps) {
     token,
     myAvatarId,
     myAvatarData,
-    setSpectatingBattle,
-    setCurrentBattle,
   } = props;
 
   const {
@@ -57,10 +56,11 @@ export default function FriendsList(props: FriendsListProps) {
     // Derived
     totalNotifications,
     isSuccessMessage,
+    setRequests,  // ADDED
   } = useFriends(props);
 
   // Handlers that need API + state updates
-  const handleAddFriendSuccess = (data: any, email: string) => {
+  const handleAddFriendSuccess = (data: FriendRequestResult) => {
     if (data.autoAccepted) {
       showMessage("✅ Auto-accepted! You are now friends!");
       loadFriends();
@@ -80,7 +80,7 @@ export default function FriendsList(props: FriendsListProps) {
       loadFriends();
       showMessage("✅ Friend request accepted!");
     } catch (err) {
-      console.error("Failed to accept request:", err);
+      console.log("Failed to accept request:", err);
     }
   };
 
@@ -90,7 +90,7 @@ export default function FriendsList(props: FriendsListProps) {
       setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
       showMessage("Request rejected");
     } catch (err) {
-      console.error("Failed to reject request:", err);
+      console.log("Failed to reject request:", err);
     }
   };
 
@@ -106,11 +106,11 @@ export default function FriendsList(props: FriendsListProps) {
       });
       showMessage("Friend removed");
     } catch (err) {
-      console.error("Failed to remove friend:", err);
+      console.log("Failed to remove friend:", err);
     }
   };
 
-  const handleBlockToggle = async (friend: any, isBlocked: boolean) => {
+  const handleBlockToggle = async (friend: Friend, isBlocked: boolean) => {
     try {
       if (isBlocked) {
         await unblockMessages(token, friend.avatarId);
@@ -128,7 +128,7 @@ export default function FriendsList(props: FriendsListProps) {
           setSelectedFriend(null);
         }
       }
-    } catch (err) {
+    } catch {
       showMessage("❌ Failed to update block status");
     }
   };

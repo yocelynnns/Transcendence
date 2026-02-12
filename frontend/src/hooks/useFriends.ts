@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useGameSocket } from "../../../ws/useGameSocket";
+import { useGameSocket } from "../ws/useGameSocket";
 import { 
   fetchFriends, 
   fetchBlockedList, 
@@ -13,11 +13,11 @@ import {
   BattleInvite, 
   FriendsListProps 
 } from "../types/friends.types";
+import { Battle } from "../types/battleTypes";
 
 export function useFriends({
   token,
   myAvatarId,
-  myAvatarData,
   setSpectatingBattle,
   setCurrentBattle,
 }: FriendsListProps) {
@@ -43,7 +43,7 @@ export function useFriends({
         emitEvent("requestFriendsStatus", data.map((f) => f.avatarId));
       }
     } catch (err) {
-      console.error("Failed to fetch friends:", err);
+      console.log("Failed to fetch friends:", err);
     }
   }, [token, emitEvent]);
 
@@ -52,7 +52,7 @@ export function useFriends({
       const blockedIds = await fetchBlockedList(token);
       setBlockedFriends(new Set(blockedIds));
     } catch (err) {
-      console.error("Failed to fetch blocked list:", err);
+      console.log("Failed to fetch blocked list:", err);
     }
   }, [token]);
 
@@ -61,7 +61,7 @@ export function useFriends({
       const data = await fetchPendingRequests(token);
       setRequests(data);
     } catch (err) {
-      console.error("Failed to fetch requests:", err);
+      console.log("Failed to fetch requests:", err);
     }
   }, [token]);
 
@@ -83,7 +83,7 @@ export function useFriends({
       navigate(`/spectating/${friend.currentBattle}`);
       setShowPanel(false);
     } catch (err) {
-      console.error("Failed to spectate:", err);
+      console.log("Failed to spectate:", err);
       alert("Failed to join spectator mode");
     }
   }, [emitEvent, navigate, setSpectatingBattle]);
@@ -96,7 +96,7 @@ export function useFriends({
       navigate(`/spectating/${friend.currentBattle}`);
       setShowPanel(false);
     } catch (err) {
-      console.error("Failed to view results:", err);
+      console.log("Failed to view results:", err);
     }
   }, [navigate, setSpectatingBattle]);
 
@@ -134,58 +134,139 @@ export function useFriends({
       subscribeEvent<{ avatarId: string; online: boolean; battleStatus?: string; currentBattle?: string | null }[]>(
         "friendsStatusUpdate",
         (statuses) => {
+          // setFriends((prev) =>
+          //   prev.map((friend) => {
+          //     const status = statuses.find((s) => s.avatarId === friend.avatarId);
+          //     return status ? {
+          //       ...friend,
+          //       online: status.online,
+          //       battleStatus: status.battleStatus || friend.battleStatus,
+          //       currentBattle: status.currentBattle !== undefined ? status.currentBattle : friend.currentBattle,
+          //     } : friend;
+          //   })
+          // );
           setFriends((prev) =>
             prev.map((friend) => {
               const status = statuses.find((s) => s.avatarId === friend.avatarId);
-              return status ? {
+
+              if (!status) return friend;
+
+              return {
                 ...friend,
                 online: status.online,
-                battleStatus: status.battleStatus || friend.battleStatus,
+                battleStatus: status.battleStatus as "online" | "in_battle" | "viewing_results" | undefined,
                 currentBattle: status.currentBattle !== undefined ? status.currentBattle : friend.currentBattle,
-              } : friend;
+              };
             })
           );
         }
       )
     );
 
-    cleanups.push(
-      subscribeEvent<{ avatarId: string; online: boolean; battleStatus?: string; currentBattle?: string | null }>(
-        "userStatusChange",
-        ({ avatarId, online, battleStatus, currentBattle }) => {
-          setFriends((prev) =>
-            prev.map((friend) =>
-              friend.avatarId === avatarId
-                ? {
-                    ...friend,
-                    online,
-                    ...(battleStatus && { battleStatus }),
-                    ...(currentBattle !== undefined && { currentBattle }),
-                  }
-                : friend
-            )
-          );
-        }
-      )
-    );
+    // cleanups.push(
+    //   subscribeEvent<{ avatarId: string; online: boolean; battleStatus?: string; currentBattle?: string | null }>(
+    //     "userStatusChange",
+    //     ({ avatarId, online, battleStatus, currentBattle }) => {
+    //       setFriends((prev) =>
+    //         prev.map((friend) =>
+    //           friend.avatarId === avatarId
+    //             ? {
+    //                 ...friend,
+    //                 online,
+    //                 ...(battleStatus && { battleStatus }),
+    //                 ...(currentBattle !== undefined && { currentBattle }),
+    //               }
+    //             : friend
+    //         )
+    //       );
+    //     }
+    //   )
+    // );
+
+  cleanups.push(
+    subscribeEvent<{
+      avatarId: string;
+      online: boolean;
+      battleStatus?: string;
+      currentBattle?: string | null;
+    }>(
+      "userStatusChange",
+      ({ avatarId, online, battleStatus, currentBattle }) => {
+        setFriends((prev) =>
+          prev.map((friend) => {
+            if (friend.avatarId !== avatarId) return friend;
+
+            return {
+              ...friend,
+              online,
+              battleStatus:
+                battleStatus === "online" ||
+                battleStatus === "in_battle" ||
+                battleStatus === "viewing_results"
+                  ? battleStatus
+                  : friend.battleStatus,
+              currentBattle:
+                currentBattle !== undefined ? currentBattle : friend.currentBattle,
+            };
+          })
+        );
+      }
+    )
+  );
+
+
+    // cleanups.push(
+    //   subscribeEvent<{ avatarId: string; currentBattle: string | null; battleStatus?: string }[]>(
+    //     "friendsBattleStatusUpdate",
+    //     (statuses) => {
+    //       setFriends((prev) =>
+    //         prev.map((friend) => {
+    //           const status = statuses.find((s) => s.avatarId === friend.avatarId);
+    //           return status ? {
+    //             ...friend,
+    //             currentBattle: status.currentBattle,
+    //             battleStatus: status.battleStatus || (status.currentBattle ? "in_battle" : "online"),
+    //           } : friend;
+    //         })
+    //       );
+    //     }
+    //   )
+    // );
 
     cleanups.push(
-      subscribeEvent<{ avatarId: string; currentBattle: string | null; battleStatus?: string }[]>(
-        "friendsBattleStatusUpdate",
-        (statuses) => {
-          setFriends((prev) =>
-            prev.map((friend) => {
-              const status = statuses.find((s) => s.avatarId === friend.avatarId);
-              return status ? {
-                ...friend,
-                currentBattle: status.currentBattle,
-                battleStatus: status.battleStatus || (status.currentBattle ? "in_battle" : "online"),
-              } : friend;
-            })
-          );
-        }
-      )
+      subscribeEvent<
+        { avatarId: string; currentBattle: string | null; battleStatus?: string }[]
+      >("friendsBattleStatusUpdate", (statuses) => {
+        setFriends((prev) =>
+          prev.map((friend) => {
+            const status = statuses.find((s) => s.avatarId === friend.avatarId);
+            if (!status) return friend;
+
+            // Normalize battleStatus to allowed union
+            let normalizedBattleStatus: "online" | "in_battle" | "viewing_results" | undefined;
+
+            if (
+              status.battleStatus === "online" ||
+              status.battleStatus === "in_battle" ||
+              status.battleStatus === "viewing_results"
+            ) {
+              normalizedBattleStatus = status.battleStatus;
+            } else if (status.currentBattle) {
+              normalizedBattleStatus = "in_battle";
+            } else {
+              normalizedBattleStatus = "online";
+            }
+
+            return {
+              ...friend,
+              currentBattle: status.currentBattle,
+              battleStatus: normalizedBattleStatus,
+            };
+          })
+        );
+      })
     );
+
 
     // Battle events
     cleanups.push(
@@ -251,7 +332,7 @@ export function useFriends({
     );
 
     cleanups.push(
-      subscribeEvent<{ battle: any }>("directMatchReady", ({ battle }) => {
+      subscribeEvent<{ battle: Battle }>("directMatchReady", ({ battle }) => {
         setCurrentBattle(battle);
         navigate(`/teamSelect/${battle._id}`, { state: { battle } });
         setShowPanel(false);
@@ -330,14 +411,27 @@ export function useFriends({
     return () => cleanups.forEach((cleanup) => cleanup());
   }, [emitEvent, subscribeEvent, myAvatarId, loadFriends, navigate, setCurrentBattle, showMessage]);
 
-  // Initial data fetch
+  // // Initial data fetch
+  // useEffect(() => {
+  //   if (showPanel) {
+  //     loadFriends();
+  //     loadRequests();
+  //     loadBlockedList();
+  //   }
+  // }, [showPanel, loadFriends, loadRequests, loadBlockedList]);
+
   useEffect(() => {
-    if (showPanel) {
-      loadFriends();
-      loadRequests();
-      loadBlockedList();
-    }
+    if (!showPanel) return;
+
+    const fetchData = async () => {
+      await loadFriends();
+      await loadRequests();
+      await loadBlockedList();
+    };
+
+    fetchData();
   }, [showPanel, loadFriends, loadRequests, loadBlockedList]);
+
 
   return {
     // State
@@ -366,5 +460,6 @@ export function useFriends({
     // Derived
     totalNotifications: requests.length + battleInvites.length,
     isSuccessMessage: message.startsWith("✅") || message.startsWith("⚔️") || message.startsWith("🔔"),
+    setRequests,
   };
 }

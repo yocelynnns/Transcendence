@@ -241,7 +241,7 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
             await Avatar.findByIdAndUpdate(friendUser.avatar, { currentBattle: null });
           }
         } catch (err) {
-          console.error(`Failed to check battle status for ${currentBattle}:`, err);
+          console.log(`Failed to check battle status for ${currentBattle}:`, err);
           battleStatus = "online";
         }
       }

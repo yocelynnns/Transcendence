@@ -124,7 +124,7 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
 
       console.log(`💬 Message saved & sent: ${senderId} -> ${receiverId}`);
     } catch (err: any) {
-      console.error("Failed to send message:", err);
+      console.log("Failed to send message:", err);
       
       // Handle specific block error from service layer
       if (err.message === "MESSAGES_BLOCKED") {
@@ -180,7 +180,7 @@ export function setupChatHandlers(io: Server, socket: Socket, onlineUsers: Map<s
         io.to(senderSocketId).emit("messagesRead", { byAvatarId: receiverId });
       }
     } catch (err) {
-      console.error("Failed to mark messages as read:", err);
+      console.log("Failed to mark messages as read:", err);
     }
   });
 }

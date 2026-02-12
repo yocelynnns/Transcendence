@@ -1,5 +1,3 @@
-import React from "react";
-
 const styles = {
   button: {
     position: "absolute" as const,
