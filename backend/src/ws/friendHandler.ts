@@ -74,5 +74,18 @@ export const setupFriendHandler = (io: Server, socket: Socket, onlineUsers: Map<
         removerAvatarId: socket.data.avatarId.toString(),
       });
     }
+    
+  });
+  // In friendHandler.ts - this looks correct already
+  socket.on("playerReturnedHome", ({ avatarId }: { avatarId: string }) => {
+    // Broadcast to ALL clients
+    io.emit("friendReturnedHome", { avatarId });
+    
+    // Update DB
+    Avatar.findByIdAndUpdate(avatarId, { currentBattle: null }).then(() => {
+      console.log(`✅ Avatar ${avatarId} returned home, battle cleared`);
+    });
   });
 };
+
+

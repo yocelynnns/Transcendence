@@ -201,6 +201,11 @@ export function setupBattleHandlers(
     console.log(`Spectator joined room ${roomName}`);
   });
 
+  socket.on("friendBattleStarted", async (data: { battleId: string; avatarId: string }) => {
+    // Re-notify friends that battle has started (in case they missed it)
+    await notifyFriendsBattleStarted(io, data.avatarId, data.battleId);
+  });
+
   // Send match invite
   socket.on("sendMatchInvite", async (data: { receiverId: string }) => {
     try {

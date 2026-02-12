@@ -1,4 +1,4 @@
-import { useEffect, useState, Dispatch } from "react";
+import { useEffect, useState, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameSocket } from "../ws/useGameSocket";
 import "./../styles/BattlePage.css";
@@ -29,6 +29,10 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
   const [battleId, setBattleId] = useState(currentBattle?._id ?? null);
   const [battleData, setBattleData] = useState<Battle | null>(null);
   const [moveTimeLeft, setMoveTimeLeft] = useState<number>(MOVE_TIMEOUT);
+  const token = sessionStorage.getItem("token");
+
+  const avatarIdRef = useRef(myAvatarId);
+  const tokenRef = useRef(token);
 
   const myRole: "player1" | "player2" | null =
     battleData && myAvatarId
@@ -38,6 +42,11 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
         ? "player2"
         : null
       : null;
+
+  useEffect(() => {
+    avatarIdRef.current = myAvatarId;
+    tokenRef.current = token;
+  }, [myAvatarId, token]);
 
   useEffect(() => {
     const fetchAndCheck = async () => {
@@ -295,6 +304,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
           <p>{battleData.winnerReason ?? ""}</p>
           <button
             onClick={() => {
+              emitEvent("playerReturnedHome", { avatarId: myAvatarId });
               setCurrentBattle(null);
               navigate("/");
             }}
@@ -307,7 +317,7 @@ export default function BattlePage({ avatarData, currentBattle, setCurrentBattle
               navigate("/matching");
             }}
           >
-            Play Again
+            Play (Random Matching)
           </button>
         </div>
       )}
