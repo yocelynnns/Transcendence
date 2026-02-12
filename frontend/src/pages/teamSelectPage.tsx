@@ -78,7 +78,10 @@ export default function TeamSelectPage({
 
   const { subscribeEvent, playerReadyMatch, emitEvent } = useGameSocket(() => {});
 
-  const avatarId = avatarData?._id ?? null;
+  const usedIds = useMemo(
+    () => new Set(slots.filter(Boolean).map((p) => p!._id)),
+    [slots]
+  );
 
   const battleId = activeBattle?._id || urlBattleId;
   const avatarId = avatarData?._id;
