@@ -13,18 +13,61 @@ export function setSocketIo(io: any) {
 }
 
 /// Helper function to emit battle ended to friends
-function emitBattleEnded(battle: any) {
+function emitBattleEnded(battle: any, silentLoser: boolean = false) {
   if (!ioInstance) return;
   
   // Extract player IDs safely
   const player1Id = battle.player1?._id?.toString?.() || battle.player1?.toString?.();
   const player2Id = battle.player2?._id?.toString?.() || battle.player2?.toString?.();
   
-  if (player1Id) {
-    ioInstance.emit("battleEnded", { avatarId: player1Id, battleId: battle._id });
+  // Determine who won/lost for silent targeting
+  const p1Ready = (battle.pokemon1?.length || 0) > 0;
+  const p2Ready = (battle.pokemon2?.length || 0) > 0;
+  
+  battle.endedAt = new Date();  
+  // let winnerId: string | null = null;
+  let loserId: string | null = null;
+  
+  if (!p1Ready && !p2Ready) {
+    // Draw - no winner/loser
+  } else if (p1Ready && !p2Ready) {
+    // winnerId = player1Id;
+    loserId = player2Id;
+  } else if (!p1Ready && p2Ready) {
+    // winnerId = player2Id;
+    loserId = player1Id;
   }
+  
+  // Emit to player 1
+  if (player1Id) {
+    const isLoser = silentLoser && loserId === player1Id;
+    ioInstance.emit("battleEnded", { 
+      avatarId: player1Id, 
+      battleId: battle._id,
+      silent: isLoser, // Loser gets silent treatment
+      winner: battle.winner,
+      isPlayer1: true,
+      reason: battle.winnerReason
+    });
+    
+    // Also emit friend status update
+    ioInstance.emit("friendReturnedHome", { avatarId: player1Id });
+  }
+  
+  // Emit to player 2
   if (player2Id) {
-    ioInstance.emit("battleEnded", { avatarId: player2Id, battleId: battle._id });
+    const isLoser = silentLoser && loserId === player2Id;
+    ioInstance.emit("battleEnded", { 
+      avatarId: player2Id, 
+      battleId: battle._id,
+      silent: isLoser, // Loser gets silent treatment
+      winner: battle.winner,
+      isPlayer1: false,
+      reason: battle.winnerReason
+    });
+    
+    // Also emit friend status update
+    ioInstance.emit("friendReturnedHome", { avatarId: player2Id });
   }
 }
 
@@ -152,35 +195,25 @@ export async function resolveBattleTimeout(battleId: string) {
     }
   );
 
-  // Emit battle ended event
-  emitBattleEnded(battle);
+  // Emit battle ended event with silentLoser=true so loser doesn't see UI
+  emitBattleEnded(battle, true);
 
   return battle;
 }
 
 // Start battle timeout (socket logic will call this)
 export function startBattleTimeout(battleId: string, io: any) {
-  if (battleTimers[battleId]) return;
+  if (battleTimers[battleId]) return; // already running
 
   battleTimers[battleId] = setTimeout(async () => {
     try {
       const battle = await resolveBattleTimeout(battleId);
       if (!battle) return;
 
-      // Emit to room so players see the ended battle
       const roomName = `battle_${battle._id}`;
-      io.to(roomName).emit("updateBattleState", {
-        _id: battle._id,
-        pokemon1: battle.pokemon1,
-        pokemon2: battle.pokemon2,
-        active1: battle.active1,
-        active2: battle.active2,
-        currentTurn: battle.currentTurn,
-        lastPlayer1Turn: battle.lastPlayer1Turn,
-        lastPlayer2Turn: battle.lastPlayer2Turn,
-        endedAt: battle.endedAt,
-        winner: battle.winner,
-        winnerReason: battle.winnerReason,
+      io.to(roomName).emit("TeamUpError", {
+        message: "Battle ended due to inactivity/disconnection",
+        battleId: battle._id,
       });
 
       delete battleTimers[battleId];
@@ -234,11 +267,8 @@ export async function checkMoveTimeout(battleId: string): Promise<{ battle?: any
       updatePlayers(battle.player2 as IAvatar),
     ]);
 
-    // Emit battle ended event - frontend will handle the message
-    emitBattleEnded(battle);
-
-    // REMOVED: Direct battleError emission
-    // io.to(`battle_${battleId}`).emit("battleError", { ... });
+    // Emit battle ended event (MOVED BEFORE RETURN)
+    emitBattleEnded(battle, false); // During battle phase, show both results
 
     return { battle, timedOut: true, loser };
   }
@@ -252,21 +282,10 @@ export function startMoveTimeout(battleId: string, io: any) {
 
   moveTimers[battleId] = setTimeout(async () => {
     const result = await checkMoveTimeout(battleId);
-    if (result.timedOut && result.battle) {
-      // Emit the ended battle state to the room so players see it
-      const roomName = `battle_${battleId}`;
-      io.to(roomName).emit("updateBattleState", {
-        _id: result.battle._id,
-        pokemon1: result.battle.pokemon1,
-        pokemon2: result.battle.pokemon2,
-        active1: result.battle.active1,
-        active2: result.battle.active2,
-        currentTurn: result.battle.currentTurn,
-        lastPlayer1Turn: result.battle.lastPlayer1Turn,
-        lastPlayer2Turn: result.battle.lastPlayer2Turn,
-        endedAt: result.battle.endedAt,
-        winner: result.battle.winner,
-        winnerReason: result.battle.winnerReason,
+    if (result.timedOut) {
+      io.to(`battle_${battleId}`).emit("battleError", {
+        message: `Battle ended: ${result.loser} did not move in time`,
+        battleId,
       });
       delete moveTimers[battleId];
     }
@@ -319,7 +338,7 @@ export async function playerAction(
     await battle.save();
     
     // Emit battle ended event
-    emitBattleEnded(battle);
+    emitBattleEnded(battle, false);
     
     return battle;
   }
@@ -356,7 +375,7 @@ export async function playerAction(
     await battle.save();
     
     // Emit battle ended event
-    emitBattleEnded(battle);
+    emitBattleEnded(battle, false);
     
     return battle;
   }
@@ -406,7 +425,7 @@ export async function playerAction(
       ]);
       
       // Emit battle ended event
-      emitBattleEnded(battle);
+      emitBattleEnded(battle, false);
     } else {
       battle.currentTurn = isPlayer1 ? "player2" : "player1";
     }
