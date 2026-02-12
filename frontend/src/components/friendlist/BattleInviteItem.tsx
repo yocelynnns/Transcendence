@@ -1,6 +1,6 @@
 import React from "react";
-import { BattleInvite } from "../types/friends.types";
-import { ASSETS } from "../../../assets";
+import { BattleInvite } from "../../types/friends.types";
+import { ASSETS } from "../../assets";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 

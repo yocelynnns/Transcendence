@@ -194,7 +194,7 @@ router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) =
       isMe: myAvatarId === targetAvatarId,
     });
   } catch (err) {
-    console.error("[GET /friends/profile/:avatarId]", err);
+    console.log("[GET /friends/profile/:avatarId]", err);
     return res.status(500).json({ message: "Failed to fetch profile" });
   }
 });

@@ -1,6 +1,6 @@
 import React from "react";
-import { Friend } from "../types/friends.types";
-import { ASSETS } from "../../../assets";
+import { Friend } from "../../types/friends.types";
+import { ASSETS } from "../../assets";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 
@@ -119,19 +119,18 @@ export function FriendItem({
     <div style={styles.container}>
       <div
         style={{
-          ...styles.avatar,
+          ...(styles.avatar as React.CSSProperties),
           background: `url(${friend.avatarImage || defaultAvatar}) center/cover`,
         }}
       >
         {friend.battleStatus === "in_battle" || friend.battleStatus === "viewing_results" ? (
-          <div style={styles.battleIndicator}>
+          <div style={styles.battleIndicator as React.CSSProperties}>
             {friend.battleStatus === "in_battle" ? "⚔️" : "📊"}
           </div>
         ) : (
-          <div style={styles.onlineIndicator(!!friend.online)} />
+          <div style={styles.onlineIndicator(!!friend.online) as React.CSSProperties} />
         )}
       </div>
-      
       <div style={styles.info}>
         <div style={styles.name}>
           {friend.userName}

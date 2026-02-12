@@ -43,7 +43,7 @@ export const setupRaceHandlers = (io: Server) => {
         const avatar = await Avatar.findById(avatarId);
         
         if (!avatar) {
-          console.error("❌ Avatar not found in database:", avatarId);
+          console.log("❌ Avatar not found in database:", avatarId);
           socket.emit("raceError", "Avatar not found");
           return;
         }
@@ -109,7 +109,7 @@ export const setupRaceHandlers = (io: Server) => {
           raceNamespace.to(roomId).emit("raceStart");
         }
       } catch (error) {
-        console.error("Error joining race:", error);
+        console.log("Error joining race:", error);
         socket.emit("raceError", "Failed to join race");
       }
     });
@@ -138,7 +138,7 @@ export const setupRaceHandlers = (io: Server) => {
             await saveRaceResult(race, player, timeMs);
             console.log(`🏆 Race completed! Winner: ${player.name}`);
           } catch (error) {
-            console.error("Error saving race result:", error);
+            console.log("Error saving race result:", error);
           }
 
           raceNamespace.to(roomId).emit("raceOver", player.name);
@@ -146,7 +146,7 @@ export const setupRaceHandlers = (io: Server) => {
 
         raceNamespace.to(roomId).emit("raceUpdate", race.players);
       } catch (error) {
-        console.error("Error processing press:", error);
+        console.log("Error processing press:", error);
       }
     });
 
@@ -175,7 +175,7 @@ export const setupRaceHandlers = (io: Server) => {
                   `Player disconnected. Winner by default: ${remainingPlayer.name}`
                 );
               } catch (error) {
-                console.error("Error saving race result:", error);
+                console.log("Error saving race result:", error);
               }
 
               raceNamespace.to(roomId).emit("raceOver", remainingPlayer.name);
@@ -190,7 +190,7 @@ export const setupRaceHandlers = (io: Server) => {
                 online: false,
               });
             } catch (error) {
-              console.error("Error updating disconnected avatar:", error);
+              console.log("Error updating disconnected avatar:", error);
             }
           }
 
@@ -206,7 +206,7 @@ export const setupRaceHandlers = (io: Server) => {
           }
         }
       } catch (error) {
-        console.error("Error handling disconnect:", error);
+        console.log("Error handling disconnect:", error);
       }
     });
 
@@ -227,7 +227,7 @@ async function saveRaceResult(
   
   const loser = race.players.find((p) => p.id !== winner.id);
   if (!loser) {
-    console.error("❌ No loser found - cannot save race");
+    console.log("❌ No loser found - cannot save race");
     return;
   }
 
@@ -287,7 +287,7 @@ async function saveRaceResult(
     
     // console.log("=== RACE RESULT SAVED SUCCESSFULLY ===");
   } catch (error) {
-    console.error("❌ Error saving race result:", error);
+    console.log("❌ Error saving race result:", error);
     throw error;
   }
 }

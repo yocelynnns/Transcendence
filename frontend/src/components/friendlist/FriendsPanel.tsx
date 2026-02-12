@@ -1,5 +1,4 @@
-import React from "react";
-import { Friend, FriendRequest, BattleInvite } from "../types/friends.types";
+import { Friend, FriendRequest, BattleInvite, FriendRequestResult } from "../../types/friends.types";
 import { FriendsTabs } from "./FriendsTabs";
 import { AddFriendForm } from "./AddFriendForm";
 import { FriendItem } from "./FriendItem";
@@ -87,7 +86,7 @@ interface FriendsPanelProps {
   
   // Actions
   onClose: () => void;
-  onAddFriendSuccess: (data: any, email: string) => void;
+  onAddFriendSuccess: (data: FriendRequestResult, email: string) => void;
   onAddFriendError: (msg: string) => void;
   onAcceptRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string) => void;

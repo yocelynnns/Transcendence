@@ -76,7 +76,7 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
           console.log("Setting username to:", username);
           setMyUserName(username);
         } else {
-          console.error("Failed to fetch avatar:", await avatarRes.text());
+          console.log("Failed to fetch avatar:", await avatarRes.text());
         }
 
         // Fetch race stats for achievements
@@ -89,7 +89,7 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
           console.log("Stats received:", stats);
           setTotalWins(stats.wins);
         } else {
-          console.error("Failed to fetch stats:", await statsRes.text());
+          console.log("Failed to fetch stats:", await statsRes.text());
         }
 
         // Fetch match history
@@ -102,7 +102,7 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
           console.log("Match history received:", history);
           setMatchHistory(history);
         } else {
-          console.error("Failed to fetch history:", await historyRes.text());
+          console.log("Failed to fetch history:", await historyRes.text());
         }
 
         // Fetch leaderboard
@@ -115,10 +115,10 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
           console.log("Leaderboard received:", leaderboardData);
           setLeaderboard(leaderboardData);
         } else {
-          console.error("Failed to fetch leaderboard:", await leaderboardRes.text());
+          console.log("Failed to fetch leaderboard:", await leaderboardRes.text());
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.log("Error fetching data:", error);
       } finally {
         setLoading(false);
       }

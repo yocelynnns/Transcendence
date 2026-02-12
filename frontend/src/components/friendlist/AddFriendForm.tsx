@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { sendFriendRequest } from "../services/friendsApi";
+import { sendFriendRequest } from "../../services/friendsApi";
+import { FriendRequestResult } from "../../types/friends.types";
 
 interface AddFriendFormProps {
   token: string;
   myAvatarId: string;
   myAvatarData?: { userName: string; avatar: string };
-  onSuccess: (data: any, email: string) => void;
+  onSuccess: (data: FriendRequestResult, email: string) => void;
   onError: (msg: string) => void;
 }
 
@@ -40,7 +41,7 @@ const styles = {
   },
 };
 
-export function AddFriendForm({ token, myAvatarId, myAvatarData, onSuccess, onError }: AddFriendFormProps) {
+export function AddFriendForm({ token, onSuccess, onError }: AddFriendFormProps) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -55,9 +56,13 @@ export function AddFriendForm({ token, myAvatarId, myAvatarData, onSuccess, onEr
         onSuccess(data, email);
         setEmail("");
       }
-    } catch (err: any) {
-      onError(err.message || "Failed to send request");
-    } finally {
+    } catch (err) {
+      if (err instanceof Error) {
+        onError(err.message);
+      } else {
+        onError(String(err) || "Failed to send request");
+      }
+    }  finally {
       setLoading(false);
     }
   };
