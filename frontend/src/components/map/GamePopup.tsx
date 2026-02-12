@@ -52,7 +52,6 @@ export default function GamePopup({
           colorText="#000"
           textSize="10px"
           cursorPointer={false}
-          style={{ pointerEvents: "none" }}   // 🔥 critical fix
         />
 
         {/* ✅ Overlay Content */}
