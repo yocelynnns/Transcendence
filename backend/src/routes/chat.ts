@@ -1,12 +1,11 @@
-import { Router } from "express";
+import { Router, Response } from "express";
 import { authMiddleware, AuthRequest } from "./auth";
-
-import * as ChatService from "../services/chat.service"
+import * as ChatService from "../services/chat.service";
 
 const router = Router();
 
 // Get chat history with a friend
-router.get("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) => {
+router.get("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -27,10 +26,13 @@ router.get("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) => 
     });
 
     return res.status(200).json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[GET /chat/:friendAvatarId]", err);
 
-    switch (err.message) {
+    const message =
+      err instanceof Error ? err.message : "Unknown error";
+
+    switch (message) {
       case "INVALID_AVATAR_ID":
         return res.status(400).json({ message: "Invalid avatar ID" });
       case "AVATAR_NOT_FOUND":
@@ -45,9 +47,8 @@ router.get("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) => 
   }
 });
 
-
 // Send message to a friend
-router.post("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) => {
+router.post("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -66,10 +67,13 @@ router.post("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) =>
     });
 
     return res.status(201).json({ message });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[POST /chat/:friendAvatarId]", err);
 
-    switch (err.message) {
+    const message =
+      err instanceof Error ? err.message : "Unknown error";
+
+    switch (message) {
       case "INVALID_AVATAR_ID":
         return res.status(400).json({ message: "Invalid friend avatar ID" });
       case "AVATAR_NOT_FOUND":
@@ -83,7 +87,7 @@ router.post("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) =>
 });
 
 // Get unread message count
-router.get("/unread/count", authMiddleware, async (req: AuthRequest, res) => {
+router.get("/unread/count", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -92,10 +96,13 @@ router.get("/unread/count", authMiddleware, async (req: AuthRequest, res) => {
     const result = await ChatService.getUnreadMessageCount(req.userId);
 
     return res.status(200).json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[GET /chat/unread/count]", err);
 
-    if (err.message === "AVATAR_NOT_FOUND") {
+    const message =
+      err instanceof Error ? err.message : "Unknown error";
+
+    if (message === "AVATAR_NOT_FOUND") {
       return res.status(404).json({ message: "Avatar not found" });
     }
 
