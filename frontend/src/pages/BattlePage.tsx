@@ -1,5 +1,5 @@
 // src/pages/BattlePage.tsx
-import { useEffect, useState, Dispatch, useRef } from "react";
+import { useEffect, useState, Dispatch } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameSocket } from "../ws/useGameSocket";
 
@@ -74,10 +74,6 @@ export default function BattlePage({
   );
   const [battleData, setBattleData] = useState<Battle | null>(null);
   const [moveTimeLeft, setMoveTimeLeft] = useState<number>(MOVE_TIMEOUT);
-  const token = sessionStorage.getItem("token");
-
-  const avatarIdRef = useRef(myAvatarId);
-  const tokenRef = useRef(token);
 
   const isPortrait = useIsPortrait();
 
@@ -91,11 +87,6 @@ export default function BattlePage({
       : null;
 
   // if ended, leave
-  useEffect(() => {
-    avatarIdRef.current = myAvatarId;
-    tokenRef.current = token;
-  }, [myAvatarId, token]);
-
   useEffect(() => {
     const fetchAndCheck = async () => {
       const updatedBattle = await refetchBattle();
@@ -178,9 +169,6 @@ export default function BattlePage({
       "battleError",
       (err) => {
         alert(err.message);
-        if (myAvatarId) {
-          emitEvent("playerReturnedHome", { avatarId: myAvatarId });
-        }
         setCurrentBattle(null);
         navigate("/");
       }
@@ -307,7 +295,7 @@ export default function BattlePage({
       {/* ROTATE WRAPPER (portrait support) */}
       <div
         className={[
-          "absolute left-1/2 top-1/2 overflow-hidden",
+          "absolute left-1/2 top-1/2",
           "[-webkit-tap-highlight-color:transparent]",
           isPortrait
             ? "h-[100vw] w-[100vh] -translate-x-1/2 -translate-y-1/2 rotate-90 origin-center"
@@ -316,12 +304,12 @@ export default function BattlePage({
       >
         {/* BACKGROUND */}
         <div
-          className="absolute inset-0 overflow-hidden bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(/assets/bg/background.png)` }}
         >
           <div className="relative h-full w-full [image-rendering:pixelated]">
             {/* Enemy HP */}
-            <div className="absolute left-[clamp(12px,3vw,48px)] top-[clamp(12px,3vw,48px)] w-[clamp(260px,38vw,520px)] z-30">
+            <div className="absolute left-[clamp(12px,3vw,48px)] top-[clamp(12px,3vw,48px)] w-[clamp(260px,38vw,520px)] z-20">
               <StatusPanel
                 pokemon={activeEnemyPokemon}
                 isPlayer={false}
@@ -330,13 +318,13 @@ export default function BattlePage({
             </div>
 
             {/* Enemy platform + sprite */}
-            <div className="absolute right-[clamp(24px,6vw,100px)] top-[clamp(90px,16vh,170px)] z-10">
+            <div className="absolute right-[clamp(24px,6vw,100px)] top-[clamp(100px,16vh,170px)] z-40">
               <img
                 src={platformImg}
                 className="w-[clamp(220px,28vw,420px)] [image-rendering:pixelated]"
                 draggable={false}
               />
-              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[75%] w-[clamp(140px,16vw,220px)] h-[clamp(140px,16vw,220px)] flex items-end justify-center">
+              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[65%] w-[clamp(120px,14vw,190px)] h-[clamp(120px,14vw,190px)] flex items-end justify-center">
                 <img
                   src={getPokemonGifPath(
                     activeEnemyPokemon.name,
@@ -351,13 +339,13 @@ export default function BattlePage({
             </div>
 
             {/* Player platform + sprite */}
-            <div className="absolute left-[clamp(16px,5vw,80px)] bottom-[clamp(140px,22vh,210px)] z-10">
+            <div className="absolute left-[clamp(16px,5vw,80px)] bottom-[clamp(120px,22vh,210px)] z-10">
               <img
                 src={platformImg}
                 className="w-[clamp(260px,34vw,520px)] [image-rendering:pixelated]"
                 draggable={false}
               />
-              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[75%] w-[clamp(180px,20vw,280px)] h-[clamp(180px,20vw,280px)] flex items-end justify-center">
+              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[65%] w-[clamp(150px,18vw,240px)] h-[clamp(150px,18vw,240px)] flex items-end justify-center">
                 <img
                   src={getPokemonGifPath(
                     activePlayerPokemon.name,
