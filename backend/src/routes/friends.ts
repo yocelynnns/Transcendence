@@ -1,14 +1,14 @@
-import { Router } from "express";
+import { Router, Response } from "express";
 import Friend from "../db/friend";
 import User from "../db/user";
 import Avatar from "../db/avatar";
 import { authMiddleware, AuthRequest } from "./auth";
-import * as FriendService from "../services/friend.service"
+import * as FriendService from "../services/friend.service";
 
 const router = Router();
 
 // Send friend request
-router.post("/request", authMiddleware, async (req: AuthRequest, res) => {
+router.post("/request", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -22,10 +22,12 @@ router.post("/request", authMiddleware, async (req: AuthRequest, res) => {
     });
 
     return res.status(result.autoAccepted ? 200 : 201).json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[POST /friends/request]", err);
 
-    switch (err.message) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+
+    switch (message) {
       case "USER_NOT_FOUND":
         return res.status(404).json({ message: "User not found" });
       case "CANNOT_ADD_SELF":
@@ -43,7 +45,7 @@ router.post("/request", authMiddleware, async (req: AuthRequest, res) => {
 });
 
 // Accept friend request
-router.post("/accept/:requestId", authMiddleware, async (req: AuthRequest, res) => {
+router.post("/accept/:requestId", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -59,10 +61,12 @@ router.post("/accept/:requestId", authMiddleware, async (req: AuthRequest, res) 
     });
 
     return res.status(200).json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[POST /friends/accept]", err);
 
-    switch (err.message) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+
+    switch (message) {
       case "INVALID_REQUEST_ID":
         return res.status(400).json({ message: "Invalid friend request ID" });
       case "FRIEND_REQUEST_NOT_FOUND":
@@ -74,7 +78,7 @@ router.post("/accept/:requestId", authMiddleware, async (req: AuthRequest, res) 
 });
 
 // Reject friend request
-router.delete("/reject/:requestId", authMiddleware, async (req: AuthRequest, res) => {
+router.delete("/reject/:requestId", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -91,14 +95,14 @@ router.delete("/reject/:requestId", authMiddleware, async (req: AuthRequest, res
     }
 
     return res.status(200).json({ message: "Friend request rejected" });
-  } catch (err) {
+  } catch (err: unknown) {
     console.log("[DELETE /friends/reject] error:", err);
     return res.status(500).json({ message: "Failed to reject friend request" });
   }
 });
 
-// Remove friend(Now accepts avatarId)
-router.delete("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) => {
+// Remove friend
+router.delete("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -113,14 +117,16 @@ router.delete("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) 
       friendAvatarId,
     });
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: "Friend removed",
       removedFriendAvatarId: friendAvatarId,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[DELETE /friends/:friendAvatarId]", err);
 
-    switch (err.message) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+
+    switch (message) {
       case "FRIEND_NOT_FOUND":
         return res.status(404).json({ message: "Friend not found" });
       default:
@@ -130,7 +136,7 @@ router.delete("/:friendAvatarId", authMiddleware, async (req: AuthRequest, res) 
 });
 
 // Get all user friends
-router.get("/", authMiddleware, async (req: AuthRequest, res) => {
+router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -139,14 +145,14 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
     const friends = await FriendService.getAllFriendsWithAvatars(req.userId);
 
     return res.status(200).json(friends);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[GET /friends]", err);
     return res.status(500).json({ message: "Failed to get friends" });
   }
 });
 
 // Get public profile
-router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
+router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -157,7 +163,6 @@ router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) =
     const currentUser = await User.findById(req.userId);
     const myAvatarId = currentUser?.avatar?.toString();
 
-    // Get target avatar
     const profile = await Avatar.findById(targetAvatarId)
       .select("userName avatar characterOption battleWin battleLoss raceWin raceLoss online")
       .lean();
@@ -166,9 +171,10 @@ router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) =
       return res.status(404).json({ message: "Profile not found" });
     }
 
-    // Check friendship status
     const targetUser = await User.findOne({ avatar: targetAvatarId });
+
     let friendshipStatus = "none";
+
     if (targetUser && myAvatarId !== targetAvatarId) {
       const friendRecord = await Friend.findOne({
         $or: [
@@ -177,11 +183,12 @@ router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) =
         ],
         status: "accepted",
       });
+
       if (friendRecord) friendshipStatus = "friend";
     }
 
     return res.status(200).json({
-      avatarId: (profile as any)._id.toString(),
+      avatarId: profile._id.toString(),
       userName: profile.userName,
       avatarImage: profile.avatar || "",
       characterOption: profile.characterOption || 0,
@@ -193,14 +200,14 @@ router.get("/profile/:avatarId", authMiddleware, async (req: AuthRequest, res) =
       friendshipStatus,
       isMe: myAvatarId === targetAvatarId,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     console.log("[GET /friends/profile/:avatarId]", err);
     return res.status(500).json({ message: "Failed to fetch profile" });
   }
 });
 
-// Get pending friend request (Received)
-router.get("/requests/pending", authMiddleware, async (req: AuthRequest, res) => {
+// Get pending friend requests
+router.get("/requests/pending", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -209,7 +216,7 @@ router.get("/requests/pending", authMiddleware, async (req: AuthRequest, res) =>
     const pendingRequests = await FriendService.getPendingRequests(req.userId);
 
     return res.status(200).json(pendingRequests);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[GET /friends/requests/pending]", err);
     return res.status(500).json({ message: "Failed to get friend requests" });
   }

@@ -86,6 +86,13 @@ export const setupFriendHandler = (io: Server, socket: Socket, onlineUsers: Map<
       console.log(`✅ Avatar ${avatarId} returned home, battle cleared`);
     });
   });
+  socket.on("viewingResults", ({ avatarId, battleId }: { avatarId: string; battleId: string }) => {
+    // Broadcast to all friends that this player is viewing results
+    // This is the same as battleEnded - keeps them in viewing_results state
+    io.emit("battleEnded", { avatarId, battleId });
+    
+    console.log(`👁️ ${avatarId} is viewing results for battle ${battleId}`);
+  });
 };
 
 
