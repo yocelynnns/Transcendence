@@ -13,7 +13,9 @@ import type { AvatarData } from "../../types/avatarTypes";
 import { ASSETS } from "../../assets";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlayerState } from "../../types/avatarTypes";
+import CatchDialog from "../elements/CatchDialog";
 import GamePopup from "./GamePopup";
+import { useNavigate } from "react-router-dom";
 
 //ASSETS
 const mapImage = ASSETS.MAP.DEFAULT;
@@ -23,18 +25,27 @@ const mapForeground = ASSETS.MAP.FOREGROUND;
 //MAP CONSTANTS
 const MAP_WIDTH = 20;
 const MAP_HEIGHT = 34;
-const TILE_SIZE = 64;
-const VIEW_WIDTH = 10;
-const VIEW_HEIGHT = 10;
+const TILE_SIZE = 84;
+// const VIEW_WIDTH = 10;
+// const VIEW_HEIGHT = 10;
+
+// DESIGN CONSTANTS
+const DESIGN_WIDTH = 2856 / 2;
+const DESIGN_HEIGHT = 1680 / 2;
+const MIN_SCALE = 0.8;
+const MAX_SCALE = 1;
 
 //TYPES
 interface GameMapProps {
   avatarData: AvatarData | null;
   avatarId: string | null;
+  freeze: boolean; /* ADD */
 }
 
 //MAIN COMPONENT
-export default function GameMap({ avatarData, avatarId }: GameMapProps) {
+export default function GameMap({ avatarData, avatarId, freeze }: GameMapProps) {
+  const navigate = useNavigate();
+  
   //POKEMON HOOK
   const { pokemonList, setPokemonList } = usePokemonSpawner();
   const safePokemonList: MapPokemon[] = Array.isArray(pokemonList) ? pokemonList : [];
@@ -49,6 +60,7 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     collision: mapData.map,
     stopMovement,
     charPref: avatarData?.characterOption ?? 0,
+    freeze: freeze, /* ADD */
   });
 
   //ENCOUNTER HOOK
@@ -74,17 +86,22 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
   useEffect(() => {
     if (player.currentTiles === 2) {
       setShowPopUpOne(true);
-    } else if (player.currentTiles === 3)
+      setShowPopUpTwo(false);
+    } else if (player.currentTiles === 3) {
       setShowPopUpTwo(true);
+      setShowPopUpOne(false);
+    }
   }, [player.currentTiles]);
   
+  // DESIGN HOOK
+  const [uiScale, setUiScale] = useState(1);
 
   //FETCH INITIAL POKEMON
   useEffect(() => {
     axios
       .get<MapPokemon[]>("http://localhost:5001/api/pokemon")
       .then((res) => setPokemonList(res.data))
-      .catch((err) => console.log("Failed to fetch initial Pokemon:", err));
+      .catch((err) => console.error("Failed to fetch initial Pokemon:", err));
   }, [setPokemonList]);
 
   //SUBSCRIBE POKEMON UPDATES
@@ -99,14 +116,13 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
   useEffect(() => {
     sendPlayerMove(player.x, player.y, player.direction, player.frame, player.charIndex);
   }, [player.x, player.y, player.direction, player.frame, player.charIndex, sendPlayerMove]);
-
-
+  
   //HANDLE CATCH
   const queryClient = useQueryClient();
 
   const handleCatchPokemon = (p: MapPokemon) => {
     if (!avatarId || !avatarData) {
-      console.log("No avatar ID found or avatarData missing");
+      console.error("No avatar ID found or avatarData missing");
       handleCatchNo();
       return;
     }
@@ -152,7 +168,34 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
     );
   };
 
+  useEffect(() => {
+    if (showDialog) {
+      setShowPopUpOne(false);
+      setShowPopUpTwo(false);
+    }
+  }, [showDialog]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const scaleWidth = window.innerWidth / DESIGN_WIDTH;
+      const scaleHeight = window.innerHeight / DESIGN_HEIGHT;
+
+      const scale = Math.min(
+        MAX_SCALE,
+        Math.max(MIN_SCALE, Math.min(scaleWidth, scaleHeight))
+      );
+
+      setUiScale(scale);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   //CAMERA
+  const VIEW_WIDTH = window.innerWidth / TILE_SIZE;
+  const VIEW_HEIGHT = window.innerHeight / TILE_SIZE;
   const viewPixelWidth = VIEW_WIDTH * TILE_SIZE;
   const viewPixelHeight = VIEW_HEIGHT * TILE_SIZE;
 
@@ -164,19 +207,11 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
 
   //RENDER
   return (
-    <div style={{ width: viewPixelWidth, height: viewPixelHeight, overflow: "hidden", position: "relative" }}>
+    <div className="relative overflow-hidden" style={{ width: viewPixelWidth, height: viewPixelHeight }}>
       {/* MAP */}
-      <img
-        src={mapImage}
-        alt="map"
-        style={{
-          position: "absolute",
-          left: -offsetX,
-          top: -offsetY,
-          width: MAP_WIDTH * TILE_SIZE,
-          height: MAP_HEIGHT * TILE_SIZE,
-          zIndex: 0,
-        }}
+      <div
+        className="absolute z-0 bg-cover bg-no-repeat"
+        style={{ left: -offsetX, top: -offsetY, width: MAP_WIDTH * TILE_SIZE, height: MAP_HEIGHT * TILE_SIZE, backgroundImage: `url(${mapImage})` }}
       />
 
       {/* POKEMON */}
@@ -186,98 +221,54 @@ export default function GameMap({ avatarData, avatarId }: GameMapProps) {
 
       {/* OTHER PLAYERS */}
       {otherPlayers.map((p) => (
-        <Player
-          key={p.id}
-          x={p.x - offsetX}
-          y={p.y - offsetY}
-          direction={p.direction as Direction}
-          frame={p.frame}
-          charIndex={p.charIndex}
-          tileSize={TILE_SIZE}
-          spriteSheet={playerSprite}
-          zIndex={4}
-        />
+        <Player key={p.id} x={p.x - offsetX} y={p.y - offsetY} direction={p.direction as Direction} frame={p.frame} charIndex={p.charIndex} tileSize={TILE_SIZE} spriteSheet={playerSprite} zIndex={4} />
       ))}
 
       {/* LOCAL PLAYER */}
-      <Player
-        x={player.x - offsetX}
-        y={player.y - offsetY}
-        direction={player.direction as Direction}
-        frame={player.frame}
-        charIndex={player.charIndex}
-        tileSize={TILE_SIZE}
-        spriteSheet={playerSprite}
-        zIndex={5}
-      />
+      <Player x={player.x - offsetX} y={player.y - offsetY} direction={player.direction as Direction} frame={player.frame} charIndex={player.charIndex} tileSize={TILE_SIZE} spriteSheet={playerSprite} zIndex={5} />
 
       {/* FOREGROUND */}
-      <img
-        src={mapForeground}
-        alt="foreground"
-        style={{
-          position: "absolute",
-          left: -offsetX,
-          top: -offsetY,
-          width: MAP_WIDTH * TILE_SIZE,
-          height: MAP_HEIGHT * TILE_SIZE,
-          zIndex: 10,
-          pointerEvents: "none",
-        }}
-      />
+      <div className="absolute pointer-events-none z-10 bg-cover bg-no-repeat" style={{ left: -offsetX, top: -offsetY, width: MAP_WIDTH * TILE_SIZE, height: MAP_HEIGHT * TILE_SIZE, backgroundImage: `url(${mapForeground})` }} />
 
       {showPopupOne && (
-      <GamePopup
-        title="Choose Mode"
-        onClose={() => setShowPopUpOne(false)}
-        button1Text="Battle Match"
-        onButton1={() => {
-          console.log("Battle Match clicked");
-          setShowPopUpOne(false);
-        }}
-        button2Text="Training Ground"
-        onButton2={() => {
-          console.log("Training Ground clicked");
-          setShowPopUpOne(false);
-        }}
-      />
-    )}
+        <GamePopup
+          title="Choose Mode"
+          onClose={() => setShowPopUpOne(false)}
+          button1Text="Trainer Battle"
+          onButton1={() => {
+            setShowPopUpOne(false);
+            navigate("/matching");
+          }}
+          button2Text="Training Ground"
+          onButton2={() => {
+            setShowPopUpOne(false);
+            navigate(`/aibattle`);
+          }}
+          scale={uiScale}
+        />
+      )}
 
-    {showPopupTwo && (
-      <GamePopup
-        title="Mini Game"
-        onClose={() => setShowPopUpTwo(false)}
-        button1Text="Eevee Race"
-        onButton1={() => {
-          console.log("Eeveed Race clicked");
-          setShowPopUpTwo(false);
-        }}
-      />
-    )}
-
-
+      {showPopupTwo && (
+        <GamePopup
+          title="Mini Game"
+          onClose={() => setShowPopUpTwo(false)}
+          button1Text="Eevee Race"
+          onButton1={() => {
+            console.log("Eeveed Race clicked");
+            setShowPopUpTwo(false);
+            navigate("/race");
+          }}
+          scale={uiScale}
+        />
+      )}
 
       {/* ENCOUNTER DIALOG */}
       {showDialog && encounterPokemon && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#fff",
-            border: "4px solid #000",
-            padding: 12,
-            zIndex: 20,
-            fontFamily: "monospace",
-          }}
-        >
-          <div style={{ marginBottom: 8 }}>Catch this Pokemon?</div>
-          <button onClick={() => handleCatchPokemon(encounterPokemon)}>Yes</button>
-          <button onClick={handleCatchNo} style={{ marginLeft: 8 }}>
-            No
-          </button>
-        </div>
+        <CatchDialog
+          scale={uiScale}
+          onYes={() => handleCatchPokemon(encounterPokemon)}
+          onNo={handleCatchNo}
+        />
       )}
     </div>
   );

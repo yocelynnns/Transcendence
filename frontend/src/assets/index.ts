@@ -75,7 +75,6 @@ import squirtleBack from './pokemon/water/squirtle/back_squirtle.gif';
 import squirtle from './pokemon/water/squirtle/squirtle.png';
 import shinySquirtle from './pokemon/water/squirtle/shiny_front_squirtle.gif';
 
-
 // HEALTH battle
 import greenHp from "./battle/green_hp.png";
 import yellowHp from "./battle/yellow_hp.png";
@@ -92,6 +91,34 @@ import spec from "./battle/spec.png";
 import history from "./battle/history.png";
 import ai from "./battle/ai.png";
 import event from "./battle/event.png";
+
+// ELEMENTS
+import profilebanner from "./elements/profilebanner.png"
+import catchDialog from "./elements/catchDialog.png"
+
+// BUTTON
+import leftA from "./elements/button/leftA.png"
+import leftB from "./elements/button/leftB.png"
+import midA from "./elements/button/midA.png"
+import midB from "./elements/button/midB.png"
+import rightA from "./elements/button/rightA.png"
+import rightB from "./elements/button/rightB.png"
+
+// ICONS
+import friendlisticon from "./elements/icons/friendlist.png"
+import guildicon from "./elements/icons/guild.png"
+import eventicon from "./elements/icons/event.png"
+import xicon from "./elements/icons/x.png"
+import backicon from "./elements/icons/back.png"
+import sendicon from "./elements/icons/send.png"
+import bluexicon from "./elements/icons/bluex.png"
+
+import spectateicon from "./elements/icons/spectate.png"
+import chaticon from "./elements/icons/chat.png"
+import blockicon from "./elements/icons/block.png"
+import unblockicon from "./elements/icons/unblock.png"
+import battleicon from "./elements/icons/battle.png"
+import friendlistblue from "./elements/icons/friendlistblue.png"
 
 // EXPORT CENTRAL ASSETS
 export const ASSETS = {
@@ -143,4 +170,33 @@ export const ASSETS = {
     SLOWPOKE: { FRONT: slowpokeFront, BACK: slowpokeBack, DEFAULT: slowpoke, SHINY: shinySlowpoke },
     SQUIRTLE: { FRONT: squirtleFront, BACK: squirtleBack, DEFAULT: squirtle, SHINY: shinySquirtle }
   },
+
+  ELEMENTS: {
+    BUTTON: { LEFT: {A: leftA, B: leftB},
+              MID: {A: midA, B: midB},
+              RIGHT: {A: rightA, B: rightB}},
+    PROFILEBANNER: profilebanner,
+    CATCHDIALOG: catchDialog,
+  },
+
+  ICONS: {
+    FRIENDLIST: friendlisticon,
+    GUILD: guildicon,
+    EVENT: eventicon,
+    X: xicon,
+    BLUEX: bluexicon,
+    BACK: backicon,
+    SEND: sendicon,
+    BATTLE: battleicon,
+  },
+
+  CHATICONS: {
+    X: bluexicon,
+    SPECTATE: spectateicon,
+    CHAT: chaticon,
+    BLOCK : blockicon,
+    UNBLOCK: unblockicon,
+    BATTLE: battleicon,
+    FRIENDLIST: friendlistblue
+  }
 };

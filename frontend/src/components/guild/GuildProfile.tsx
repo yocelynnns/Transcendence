@@ -5,6 +5,7 @@ import { ASSETS } from "../../assets";
 import { useGameSocket } from "../../ws/useGameSocket";
 import type { AvatarData } from "../../types/avatarTypes";
 import { useQueryClient } from "@tanstack/react-query";
+import PixelButton from "../elements/PixelButton";
 
 const logo = ASSETS.GUILD.LOGO;
 
@@ -12,14 +13,12 @@ interface GuildProfileProps {
   token: string | null;
   avatarData: AvatarData;
   selectedGuild: Guild | undefined;
-  onOpenChat: () => void;
   onBack: () => void;
 }
 
 export default function GuildProfile({
   avatarData,
   selectedGuild,
-  onOpenChat,
   token,
   onBack,
 }: GuildProfileProps) {
@@ -70,7 +69,6 @@ export default function GuildProfile({
     return false;
   });
 
-
   const handleLeaveGuild = async () => {
     if (!guild || !token) return;
     try {
@@ -79,10 +77,7 @@ export default function GuildProfile({
         `http://localhost:5001/api/guild/${guild._id}/leave`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         }
       );
       if (!res.ok)
@@ -90,47 +85,30 @@ export default function GuildProfile({
       const data = await res.json();
       setGuild(data.guild);
 
-      emitEvent("guildUpdate", {
-        guildId: data.guild._id,
-        action: "update",
-      });
+      emitEvent("guildUpdate", { guildId: data.guild._id, action: "update" });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to leave guild");
     } finally {
       setLeaving(false);
-      queryClient.invalidateQueries({
-        queryKey: ["avatar", avatarData._id],
-        exact: true,
-      });
+      queryClient.invalidateQueries({ queryKey: ["avatar", avatarData._id], exact: true });
       onBack();
     }
   };
 
   const handleDisbandGuild = async () => {
     if (!guild || !token) return;
-    if (
-      !window.confirm(
-        "Are you sure you want to disband this guild? This cannot be undone."
-      )
-    )
-      return;
+    if (!window.confirm("Are you sure you want to disband this guild? This cannot be undone.")) return;
 
     try {
       setDisbanding(true);
-      const res = await fetch(
-        `http://localhost:5001/api/guild/${guild._id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`http://localhost:5001/api/guild/${guild._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok)
         throw new Error((await res.json()).message || "Failed to disband guild");
 
-      emitEvent("guildUpdate", {
-        guildId: guild._id,
-        action: "delete",
-      });
+      emitEvent("guildUpdate", { guildId: guild._id, action: "delete" });
       setGuild(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to disband guild");
@@ -147,30 +125,21 @@ export default function GuildProfile({
 
     try {
       setUpdating(true);
-      const res = await fetch(
-        `http://localhost:5001/api/guild/${guild._id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: editName,
-            description: editDescription,
-            image: editImageBase64 || guild.image,
-          }),
-        }
-      );
+      const res = await fetch(`http://localhost:5001/api/guild/${guild._id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          description: editDescription,
+          image: editImageBase64 || guild.image,
+        }),
+      });
       if (!res.ok)
         throw new Error((await res.json()).message || "Failed to update guild");
       const data = await res.json();
       setGuild(data.guild);
 
-      emitEvent("guildUpdate", {
-        guildId: data.guild._id,
-        action: "update",
-      });
+      emitEvent("guildUpdate", { guildId: data.guild._id, action: "update" });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update guild");
     } finally {
@@ -186,24 +155,11 @@ export default function GuildProfile({
     try {
       const res = await fetch(
         `http://localhost:5001/api/guild/${guild._id}/kick/${targetAvatarId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
       );
+      if (!res.ok) throw new Error((await res.json()).message || "Failed to kick member");
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to kick member");
-      }
-
-      emitEvent("guildUpdate", {
-        guildId: guild._id,
-        targetAvatarId,
-        action: "kick",
-      });
+      emitEvent("guildUpdate", { guildId: guild._id, targetAvatarId, action: "kick" });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to kick member");
     }
@@ -211,28 +167,14 @@ export default function GuildProfile({
 
   const handlePromoteMember = async (targetAvatarId: string) => {
     if (!guild || !token) return;
-
     try {
       const res = await fetch(
         `http://localhost:5001/api/guild/${guild._id}/promote/${targetAvatarId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
       );
+      if (!res.ok) throw new Error((await res.json()).message || "Failed to promote member");
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to promote member");
-      }
-
-      emitEvent("guildUpdate", {
-        guildId: guild._id,
-        action: "promote",
-      });
-
+      emitEvent("guildUpdate", { guildId: guild._id, action: "promote" });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to promote member");
     }
@@ -240,28 +182,14 @@ export default function GuildProfile({
 
   const handleDemoteMember = async (targetAvatarId: string) => {
     if (!guild || !token) return;
-
     try {
       const res = await fetch(
         `http://localhost:5001/api/guild/${guild._id}/demote/${targetAvatarId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
       );
+      if (!res.ok) throw new Error((await res.json()).message || "Failed to demote co-leader");
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to demote co-leader");
-      }
-
-      emitEvent("guildUpdate", {
-        guildId: guild._id,
-        action: "update",
-      });
-
+      emitEvent("guildUpdate", { guildId: guild._id, action: "update" });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to demote co-leader");
     }
@@ -280,9 +208,7 @@ export default function GuildProfile({
     }
   };
 
-  const getAvatarId = (
-    avatar: string | AvatarData | null | undefined
-  ): string | null => {
+  const getAvatarId = (avatar: string | AvatarData | null | undefined): string | null => {
     if (!avatar) return null;
     if (typeof avatar === "string") return avatar;
     return avatar._id;
@@ -290,191 +216,157 @@ export default function GuildProfile({
 
   if (!guild) return <p>Guild not found</p>;
 
+  // BUTTON COLORS
+  const greenBtn = { colorA: "#6f8f63", colorB: "#4f6b4a", colorText: "#ffffff" };
+  const redBtn = { colorA: "#de4040", colorB: "#9d2f2f", colorText: "#ffffff" };
+  const beigeBtn = { colorA: "#fff1ef", colorB: "#ab7b81", colorText: "#ab7b81" };
+  const grayBtn = { colorA: "#a3a3a3", colorB: "#737373", colorText: "#ffffff" };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ textAlign: "center" }}>
+    <div className="flex flex-col gap-4">
+      <div className="text-center">
         <Shield width={80} fillImage={previewImage || logo} borderColor="black" />
       </div>
 
       {isLeader && (
-        <form
-          onSubmit={handleUpdateGuild}
-          style={{ display: "flex", flexDirection: "column", gap: 8 }}
-        >
-          <input
-            type="text"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            placeholder="Guild Name"
-            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
-          />
-          <textarea
-            value={editDescription}
-            onChange={(e) => setEditDescription(e.target.value)}
-            placeholder="Guild Description"
-            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
-          />
-          <input type="file" accept="image/*" onChange={handleImageChange} />
-          <button
-            type="submit"
-            disabled={updating}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 10,
-              border: "2px solid #bbb",
-              background: "#cce5ff",
-              cursor: updating ? "not-allowed" : "pointer",
-              fontWeight: 600,
-            }}
-          >
-            {updating ? "Updating..." : "Update Guild"}
-          </button>
+        <form onSubmit={handleUpdateGuild} className="flex flex-col gap-2">
+          <div className="relative w-full h-13">
+            <PixelButton {...beigeBtn} height={52} width="100%" textSize="1rem" />
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Guild Name"
+              className="absolute inset-0 bg-transparent px-4 py-2 text-sm font-bold outline-none text-[#909090] font-mono"
+            />
+          </div>
+
+          <div className="relative w-full h-30">
+            <PixelButton {...beigeBtn} height={120} width="100%" textSize="1rem" />
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Guild Description"
+              className="absolute inset-0 bg-transparent px-4 py-3 text-sm resize-none outline-none font-mono text-[#ab7b81]"
+            />
+          </div>
+
+          <div className="relative w-full h-13">
+            <PixelButton {...grayBtn} height={52} width="100%" textSize="1rem" />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+            <div className="absolute inset-0 flex items-center justify-center text-lg pointer-events-none text-[#ffffff]">
+              Browse Image
+            </div>
+          </div>
+
+          <div className="relative w-full h-13 text-white">
+            <PixelButton {...greenBtn} height={52} width="100%" textSize="1rem" />
+            <button
+              type="submit"
+              disabled={updating}
+              className="absolute inset-0 text-lg"
+            >
+              {updating ? "Updating..." : "Update Guild"}
+            </button>
+          </div>
         </form>
       )}
 
-      {guild.members.map((m, index) => {
-        const avatarId = getAvatarId(m.avatar);
+      <ul className="flex flex-col gap-2">
+        {guild.members.map((m, index) => {
+          const avatarId = getAvatarId(m.avatar);
+          const memberName =
+            typeof m.avatar === "object" && m.avatar && "userName" in m.avatar
+              ? m.avatar.userName
+              : "Unknown";
+          const isSelf = avatarId === avatarData._id;
 
-        const memberName =
-          typeof m.avatar === "object" && m.avatar && "userName" in m.avatar
-            ? m.avatar.userName
-            : "Unknown";
+          const canKick = !isSelf && ((isLeader && m.role !== "leader") || (isCoLeader && m.role === "member"));
+          const canPromote = isLeader && !isSelf && m.role === "member";
+          const canDemote = isLeader && !isSelf && m.role === "co-leader";
 
-        const isSelf = avatarId === avatarData._id;
+          // row background color
+          const memberRowBtn = { colorA: "#fff1ef", colorB: "#ab7b81", colorText: "#000000" }; // pixel gray
 
-        const canKick =
-        !isSelf &&
-        (
-          (isLeader && m.role !== "leader") ||
-          (isCoLeader && m.role === "member")
-        );
+          return (
+            <li key={index} className="relative">
+              <PixelButton {...memberRowBtn} height={60} width="100%" textSize="0.9rem" />
+              <div className="absolute inset-0 flex items-center justify-between px-4">
+                <span className="text-[#ab7b81]">{memberName} <strong>({m.role})</strong></span>
 
-        const canPromote = isLeader && !isSelf && m.role === "member";
+                <div className="flex gap-1.5 pb-1">
+                  {canPromote && avatarId && (
+                    <div className="relative">
+                      <PixelButton {...greenBtn} height={36} width={80} textSize="0.8rem" />
+                      <button
+                        onClick={() => handlePromoteMember(avatarId)}
+                        className="absolute inset-0 text-xs font-bold text-white"
+                      >
+                        Promote
+                      </button>
+                    </div>
+                  )}
 
-        const canDemote = isLeader && !isSelf && m.role === "co-leader";
+                  {canDemote && avatarId && (
+                    <div className="relative">
+                      <PixelButton {...grayBtn} height={36} width={80} textSize="0.8rem" />
+                      <button
+                        onClick={() => handleDemoteMember(avatarId)}
+                        className="absolute inset-0 text-xs font-bold text-white"
+                      >
+                        Demote
+                      </button>
+                    </div>
+                  )}
 
-        return (
-          <li
-            key={index}
-            style={{
-              fontSize: 14,
-              padding: "6px 0",
-              borderBottom: "1px solid #eee",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span>
-              {memberName} <strong>({m.role})</strong>
-            </span>
+                  {canKick && avatarId && (
+                    <div className="relative">
+                      <PixelButton {...redBtn} height={36} width={80} textSize="0.8rem" />
+                      <button
+                        onClick={() => handleKickMember(avatarId)}
+                        className="absolute inset-0 text-xs font-bold text-white"
+                      >
+                        Kick
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
 
-            <div style={{ display: "flex", gap: 6 }}>
-              {canPromote && avatarId && (
-                <button
-                  onClick={() => handlePromoteMember(avatarId)}
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: 6,
-                    border: "1px solid #2d7",
-                    background: "#e6fff5",
-                    color: "#060",
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  Promote
-                </button>
-              )}
-
-              {canDemote && avatarId && (
-                <button
-                  onClick={() => handleDemoteMember(avatarId)}
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: 6,
-                    border: "1px solid #e6a700",
-                    background: "#fff6d6",
-                    color: "#805a00",
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  Demote
-                </button>
-              )}
-
-              {canKick && avatarId && (
-                <button
-                  onClick={() => handleKickMember(avatarId)}
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: 6,
-                    border: "1px solid #d33",
-                    background: "#ffe5e5",
-                    color: "#a00",
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  Kick
-                </button>
-              )}
-            </div>
-          </li>
-        );
-      })}
-
-      {isMember && (
-        <button
-          onClick={onOpenChat}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "2px solid #bbb",
-            background: "#fafafa",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          Open Guild Chat
-        </button>
-      )}
+      {/* {isMember && (
+        <div className="relative w-full h-[52px]">
+          <PixelButton {...greenBtn} height={52} width="100%" textSize="1rem" />
+          <button onClick={onOpenChat} className="absolute inset-0 text-sm font-bold uppercase">
+            Open Guild Chat
+          </button>
+        </div>
+      )} */}
 
       {isMember && !isLeader && (
-        <button
-          onClick={handleLeaveGuild}
-          disabled={leaving}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "2px solid #bbb",
-            background: "#ffe5e5",
-            cursor: leaving ? "not-allowed" : "pointer",
-            fontWeight: 600,
-            color: "#a00",
-          }}
-        >
-          {leaving ? "Leaving..." : "Leave Guild"}
-        </button>
+        <div className="relative w-full h-13">
+          <PixelButton {...redBtn} height={52} width="100%" textSize="1rem" />
+          <button onClick={handleLeaveGuild} disabled={leaving} className="absolute inset-0 text-lg text-[#ffffff]">
+            {leaving ? "Leaving..." : "Leave Guild"}
+          </button>
+        </div>
       )}
 
       {isLeader && (
-        <button
-          onClick={handleDisbandGuild}
-          disabled={disbanding}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "2px solid #bbb",
-            background: "#ffcccc",
-            cursor: disbanding ? "not-allowed" : "pointer",
-            fontWeight: 600,
-            color: "#900",
-          }}
-        >
-          {disbanding ? "Disbanding..." : "Disband Guild"}
-        </button>
+        <div className="relative w-full h-13">
+          <PixelButton {...redBtn} height={52} width="100%" textSize="1rem" />
+          <button onClick={handleDisbandGuild} disabled={disbanding} className="absolute inset-0 text-lg text-[#ffffff]">
+            {disbanding ? "Disbanding..." : "Disband Guild"}
+          </button>
+        </div>
       )}
     </div>
   );

@@ -1,15 +1,22 @@
+// src/pages/MatchingPage.tsx
 import { useEffect, useState, useMemo, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { AvatarData } from "../types/avatarTypes";
+import type { AvatarData } from "../types/avatarTypes";
 import { ASSETS } from "../assets";
 import { useGameSocket } from "../ws/useGameSocket";
-import { Battle } from "../types/battleTypes";
+import type { Battle } from "../types/battleTypes";
 
 interface MatchMakingProps {
   avatarData: AvatarData | null | undefined;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
 }
+
+const designWidth = 760;
+const designHeight = 520;
+const padding = 24;
+const maxScale = 1;
+const minScale = 0.45;
 
 export default function Matching({
   avatarData,
@@ -24,6 +31,20 @@ export default function Matching({
   const [countdown, setCountdown] = useState(5);
   const joinRef = useRef<boolean>(false);
 
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const handleResize = () => {
+      const scaleX = (window.innerWidth - padding * 2) / designWidth;
+      const scaleY = (window.innerHeight - padding * 2) / designHeight;
+      const newScale = Math.min(maxScale, Math.max(minScale, Math.min(scaleX, scaleY)));
+      setScale(newScale);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     if (!avatarData) return;
     const inventory = avatarData.pokemonInventory ?? [];
@@ -33,6 +54,7 @@ export default function Matching({
     }
   }, [avatarData, navigate]);
 
+  // opponent logic
   const opponentAvatar = useMemo(() => {
     if (!currentBattle || !currentId) return null;
     return currentBattle.player1._id === currentId
@@ -43,18 +65,14 @@ export default function Matching({
   const matchStarted = Boolean(currentBattle && opponentAvatar);
   const waiting = !matchStarted;
 
+  // countdown -> team select
   useEffect(() => {
     if (!currentBattle || !opponentAvatar) return;
 
-    const endTime =
-      new Date(currentBattle.createdAt ?? Date.now()).getTime() + 5_000;
+    const endTime = new Date(currentBattle.createdAt ?? Date.now()).getTime() + 5_000;
 
     const updateCountdown = () => {
-      const secondsLeft = Math.max(
-        Math.ceil((endTime - Date.now()) / 1000),
-        0
-      );
-
+      const secondsLeft = Math.max(Math.ceil((endTime - Date.now()) / 1000), 0);
       setCountdown(secondsLeft);
 
       if (secondsLeft <= 0) {
@@ -64,10 +82,10 @@ export default function Matching({
 
     updateCountdown();
     const timer = setInterval(updateCountdown, 200);
-
     return () => clearInterval(timer);
   }, [currentBattle, opponentAvatar, navigate]);
 
+  // join + events
   useEffect(() => {
     if (!currentId || currentBattle) return;
 
@@ -84,11 +102,8 @@ export default function Matching({
       }
     );
 
-    const cleanupError = subscribeEvent(
-      "matchError",
-      (data: { message: string }) => {
-        alert(data.message);
-      }
+    const cleanupError = subscribeEvent("matchError", (data: { message: string }) =>
+      alert(data.message)
     );
 
     return () => {
@@ -98,100 +113,83 @@ export default function Matching({
   }, [currentId, currentBattle, joinMatching, subscribeEvent, setCurrentBattle]);
 
   const handleReturn = () => {
-    if (currentId) {
-      emitEvent("leaveMatching", currentId);
-    }
+    if (currentId) emitEvent("leaveMatching", currentId);
     navigate("/", { replace: true });
   };
 
   if (!avatarData) {
     return (
-      <div className="fullscreen-center" style={{ color: "#fff" }}>
+      <div className="w-screen h-screen grid place-items-center bg-black text-white pixelify-sans text-lg">
         Loading player data...
       </div>
     );
   }
 
+  const title = matchStarted ? "MATCH FOUND!" : "WAITING FOR OPPONENT...";
+
   return (
     <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #1e1e2f 0%, #2a2a3f 100%)",
-        fontFamily: "monospace",
-        color: "#999",
-        textAlign: "center",
-      }}
+      className="fixed inset-0 flex items-center justify-center pixelify-sans"
+      style={{ background: "linear-gradient(to bottom, #a9c0dc 0%, #7fa3c7 100%)" }}
     >
-      <h1
+      <div
         style={{
-          fontSize: 32,
-          marginBottom: 12,
-          color: "#fff",
-          textShadow: "0 0 10px #888",
+          width: designWidth,
+          height: designHeight,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
         }}
+        className="relative"
       >
-        {matchStarted ? "Match Found!" : "Waiting for Opponent..."}
-      </h1>
+        {/* CONTENT */}
+        <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
+          {/* TITLE PANEL */}
+          <div className="mb-6 px-8 py-4 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55]">
+            <h1 className="text-[28px] text-white tracking-wide">{title}</h1>
+          </div>
 
-      {matchStarted && (
-        <div
-          style={{
-            fontSize: 18,
-            marginBottom: 30,
-            color: "#a2d5f2",
-            textShadow: "0 0 6px #000",
-          }}
-        >
-          Match starts in {countdown} second{countdown !== 1 ? "s" : ""}
+          {/* COUNTDOWN */}
+          {matchStarted && (
+            <div className="mb-6 px-6 py-3 bg-[#5f78a8] border-4 border-black shadow-[6px_6px_0px_#2b3d55] text-[16px] text-white">
+              Match starts in {countdown} second{countdown !== 1 ? "s" : ""}
+            </div>
+          )}
+
+          {/* AVATARS */}
+          <div className="flex items-center justify-center gap-14">
+            <AvatarCard avatar={avatarData.avatar || defaultAvatar} name={avatarData.userName} />
+
+            <div className="text-[28px] font-bold text-white drop-shadow-[2px_2px_0_#2b3d55]">
+              VS
+            </div>
+
+            <AvatarCard
+              avatar={opponentAvatar?.avatar}
+              name={waiting ? "Searching..." : opponentAvatar?.userName || ""}
+              loading={waiting}
+            />
+          </div>
+
+          {/* RETURN BUTTON */}
+          <button
+            onClick={handleReturn}
+            className="
+              mt-10
+              px-8 py-3
+              bg-[#5f78a8]
+              border-4 border-black
+              text-white
+              text-[16px]
+              shadow-[6px_6px_0px_#2b3d55]
+              active:translate-x-0.5
+              active:translate-y-0.5
+              active:shadow-[3px_3px_0px_#2b3d55]
+            "
+          >
+            ← Return
+          </button>
         </div>
-      )}
-
-      <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
-        <AvatarCard
-          avatar={avatarData.avatar || defaultAvatar}
-          name={avatarData.userName}
-          color="#a2d5f2"
-        />
-
-        <div
-          style={{
-            fontSize: 36,
-            fontWeight: "bold",
-            color: "#888",
-            textShadow: "0 0 15px #666",
-          }}
-        >
-          VS
-        </div>
-
-        <AvatarCard
-          avatar={opponentAvatar?.avatar}
-          name={waiting ? "Searching..." : opponentAvatar?.userName || ""}
-          color="#ff5555"
-          loading={waiting}
-        />
       </div>
-
-      <button
-        onClick={handleReturn}
-        style={{
-          marginTop: 40,
-          padding: "10px 20px",
-          borderRadius: 10,
-          border: "2px solid black",
-          background: "white",
-          cursor: "pointer",
-          fontWeight: 600,
-          color: "black",
-        }}
-      >
-        Return
-      </button>
     </div>
   );
 }
@@ -199,38 +197,43 @@ export default function Matching({
 function AvatarCard({
   avatar,
   name,
-  color,
   loading = false,
 }: {
   avatar?: string;
   name: string;
-  color: string;
   loading?: boolean;
 }) {
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="text-center">
       <div
+        className="
+          w-36 h-36
+          border-4 border-black
+          bg-[#5f78a8]
+          shadow-[6px_6px_0px_#2b3d55]
+          flex items-center justify-center
+          overflow-hidden
+        "
         style={{
-          width: 150,
-          height: 150,
-          borderRadius: 16,
-          border: `4px solid ${color}`,
-          boxShadow: `0 0 15px ${color}`,
-          background: avatar ? `url(${avatar}) center/cover` : "#444",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          backgroundImage: !loading && avatar ? `url(${avatar})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          imageRendering: "pixelated",
         }}
       >
         {loading && (
           <img
             src="/assets/matching/loading.gif"
             alt="Searching..."
-            style={{ width: "100%", height: "100%" }}
+            className="w-full h-full object-cover"
+            style={{ imageRendering: "pixelated" }}
           />
         )}
       </div>
-      <div style={{ marginTop: 12, color: "#fff" }}>{name}</div>
+
+      <div className="mt-3 text-white text-[15px] tracking-wide drop-shadow-[2px_2px_0_#2b3d55]">
+        {name}
+      </div>
     </div>
   );
 }

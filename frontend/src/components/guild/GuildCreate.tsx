@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Shield from "./GuildShield";
 import { useGameSocket } from "../../ws/useGameSocket";
 import type { AvatarData } from "../../types/avatarTypes";
 import { useQueryClient } from "@tanstack/react-query";
+import PixelButton from "../elements/PixelButton";
 
 interface GuildCreateProps {
-  token: string | null; 
+  token: string | null;
   avatarData: AvatarData;
   onBack: () => void;
 }
@@ -21,8 +22,9 @@ export default function GuildCreate({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { emitEvent } = useGameSocket(() => {});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { emitEvent } = useGameSocket(() => {});
   const queryClient = useQueryClient();
 
   const isDisabled = loading;
@@ -59,99 +61,156 @@ export default function GuildCreate({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to create guild");
 
-      emitEvent("guildUpdate", { guildId: data._id, action:"update" });
+      emitEvent("guildUpdate", { guildId: data._id, action: "update" });
+      queryClient.invalidateQueries({
+        queryKey: ["avatar", avatarData._id],
+        exact: true,
+      });
 
-      queryClient.invalidateQueries({ queryKey: ["avatar", avatarData._id], exact: true });
       onBack();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-        console.log("Guild creation error:", err);
-      } else {
-        setError("Failed to create guild");
-        console.log("Guild creation unknown error:", err);
-      }
+      setError(err instanceof Error ? err.message : "Failed to create guild");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Guild image preview */}
-      <div style={{ textAlign: "center" }}>
+    <div className="flex flex-col gap-4">
+
+      {/* Shield preview */}
+      <div className="flex justify-center">
         <Shield width={130} fillImage={image || ""} borderColor="black" />
       </div>
 
-      {/* Upload button */}
-      <div style={{ textAlign: "center" }}>
+      {/* Browse image (pixel button) */}
+      <div className="relative w-full h-[52px]">
+        <PixelButton
+          colorA="#fff1ef"
+          colorB="#ab7b81"
+          colorText="#000"
+          textSize="1rem"
+          height={52}
+          width="100%"
+        />
+        <button
+          type="button"
+          disabled={isDisabled}
+          onClick={() => fileInputRef.current?.click()}
+          className="absolute inset-0 text-sm font-semibold"
+        >
+          Browse
+        </button>
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           onChange={handleImageUpload}
-          style={{ cursor: "pointer" }}
-          disabled={isDisabled}
+          className="hidden"
         />
       </div>
 
       {/* Guild name */}
-      <input
-        placeholder="Guild Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{ padding: 10, borderRadius: 8, border: "2px solid #bbb", fontSize: 16 }}
-        disabled={isDisabled}
-      />
+      <div className="relative w-full h-[52px]">
+        <PixelButton
+          colorA="#fff1ef"
+          colorB="#ab7b81"
+          height={52}
+          colorText="#000"
+          textSize="1rem"
+          width="100%"
+        />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Guild Name"
+          disabled={isDisabled}
+          className="
+            absolute inset-0
+            bg-transparent
+            px-4
+            text-sm
+            outline-none
+            font-mono
+            font-semibold
+          "
+        />
+      </div>
 
       {/* Guild description */}
-      <textarea
-        placeholder="Guild Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        rows={4}
-        style={{ padding: 10, borderRadius: 8, border: "2px solid #bbb", fontSize: 14, resize: "vertical" }}
-        disabled={isDisabled}
-      />
-
-      {/* Error message */}
-      {error && <div style={{ color: "red", fontWeight: 600 }}>{error}</div>}
-
-      {/* Action buttons */}
-      <div style={{ display: "flex", gap: 10 }}>
-        <button
-          onClick={handleCreate}
+      <div className="relative w-full h-[120px]">
+        <PixelButton
+          colorA="#fff1ef"
+          colorB="#ab7b81"
+          height={120}
+          colorText="#000"
+          textSize="1rem"
+          width="100%"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Guild Description"
           disabled={isDisabled}
-          style={{
-            flex: 1,
-            padding: 10,
-            borderRadius: 10,
-            border: "2px solid #bbb",
-            background: isDisabled ? "#eee" : "#fafafa",
-            cursor: isDisabled ? "not-allowed" : "pointer",
-            fontWeight: 600,
-          }}
-        >
-          {
-            avatarData.guild
-            ? "Already in a Guild"
-            : loading
-            ? "Creating..."
-            : "Create"}
-        </button>
-        <button
-          onClick={onBack}
-          style={{
-            flex: 1,
-            padding: 10,
-            borderRadius: 10,
-            border: "2px solid #bbb",
-            background: "#fafafa",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          Cancel
-        </button>
+          className="
+            absolute inset-0
+            bg-transparent
+            px-4 py-3
+            text-sm
+            resize-none
+            outline-none
+            font-mono
+          "
+        />
+      </div>
+
+      {/* Error */}
+      {error && <div className="text-red-600 font-bold">{error}</div>}
+
+      {/* Buttons */}
+      <div className="flex gap-3 pt-2">
+
+        {/* Create */}
+        <div className="relative flex-1 h-[52px]">
+          <PixelButton
+            colorA="#6f8f63"
+            colorB="#4f6b4a"
+            height={52}
+            colorText="#000"
+            textSize="1rem"
+            width="100%"
+          />
+          <button
+            onClick={handleCreate}
+            disabled={isDisabled || !!avatarData.guild}
+            className="absolute inset-0 text-xl text-[#ffffff]"
+          >
+            {avatarData.guild
+              ? "Already in Guild"
+              : loading
+              ? "Creating..."
+              : "Create"}
+          </button>
+        </div>
+
+        {/* Cancel */}
+        <div className="relative flex-1 h-[52px]">
+          <PixelButton
+            colorA="#de4040"
+            colorB="#9d2f2f"
+            height={52}
+            colorText="#000"
+            textSize="1rem"
+            width="100%"
+          />
+          <button
+            onClick={onBack}
+            className="absolute inset-0 text-xl text-[#ffffff]"
+          >
+            Cancel
+          </button>
+        </div>
+
       </div>
     </div>
   );

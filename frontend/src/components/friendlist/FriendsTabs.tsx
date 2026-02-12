@@ -1,4 +1,5 @@
 import React from "react";
+import PixelButton from "../elements/PixelButton";
 
 interface FriendsTabsProps {
   activeTab: "friends" | "requests" | "battles";
@@ -8,18 +9,6 @@ interface FriendsTabsProps {
   battleInvitesCount: number;
 }
 
-const tabStyle = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: "6px 8px",
-  fontSize: 12,
-  fontFamily: "monospace",
-  cursor: "pointer",
-  border: "2px solid #333",
-  borderRadius: 6,
-  background: active ? "#ffcc00" : "white",
-  fontWeight: active ? "bold" : "normal",
-});
-
 export function FriendsTabs({
   activeTab,
   setActiveTab,
@@ -27,17 +16,49 @@ export function FriendsTabs({
   requestsCount,
   battleInvitesCount,
 }: FriendsTabsProps) {
+
+  const buttonHeight = 45;
+  const buttonWidth = 130;
+
+  const getColors = (tab: "friends" | "requests" | "battles") =>
+    activeTab === tab
+      ? { colorA: "#ffcc00", colorB: "#d4a500", colorText: "#000000" } // active: yellow gradient
+      : { colorA: "#677fb4", colorB: "#384071", colorText: "#ffffff" }; // inactive: normal pinkish
+
   return (
-    <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-      <button onClick={() => setActiveTab("friends")} style={tabStyle(activeTab === "friends")}>
+    <div className="flex justify-between mb-4">
+      <PixelButton
+        onClick={() => setActiveTab("friends")}
+        width={buttonWidth}
+        height={buttonHeight}
+        textSize="14px"
+        cursorPointer={true}
+        {...getColors("friends")}
+      >
         Friends ({friendsCount})
-      </button>
-      <button onClick={() => setActiveTab("requests")} style={tabStyle(activeTab === "requests")}>
+      </PixelButton>
+
+      <PixelButton
+        onClick={() => setActiveTab("requests")}
+        width={buttonWidth}
+        height={buttonHeight}
+        textSize="14px"
+        cursorPointer={true}
+        {...getColors("requests")}
+      >
         Requests{requestsCount > 0 && ` (${requestsCount})`}
-      </button>
-      <button onClick={() => setActiveTab("battles")} style={tabStyle(activeTab === "battles")}>
+      </PixelButton>
+
+      <PixelButton
+        onClick={() => setActiveTab("battles")}
+        width={buttonWidth}
+        height={buttonHeight}
+        textSize="14px"
+        cursorPointer={true}
+        {...getColors("battles")}
+      >
         Battles{battleInvitesCount > 0 && ` (${battleInvitesCount})`}
-      </button>
+      </PixelButton>
     </div>
   );
 }

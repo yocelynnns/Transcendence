@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { GuildMessage } from "../../types/guildTypes";
+import PixelButton from "../elements/PixelButton";
+import { ASSETS } from "../../assets";
 
 interface GuildChatProps {
   guildId: string | undefined;
@@ -8,7 +10,7 @@ interface GuildChatProps {
   onBack: () => void;
 }
 
-export default function GuildChat({ guildId, messages, onBack}: GuildChatProps) {
+export default function GuildChat({ guildId, messages, onBack }: GuildChatProps) {
   const [text, setText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -29,28 +31,21 @@ export default function GuildChat({ guildId, messages, onBack}: GuildChatProps) 
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  if (!guildId) onBack() ;
+  if (!guildId) onBack();
+
+  // PixelButton colors for input
+  const beigeBtn = { colorA: "#fff1ef", colorB: "#ab7b81", colorText: "#ab7b81" };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div
-        style={{
-          height: 340,
-          overflowY: "auto",
-          border: "2px solid #bbb",
-          borderRadius: 10,
-          padding: 10,
-          background: "#fafafa",
-        }}
-      >
+    <div className="flex flex-col gap-3">
+      {/* Messages container */}
+      <div className="h-[560px] overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#fff1ef]">
         {messages.length === 0 && (
-          <div style={{ opacity: 0.6, textAlign: "center" }}>
-            No messages yet
-          </div>
+          <div className="opacity-60 text-center">No messages yet</div>
         )}
 
         {messages.map((msg) => (
-          <div key={msg._id} style={{ marginBottom: 6 }}>
+          <div key={msg._id} className="mb-1.5">
             <strong>{msg.senderName}:</strong> {msg.text}
           </div>
         ))}
@@ -58,32 +53,33 @@ export default function GuildChat({ guildId, messages, onBack}: GuildChatProps) 
         <div ref={messagesEndRef} />
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Type your message..."
-          style={{
-            flex: 1,
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "2px solid #bbb",
-          }}
-        />
-        <button
-          onClick={sendMessage}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "2px solid #bbb",
-            background: "#fafafa",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          Send
-        </button>
+      {/* Input area */}
+      <div className="flex gap-2 items-center">
+        {/* Pixel input */}
+        <div className="relative flex-1">
+          <PixelButton {...beigeBtn} height={40} width="100%" textSize="0.8rem" />
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            placeholder="Type your message..."
+            className="absolute inset-0 px-3 py-4 outline-none bg-transparent text-[#ab7b81] font-mono text-sm"
+          />
+        </div>
+
+        {/* Send button with icon */}
+        <div className="relative w-12 h-12 shrink-0">
+          <button
+            onClick={sendMessage}
+            className="absolute inset-0 flex items-center justify-center"
+          >
+            <img
+              src={ASSETS.ICONS.SEND}
+              alt="Send"
+              className="w-12 h-12 object-contain image-rendering-pixelated hover:scale-110"
+            />
+          </button>
+        </div>
       </div>
     </div>
   );

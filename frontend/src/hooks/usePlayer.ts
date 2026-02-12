@@ -9,7 +9,7 @@ import { PlayerState } from "../types/avatarTypes";
 //CONSTANTS
 const MOVE_SPEED = 1.5;  
 const FRAME_INTERVAL = 180;   
-const TILE_SIZE = 64;
+const TILE_SIZE = 84;
 
 //TYPES
 
@@ -20,7 +20,8 @@ type UsePlayerProps = {
   mapHeight: number;
   collision: number[];
   stopMovement?: boolean;
-  charPref?: number; 
+  charPref?: number;
+  freeze: boolean; 
 };
 
 //MAIN HOOK
@@ -32,6 +33,7 @@ export default function usePlayer({
   collision,
   stopMovement = false,
   charPref,
+  freeze,
 }: UsePlayerProps) {
 
   //PLAYER STATE
@@ -53,8 +55,8 @@ export default function usePlayer({
 
   //SYNC STOP MOVEMENT PROP
   useEffect(() => {
-    stopMovementRef.current = stopMovement;
-  }, [stopMovement]);
+    stopMovementRef.current = stopMovement || freeze;
+  }, [stopMovement, freeze]);
 
   //SYNC CHARACTER PREFERENCE
   useEffect(() => {

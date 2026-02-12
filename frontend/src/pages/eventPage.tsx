@@ -1,19 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import usePlayer from "../hooks/usePlayer";
 import Player, { type Direction } from "../components/map/GamePlayer";
+import Pokemon from "../components/map/GamePokemon";
 import mapData from "../assets/map/map.json";
-import type { AvatarData, PlayerState } from "../types/avatarTypes";
 import { ASSETS } from "../assets";
 import { useGameSocket } from "../ws/useGameSocket";
-import Pokemon from "../components/map/GamePokemon";
+import { PlayerState } from "../types/avatarTypes";
 import { MapPokemon } from "../types/pokemonTypes";
+import { AvatarData } from "../types/avatarTypes";
 import { useNavigate } from "react-router-dom";
-
-export interface EventPlayer {
-  playerId: string;
-  playerName: string;
-  catchCount: number;
-}
 
 // ASSETS
 const mapImage = ASSETS.MAP.DEFAULT;
@@ -23,22 +18,42 @@ const mapForeground = ASSETS.MAP.FOREGROUND;
 // MAP CONSTANTS
 const MAP_WIDTH = 20;
 const MAP_HEIGHT = 34;
-const TILE_SIZE = 64;
-const VIEW_WIDTH = 10;
-const VIEW_HEIGHT = 10;
+const TILE_SIZE = 84;
 
-// PROPS
+// TYPES
+export interface EventPlayer {
+  playerId: string;
+  playerName: string;
+  catchCount: number;
+}
+
 interface EventPageProps {
   avatarData: AvatarData | null | undefined;
 }
 
 export default function EventPage({ avatarData }: EventPageProps) {
-
   const navigate = useNavigate();
   const avatarId = avatarData?._id;
   const playerName = avatarData?.userName;
 
+  // -------------------
+  // WINDOW SIZE / SCALE
+  // -------------------
+  const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  useEffect(() => {
+    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // const VIEW_WIDTH = windowSize.width / TILE_SIZE;
+  // const VIEW_HEIGHT = windowSize.height / TILE_SIZE;
+  const viewPixelWidth = windowSize.width;
+  const viewPixelHeight = windowSize.height;
+
+  // -------------------
   // PLAYER
+  // -------------------
   const player = usePlayer({
     startX: 10,
     startY: 17,
@@ -46,17 +61,21 @@ export default function EventPage({ avatarData }: EventPageProps) {
     mapHeight: MAP_HEIGHT,
     collision: mapData.map,
     charPref: avatarData?.characterOption ?? 0,
+    freeze: false,
   });
 
+  // -------------------
   // SOCKET
+  // -------------------
   const [otherPlayers, setOtherPlayers] = useState<PlayerState[]>([]);
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
 
+  // -------------------
   // EVENT STATE
+  // -------------------
   const [eventPokemons, setEventPokemons] = useState<MapPokemon[]>([]);
   const [catchCount, setCatchCount] = useState(0);
 
-  // FINISH STATE
   const [eventFinished, setEventFinished] = useState(false);
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [finalScores, setFinalScores] = useState<EventPlayer[]>([]);
@@ -67,64 +86,54 @@ export default function EventPage({ avatarData }: EventPageProps) {
   const emittedRef = useRef<Set<string>>(new Set());
   const joinRef = useRef<boolean>(false);
 
+  // -------------------
   // INIT EVENT
+  // -------------------
   useEffect(() => {
-    const unsubState = subscribeEvent<{
-      pokemon: MapPokemon[];
-      players: EventPlayer[];
-      status: string;
-    }>("updateEventState", (data) => {
-      setEventPokemons(data.pokemon);
-      const me = data.players.find((p) => p.playerId === avatarId);
-      if (me) setCatchCount(me.catchCount);
-    });
-
-    const FIVE_MIN = 5 * 60 * 1000;
-
-    const unsubWaiting = subscribeEvent<{ createdAt: Date }>(
-      "eventWaiting",
+    const unsubState = subscribeEvent<{ pokemon: MapPokemon[]; players: EventPlayer[]; status: string }>(
+      "updateEventState",
       (data) => {
-        const createdAtMs = new Date(data.createdAt).getTime();
-        const startAt = createdAtMs + FIVE_MIN;
-
-        setEventStartAt(startAt);
-
-        const delay = Math.max(startAt - Date.now(), 0);
-
-        const timeoutId = setTimeout(() => {
-          console.log("🚀 Event started!");
-
-          if (avatarId && !joinRef.current)
-          {
-            joinRef.current = true;
-            emitEvent("joinCatchEvent", { playerName });
-          }
-        }, delay);
-
-        return () => clearTimeout(timeoutId);
+        setEventPokemons(data.pokemon);
+        const me = data.players.find((p) => p.playerId === avatarId);
+        if (me) setCatchCount(me.catchCount);
       }
     );
 
+    const FIVE_MIN = 5 * 60 * 1000;
 
-    const unsubFinished = subscribeEvent<{
-      winnerId: string;
-      scores: EventPlayer[];
-      lastCheckedAt: Date;
-    }>("eventFinished", (data) => {
-      setEventFinished(true);
-      setWinnerId(data.winnerId);
-      setFinalScores(data.scores);
+    const unsubWaiting = subscribeEvent<{ createdAt: Date }>("eventWaiting", (data) => {
+      const createdAtMs = new Date(data.createdAt).getTime();
+      const startAt = createdAtMs + FIVE_MIN;
+      setEventStartAt(startAt);
 
-      const nextStart = new Date(data.lastCheckedAt).getTime() + 10 * 60 * 1000;
-      setEventStartAt(nextStart);
+      const delay = Math.max(startAt - Date.now(), 0);
+      const timeoutId = setTimeout(() => {
+        if (avatarId && !joinRef.current) {
+          joinRef.current = true;
+          emitEvent("joinCatchEvent", { playerName });
+        }
+      }, delay);
+
+      return () => clearTimeout(timeoutId);
     });
 
-    if (avatarId && !joinRef.current)
-    {
+    const unsubFinished = subscribeEvent<{ winnerId: string; scores: EventPlayer[]; lastCheckedAt: Date }>(
+      "eventFinished",
+      (data) => {
+        setEventFinished(true);
+        setWinnerId(data.winnerId);
+        setFinalScores(data.scores);
+
+        const nextStart = new Date(data.lastCheckedAt).getTime() + 10 * 60 * 1000;
+        setEventStartAt(nextStart);
+      }
+    );
+
+    if (avatarId && !joinRef.current) {
       joinRef.current = true;
       emitEvent("joinCatchEvent", { playerName });
     }
-    
+
     return () => {
       unsubState();
       unsubFinished();
@@ -132,17 +141,22 @@ export default function EventPage({ avatarData }: EventPageProps) {
     };
   }, [subscribeEvent, emitEvent, avatarId, playerName]);
 
+  // -------------------
+  // UPDATE OTHER PLAYERS
+  // -------------------
   useEffect(() => {
-  const unsubEventPlayers = subscribeEvent<PlayerState[]>("eventPlayersUpdate", (players) => {
-    setOtherPlayers(players.filter((p) => p.id !== avatarId));
-  });
+    const unsubEventPlayers = subscribeEvent<PlayerState[]>("eventPlayersUpdate", (players) => {
+      setOtherPlayers(players.filter((p) => p.id !== avatarId));
+    });
 
-  return () => unsubEventPlayers();
-}, [subscribeEvent, avatarId]);
+    return () => unsubEventPlayers();
+  }, [subscribeEvent, avatarId]);
 
-
+  // -------------------
+  // EMIT PLAYER MOVEMENT
+  // -------------------
   useEffect(() => {
-  if (!avatarId) return;
+    if (!avatarId) return;
     emitEvent("eventPlayerMove", {
       x: player.x,
       y: player.y,
@@ -152,17 +166,19 @@ export default function EventPage({ avatarData }: EventPageProps) {
     });
   }, [player.x, player.y, player.direction, player.frame, player.charIndex, emitEvent, avatarId]);
 
+  // -------------------
+  // EVENT TIMER
+  // -------------------
   useEffect(() => {
-  if (!eventStartAt) return;
+    if (!eventStartAt) return;
 
-  const interval = setInterval(() => {
-    const remaining = eventStartAt - Date.now();
-    setTimeLeft(Math.max(remaining, 0));
-  }, 1000);
+    const interval = setInterval(() => {
+      const remaining = eventStartAt - Date.now();
+      setTimeLeft(Math.max(remaining, 0));
+    }, 1000);
 
-  return () => clearInterval(interval);
-}, [eventStartAt]);
-
+    return () => clearInterval(interval);
+  }, [eventStartAt]);
 
   // -------------------
   // ATTEMPT CATCH
@@ -173,8 +189,6 @@ export default function EventPage({ avatarData }: EventPageProps) {
     const handle = requestAnimationFrame(() => {
       eventPokemons.forEach((p) => {
         if (p.caught) return;
-
-        // ✅ already emitted for this pokemon → skip
         if (emittedRef.current.has(p._id)) return;
 
         const dx = player.x - p.x;
@@ -182,11 +196,8 @@ export default function EventPage({ avatarData }: EventPageProps) {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < TILE_SIZE / 1.5) {
-          emittedRef.current.add(p._id); // 🔒 lock it
-          emitEvent("attemptCatch", {
-            eventId: "catch_event",
-            pokemonId: p._id,
-          });
+          emittedRef.current.add(p._id);
+          emitEvent("attemptCatch", { eventId: "catch_event", pokemonId: p._id });
         }
       });
     });
@@ -194,13 +205,9 @@ export default function EventPage({ avatarData }: EventPageProps) {
     return () => cancelAnimationFrame(handle);
   }, [player.x, player.y, avatarId, emitEvent, eventPokemons, eventFinished]);
 
-
   // -------------------
-  // CAMERA
+  // CAMERA OFFSETS
   // -------------------
-  const viewPixelWidth = VIEW_WIDTH * TILE_SIZE;
-  const viewPixelHeight = VIEW_HEIGHT * TILE_SIZE;
-
   let offsetX = player.x - viewPixelWidth / 2 + TILE_SIZE / 2;
   let offsetY = player.y - viewPixelHeight / 2 + TILE_SIZE / 2;
 
@@ -211,100 +218,40 @@ export default function EventPage({ avatarData }: EventPageProps) {
   // RENDER
   // -------------------
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        background: "#000",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        position: "relative",
-      }}
-    >
-
+    <div className="w-screen h-screen bg-black flex items-center justify-center relative overflow-hidden">
+      {/* START TIMER */}
       {eventStartAt && timeLeft > 0 && (
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          left: 60,
-          background: "#fff",
-          border: "3px solid #000",
-          padding: "6px 10px",
-          fontFamily: "monospace",
-          zIndex: 50,
-        }}
-      >
-        Event starts in: {Math.ceil(timeLeft / 1000)}s
-      </div>
-    )}
+        <div className="absolute top-4 left-[60px] bg-white border-[3px] border-black px-3 py-1 font-mono z-50">
+          Event starts in: {Math.ceil(timeLeft / 1000)}s
+        </div>
+      )}
 
       {/* SCORE */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          right: 60,
-          background: "#fff",
-          border: "3px solid #000",
-          padding: "8px 12px",
-          fontFamily: "monospace",
-          zIndex: 50,
-        }}
-      >
+      <div className="absolute top-4 right-[60px] bg-white border-[3px] border-black px-4 py-2 font-mono z-50">
         Catch count: {catchCount}
       </div>
 
+      {/* BACK BUTTON */}
       <button
         onClick={() => navigate("/")}
-        style={{
-          position: "absolute",
-          top: 60,
-          left: 60,
-          zIndex: 110,
-          background: "#fff",
-          border: "3px solid #000",
-          padding: "6px 10px",
-          fontFamily: "monospace",
-          cursor: "pointer",
-        }}
+        className="absolute top-[60px] left-[60px] z-110 bg-white border-[3px] border-black px-3 py-1 font-mono cursor-pointer hover:bg-gray-200 active:translate-y-[2px]"
       >
         ← Back
       </button>
 
-
       {/* EVENT FINISHED OVERLAY */}
       {eventFinished && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0,0,0,0.8)",
-            zIndex: 100,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            color: "#fff",
-            fontFamily: "monospace",
-          }}
-        >
-          <div style={{ background: "#111", padding: 24, border: "4px solid #fff" }}>
-            <h2>🏆 Event Finished</h2>
+        <div className="absolute inset-0 bg-black/80 z-100 flex items-center justify-center text-white font-mono">
+          <div className="bg-[#111] p-6 border-4 border-white">
+            <h2 className="text-xl mb-2">🏆 Event Finished</h2>
             <p>
-              Winner:{" "}
-              <strong style={{ color: "#ffd700" }}>
-                {winnerId + " 🎉"}
-              </strong>
+              Winner: <strong className="text-yellow-400">{winnerId + " 🎉"}</strong>
             </p>
-
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-3 space-y-1">
               {finalScores
                 .sort((a, b) => b.catchCount - a.catchCount)
                 .map((p) => (
-                  <div key={p.playerId}>
-                    {p.playerId === avatarId ? "You" : p.playerName}: {p.catchCount}
-                  </div>
+                  <div key={p.playerId}>{p.playerId === avatarId ? "You" : p.playerName}: {p.catchCount}</div>
                 ))}
             </div>
           </div>
@@ -312,19 +259,20 @@ export default function EventPage({ avatarData }: EventPageProps) {
       )}
 
       {/* MAP VIEW */}
-      <div style={{ width: viewPixelWidth, height: viewPixelHeight, overflow: "hidden", position: "relative" }}>
-        <img
-          src={mapImage}
-          alt="map"
+      <div className="relative overflow-hidden" style={{ width: viewPixelWidth, height: viewPixelHeight }}>
+        {/* MAP IMAGE */}
+        <div
+          className="absolute z-0 bg-cover bg-no-repeat"
           style={{
-            position: "absolute",
             left: -offsetX,
             top: -offsetY,
             width: MAP_WIDTH * TILE_SIZE,
             height: MAP_HEIGHT * TILE_SIZE,
+            backgroundImage: `url(${mapImage})`,
           }}
         />
 
+        {/* EVENT POKEMON */}
         {eventPokemons.map(
           (p) =>
             !p.caught && (
@@ -339,6 +287,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
             )
         )}
 
+        {/* OTHER PLAYERS */}
         {otherPlayers.map((p) => (
           <Player
             key={p.id}
@@ -353,6 +302,7 @@ export default function EventPage({ avatarData }: EventPageProps) {
           />
         ))}
 
+        {/* LOCAL PLAYER */}
         <Player
           x={player.x - offsetX}
           y={player.y - offsetY}
@@ -364,17 +314,15 @@ export default function EventPage({ avatarData }: EventPageProps) {
           zIndex={5}
         />
 
-        <img
-          src={mapForeground}
-          alt="foreground"
+        {/* FOREGROUND */}
+        <div
+          className="absolute pointer-events-none z-10 bg-cover bg-no-repeat"
           style={{
-            position: "absolute",
             left: -offsetX,
             top: -offsetY,
             width: MAP_WIDTH * TILE_SIZE,
             height: MAP_HEIGHT * TILE_SIZE,
-            pointerEvents: "none",
-            zIndex: 10,
+            backgroundImage: `url(${mapForeground})`,
           }}
         />
       </div>

@@ -1,4 +1,4 @@
-.sp {
+/* .sp {
   position: absolute;
   width: 55%;
   image-rendering: pixelated;
@@ -13,6 +13,20 @@
   left: 65%;
   top: 12%;
   width: 45.83%;
+} */
+
+.sp {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  image-rendering: pixelated;
+}
+
+.player2-sp,
+.player-sp {
+  left: auto;
+  top: auto;
+  width: 100%;
 }
 
 .sp-bg {
