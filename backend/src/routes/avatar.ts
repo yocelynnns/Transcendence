@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { authMiddleware, AuthRequest } from "../routes/auth";
 import * as AvatarService from "../services/avatar.service";
 
 const router = Router();
 
 // Create avatar & link with user
-router.post("/", authMiddleware, async (req: AuthRequest, res) => {
+router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { userName, avatar, characterOption } = req.body;
 
@@ -14,21 +14,25 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const newAvatar = await AvatarService.createAvatar({
-      userId: req.userId!,
+      userId: req.userId,
       userName,
       avatar,
       characterOption,
     });
 
     return res.status(201).json({ avatar: newAvatar });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[POST /avatar]", err);
-    return res.status(400).json({ message: err.message || "Failed to create avatar" });
+
+    const message =
+      err instanceof Error ? err.message : "Failed to create avatar";
+
+    return res.status(400).json({ message });
   }
 });
 
 // Get single avatar information
-router.get("/:avatarId", async (req, res) => {
+router.get("/:avatarId", async (req: Request, res: Response) => {
   try {
     const avatarId = Array.isArray(req.params.avatarId)
       ? req.params.avatarId[0]
@@ -37,14 +41,18 @@ router.get("/:avatarId", async (req, res) => {
     const avatar = await AvatarService.getAvatarById({ avatarId });
 
     return res.json(avatar);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[GET /avatar/:avatarId]", err);
-    return res.status(400).json({ message: err.message || "Server error" });
+
+    const message =
+      err instanceof Error ? err.message : "Server error";
+
+    return res.status(400).json({ message });
   }
 });
 
 // Update single avatar information
-router.put("/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
+router.put("/:avatarId", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const avatarId = Array.isArray(req.params.avatarId)
       ? req.params.avatarId[0]
@@ -56,9 +64,13 @@ router.put("/:avatarId", authMiddleware, async (req: AuthRequest, res) => {
     });
 
     return res.json(updatedAvatar);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log("[PUT /avatar/:avatarId]", err);
-    return res.status(400).json({ message: err.message || "Failed to update avatar" });
+
+    const message =
+      err instanceof Error ? err.message : "Failed to update avatar";
+
+    return res.status(400).json({ message });
   }
 });
 
