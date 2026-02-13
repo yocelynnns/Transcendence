@@ -49,9 +49,7 @@ export const avatarToSocket = new Map<string, string>();
 
 // Socket Setup
 export function setupSocket(server: any) {
-  const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] },
-  });
+  const io = new Server(server);
 
   // Set socket io instance for battle service
   setSocketIo(io);

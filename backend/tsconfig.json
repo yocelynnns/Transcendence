@@ -17,7 +17,7 @@
     "noImplicitReturns": true,
 
     // Useful for Node
-    "types": ["node"],                   // include Node typings
+    "types": ["node", "express"],                   // include Node typings
     "moduleResolution": "node",          // Node-style module resolution
 
     // Source maps & declaration

@@ -184,7 +184,7 @@ export default function PublicProfilePopup({
     try {
       setLoading(true);
       const res = await fetch(
-        `http://localhost:5001/api/friends/profile/${targetAvatarId}`,
+        `https://localhost/api/friends/profile/${targetAvatarId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -213,7 +213,7 @@ export default function PublicProfilePopup({
   //   try {
   //     setLoading(true);
   //     const res = await fetch(
-  //       `http://localhost:5001/api/friends/profile/${targetAvatarId}`,
+  //       `https://localhost/api/friends/profile/${targetAvatarId}`,
   //       {
   //         headers: { Authorization: `Bearer ${token}` },
   //       }

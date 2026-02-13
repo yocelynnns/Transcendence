@@ -21,7 +21,7 @@ export default function SpectatingButton({ avatarId, setSpectatingBattle }: Spec
   useEffect(() => {
     const fetchAvatar = async () => {
       try {
-        const res = await axios.get(`http://localhost:5001/api/avatar/${avatarId}`);
+        const res = await axios.get(`https://localhost/api/avatar/${avatarId}`);
         setAvatarData(res.data);
       } catch (err) {
         console.log("Failed to fetch avatar:", err);
@@ -51,7 +51,7 @@ export default function SpectatingButton({ avatarId, setSpectatingBattle }: Spec
     emitEvent("joinAsSpectator", { battleId });
 
 
-    const res = await fetch(`http://localhost:5001/api/battle/${battleId}`);
+    const res = await fetch(`https://localhost/api/battle/${battleId}`);
     const currentBattle = await res.json();
     setSpectatingBattle(currentBattle as Battle);
 
