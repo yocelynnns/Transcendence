@@ -21,6 +21,7 @@ interface HomePageProps {
   setSpectatingBattle: Dispatch<React.SetStateAction<Battle | null>>;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
   handleLogOut: () => void;
+  battleLatest: (avatarId?: string) => Promise<void>;
 }
 
 // Hook to detect mobile & portrait orientation
@@ -49,6 +50,7 @@ export default function HomePage({
   setSpectatingBattle,
   setCurrentBattle,
   handleLogOut,
+  battleLatest,
 }: HomePageProps) {
   const navigate = useNavigate();
   const { updateAvatar } = useAvatar(avatarData?._id ?? null);
@@ -104,6 +106,7 @@ export default function HomePage({
           avatarData={avatarData}
           avatarId={avatarData._id}
           freeze={showProfilePanel || showGuildPanel || showFriendsPanel}
+          battleLatest={battleLatest}
         />
       </div>
 

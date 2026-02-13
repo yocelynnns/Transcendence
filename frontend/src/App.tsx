@@ -16,6 +16,7 @@ import AIPages from './pages/AiPages';
 import EventPage from './pages/eventPage';
 import RacePage from './pages/RacePage';
 import SocketManager from "./SocketManager";
+import { useQueryClient } from '@tanstack/react-query';
 
 
 function App() {
@@ -34,7 +35,6 @@ function App() {
     setCurrentBattle(null);
     setSpectatingBattle(null);
   }
-
   // --- stable refetchUser ---
   const refetchUser = useCallback(async () => {
     if (!token) return;
@@ -87,14 +87,29 @@ function App() {
     [avatarId, battleId]
   );
 
-  // ---- auto fetch on mount or currentBattle change ----
+  const queryClient = useQueryClient();
+      
+  const battleLatest = useCallback(
+    async (avatarIdParam?: string) => {
+      const _avatarId = avatarIdParam ?? avatarId;
+      if (!_avatarId) return;
+
+      await queryClient.invalidateQueries({
+        queryKey: ["avatar", _avatarId],
+        exact: true,
+      });
+
+      await refetchBattle();
+    },
+    [avatarId, queryClient, refetchBattle]
+  );
+
+
   useEffect(() => {
     if (!token) return;
-    // Run whenever token changes OR when we need to refresh battle status
     refetchUser();
   }, [token, refetchUser]);
 
-  // Clear currentBattle whenever battleId becomes null
   useEffect(() => {
     if (!battleId && currentBattle) {
       console.log('battleId is null, clearing currentBattle');
@@ -102,7 +117,6 @@ function App() {
     }
   }, [battleId, currentBattle]);
 
-  // ---- auto fetch battle when avatarId or battleId changes ----
   useEffect(() => {
     refetchBattle();
   }, [battleId, avatarId, refetchBattle]);
@@ -178,7 +192,6 @@ function App() {
                 setCurrentBattle={setCurrentBattle}
                 avatarData={avatarData}
                 currentBattle={currentBattle}
-                refetchBattle={refetchBattle}
               />
             ) : (
               <Navigate to="/login" />
@@ -216,7 +229,7 @@ function App() {
           element={
             token
               ? avatarId
-                ? <HomePage avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle} setCurrentBattle={setCurrentBattle} handleLogOut={handleLogOut}/>
+                ? <HomePage avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle} setCurrentBattle={setCurrentBattle} handleLogOut={handleLogOut} battleLatest={battleLatest}/>
                 : <Navigate to="/profile" />
               : <Navigate to="/login" />
           }

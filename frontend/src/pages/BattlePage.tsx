@@ -1,4 +1,4 @@
-import { useEffect, useState, Dispatch } from "react";
+import { useEffect, useState, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameSocket } from "../ws/useGameSocket";
 
@@ -11,12 +11,12 @@ import { getPlayerOtherPokemons, getAliveCount } from "../utils/battleUtils";
 
 import type { Battle, BattlePokemon } from "../types/battleTypes";
 import type { AvatarData } from "../types/avatarTypes";
+import EnemyDontMoveOverlay from "../components/Battle/enemyDontMove";
 
 interface BattlePageProps {
   avatarData: AvatarData | null | undefined;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
-  refetchBattle: () => Promise<Battle | undefined>;
 }
 
 const MOVE_TIMEOUT = 30_000;
@@ -62,17 +62,23 @@ export default function BattlePage({
   avatarData,
   currentBattle,
   setCurrentBattle,
-  refetchBattle,
 }: BattlePageProps) {
   const navigate = useNavigate();
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
-  const myAvatarId = avatarData?._id || sessionStorage.getItem("avatarId");
-
-  const [battleId, setBattleId] = useState<string | null>(
-    currentBattle?._id ?? null
-  );
+  const myAvatarId = avatarData?._id;
   const [battleData, setBattleData] = useState<Battle | null>(null);
   const [moveTimeLeft, setMoveTimeLeft] = useState<number>(MOVE_TIMEOUT);
+  const [enemyDontMove, setenemyDontMove] = useState(false);
+  const [battleId, setBattleId] = useState<string | undefined>(undefined);
+
+  const activeBattleRef = useRef(currentBattle);
+
+  useEffect(() => {
+    if (!currentBattle) return ;
+    activeBattleRef.current = currentBattle;
+    setBattleData(activeBattleRef.current);
+    setBattleId(currentBattle?._id);
+  }, [currentBattle]);
 
   const isPortrait = useIsPortrait();
 
@@ -84,52 +90,6 @@ export default function BattlePage({
         ? "player2"
         : null
       : null;
-
-  // if ended, leave
-  useEffect(() => {
-    const fetchAndCheck = async () => {
-      const updatedBattle = await refetchBattle();
-      if (updatedBattle?.endedAt) navigate(`/matching`);
-    };
-    fetchAndCheck();
-  }, [refetchBattle, navigate]);
-
-  // initial fetch
-  useEffect(() => {
-    if (!battleId) return;
-
-    async function fetchBattle() {
-      try {
-        const res = await fetch(`http://localhost:5001/api/battle/${battleId}`);
-        if (!res.ok) throw new Error("Failed to fetch battle");
-        const fetchedBattle: Battle = await res.json();
-
-        setBattleData({
-          ...fetchedBattle,
-          pokemon1: normalizeTeam(fetchedBattle.pokemon1),
-          pokemon2: normalizeTeam(fetchedBattle.pokemon2),
-          active1: fetchedBattle.active1 ?? 0,
-          active2: fetchedBattle.active2 ?? 0,
-          currentTurn: fetchedBattle.currentTurn ?? "player1",
-          lastPlayer1Turn: fetchedBattle.lastPlayer1Turn
-            ? new Date(fetchedBattle.lastPlayer1Turn)
-            : undefined,
-          lastPlayer2Turn: fetchedBattle.lastPlayer2Turn
-            ? new Date(fetchedBattle.lastPlayer2Turn)
-            : undefined,
-          endedAt: fetchedBattle.endedAt ?? undefined,
-          winner: fetchedBattle.winner ?? undefined,
-          winnerReason: fetchedBattle.winnerReason ?? undefined,
-        });
-      } catch (err) {
-        console.error("Failed to fetch battle:", err);
-        setBattleData(null);
-        setBattleId(null);
-      }
-    }
-
-    fetchBattle();
-  }, [battleId]);
 
   // socket updates
   useEffect(() => {
@@ -166,10 +126,9 @@ export default function BattlePage({
 
     const unsubBattleError = subscribeEvent<{ battleId: string; message: string }>(
       "battleError",
-      (err) => {
-        alert(err.message);
+      () => {
+        setenemyDontMove(true);
         setCurrentBattle(null);
-        navigate("/");
       }
     );
 
@@ -186,12 +145,14 @@ export default function BattlePage({
     const interval = setInterval(() => {
       const now = Date.now();
 
-      const lastTurnTime =
+      const lastTurnString =
         battleData.currentTurn === "player1"
-          ? battleData.lastPlayer1Turn?.getTime()
-          : battleData.lastPlayer2Turn?.getTime();
+          ? battleData.lastPlayer1Turn
+          : battleData.lastPlayer2Turn;
 
-      if (!lastTurnTime) return;
+      if (!lastTurnString) return;
+
+      const lastTurnTime = new Date(lastTurnString).getTime(); // convert string to Date
 
       const timeLeft = MOVE_TIMEOUT - (now - lastTurnTime);
       setMoveTimeLeft(timeLeft > 0 ? timeLeft : 0);
@@ -477,6 +438,16 @@ export default function BattlePage({
                 </div>
               </div>
             )}
+
+
+            {enemyDontMove && (
+              <EnemyDontMoveOverlay
+                result={isMyTurn ? "lose" : "win"}
+                onHome={() => navigate("/")}
+                onMatching={() => navigate("/matching")}
+              />
+            )}
+
 
             {/* Result overlay */}
             {battleResult && (
