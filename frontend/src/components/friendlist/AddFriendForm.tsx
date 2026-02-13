@@ -56,8 +56,17 @@ export function AddFriendForm({ token, onSuccess, onError }: AddFriendFormProps)
         onSuccess(data);
         setEmail("");
       }
-    } catch (err: any) {
-      const errorMessage = err?.message || err?.error || String(err) || "Failed to send request";
+    } catch (err: unknown) {
+      let errorMessage = "Failed to send request";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "error" in err) {
+        errorMessage = String((err as { error: unknown }).error);
+      } else {
+        errorMessage = String(err);
+      }
+
       onError(errorMessage);
     } finally {
       setLoading(false);

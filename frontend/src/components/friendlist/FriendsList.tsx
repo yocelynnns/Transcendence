@@ -21,6 +21,8 @@ export interface FriendsListProps {
 
   onClosePanel: () => void;
   scale: number;
+  battleLatest: (avatarId?: string,battleIdParam?:string ) => Promise<void>;
+  setBattleId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export default function FriendsList(props: FriendsListProps) {
@@ -29,7 +31,7 @@ export default function FriendsList(props: FriendsListProps) {
     myAvatarId,
     myAvatarData,
     onClosePanel, 
-    scale
+    scale,
   } = props;
 
   const BASE_WIDTH = 520;

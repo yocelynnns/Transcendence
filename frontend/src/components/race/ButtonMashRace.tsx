@@ -1,5 +1,12 @@
-import React, { useEffect, useState } from "react";
+// frontend/src/components/race/buttonmashrace.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import RaceTrack from "./RaceTrack";
+import HowToPlayCard from "./HowToPlayCard";
+import RecentMatches from "./RecentMatches";
+import LeaderboardPanel from "./LeaderboardPanel";
+import AchievementsPanel from "./AchievementsPanel";
+import PixelButton from "../elements/PixelButton";
 
 interface Player {
   id: string;
@@ -44,11 +51,40 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   const [joined, setJoined] = useState(false);
   const [started, setStarted] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
+
   const [matchHistory, setMatchHistory] = useState<MatchHistoryItem[]>([]);
   const [myUserName, setMyUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [totalWins, setTotalWins] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<"history" | "achievements">("history");
+  // ✅ Compact mode for "mobile landscape" / short height screens
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const updateCompact = () => {
+      const h = window.innerHeight;
+      const w = window.innerWidth;
+      setCompact(h <= 520 && w >= h); // short-height + landscape-ish => compact
+    };
+    updateCompact();
+    window.addEventListener("resize", updateCompact);
+    return () => window.removeEventListener("resize", updateCompact);
+  }, []);
+
+  // ✅ Compact mode for "mobile landscape" / short height screens
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const updateCompact = () => {
+      const h = window.innerHeight;
+      const w = window.innerWidth;
+      setCompact(h <= 520 && w >= h); // short-height + landscape-ish => compact
+    };
+    updateCompact();
+    window.addEventListener("resize", updateCompact);
+    return () => window.removeEventListener("resize", updateCompact);
+  }, []);
 
   const achievements: Achievement[] = [
     { id: "first_win", title: "Level 1: First Victory", description: "Win your first race", requirement: 1, icon: "🏅" },
@@ -56,62 +92,70 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
     { id: "ten_wins", title: "Level 3: Racing Legend", description: "Win 10 races", requirement: 10, icon: "👑" },
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const avatarRes = await fetch(`http://localhost:5001/api/avatar/${avatarId}`);
-        if (avatarRes.ok) {
-          const avatarData = await avatarRes.json();
-          const username = avatarData.userName || avatarData.avatar?.userName;
-          setMyUserName(username);
-        }
-
-        const statsRes = await fetch(`http://localhost:5001/api/race/stats/${avatarId}`);
-        if (statsRes.ok) {
-          const stats = await statsRes.json();
-          setTotalWins(stats.wins);
-        }
-
-        const historyRes = await fetch(`http://localhost:5001/api/race/history/${avatarId}`);
-        if (historyRes.ok) {
-          const history = await historyRes.json();
-          setMatchHistory(history);
-        }
-
-        const leaderboardRes = await fetch(`http://localhost:5001/api/race/leaderboard`);
-        if (leaderboardRes.ok) {
-          const leaderboardData = await leaderboardRes.json();
-          setLeaderboard(leaderboardData);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
+  // Fetch profile + stats + history + leaderboard
+  const fetchData = async () => {
+    try {
+      const avatarRes = await fetch(`http://localhost:5001/api/avatar/${avatarId}`);
+      if (avatarRes.ok) {
+        const avatarData = await avatarRes.json();
+        const username = avatarData.userName || avatarData.avatar?.userName || "";
+        setMyUserName(username);
       }
-    };
 
+      const statsRes = await fetch(`http://localhost:5001/api/race/stats/${avatarId}`);
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        setTotalWins(stats.wins);
+      }
+
+      const historyRes = await fetch(`http://localhost:5001/api/race/history/${avatarId}`);
+      if (historyRes.ok) {
+        const history = await historyRes.json();
+        setMatchHistory(history);
+      }
+
+      const leaderboardRes = await fetch(`http://localhost:5001/api/race/leaderboard`);
+      if (leaderboardRes.ok) {
+        const leaderboardData = await leaderboardRes.json();
+        setLeaderboard(leaderboardData);
+      }
+    } catch (error) {
+      console.error("Error fetching race data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [avatarId]);
 
+  // Socket connect
   useEffect(() => {
     const newSocket = io("http://localhost:5001/minigame");
     setSocket(newSocket);
     return () => newSocket.disconnect();
   }, []);
 
+  // Socket events + key press
   useEffect(() => {
     if (!socket) return;
 
     socket.on("raceJoined", (racePlayers: Player[]) => setPlayers(racePlayers));
     socket.on("raceUpdate", (racePlayers: Player[]) => setPlayers(racePlayers));
-    socket.on("raceStart", () => setStarted(true));
-    socket.on("raceOver", (winnerName: string) => setWinner(winnerName));
+    socket.on("raceStart", () => {
+      setStarted(true);
+      setWinner(null);
+    });
+    socket.on("raceOver", (winnerName: string) => {
+      setWinner(winnerName);
+      setStarted(false);
+    });
     socket.on("raceError", (error: string) => alert(error));
 
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (joined && started && !winner && e.code === "Space") {
-        socket.emit("press");
-      }
+      if (joined && started && !winner && e.code === "Space") socket.emit("press");
     };
     window.addEventListener("keyup", handleKeyPress);
 
@@ -125,258 +169,206 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
     if (!socket) return;
     socket.emit("joinRace", { avatarId });
     setJoined(true);
+    setStarted(false);
+    setWinner(null);
   };
 
   const handleExit = () => {
-    if (socket) socket.disconnect();
-    if (onExit) onExit();
+    socket?.disconnect();
+    onExit?.();
   };
 
+  // ✅ Rematch = re-join matchmaking, reset local UI
+  const rematch = () => {
+    if (!socket) return;
+    setWinner(null);
+    setStarted(false);
+    // keep joined true so you stay on race screen
+    socket.emit("joinRace", { avatarId });
+    // refresh sidebar data
+    setLoading(true);
+    fetchData();
+  };
+
+  // ✅ FIX: show rematch for BOTH players whenever race ended
+  // - primary: winner received
+  // - fallback: someone reached 100% but raceOver maybe missed
+  const raceEnded = useMemo(() => {
+    if (winner) return true;
+    return players.some((p) => p.position >= 100);
+  }, [winner, players]);
+
+  // ✅ Compact typography/spacing helpers
+  const cardPad = compact ? "p-2" : "p-3 sm:p-4";
+  const titleText = compact ? "text-[11px]" : "text-sm sm:text-base";
+  const bodyText = compact ? "text-[10px]" : "text-xs sm:text-sm";
+
+  // ✅ Heights for each scrollable list (keeps Join button always visible)
+//   const recentListH = useMemo(() => (compact ? "h-[150px]" : "h-[260px] sm:h-[320px]"), [compact]);
+  const leaderboardListH = useMemo(() => (compact ? "h-[120px]" : "h-[200px] sm:h-[240px]"), [compact]);
+  const achievementListH = useMemo(() => (compact ? "h-[160px]" : "h-[260px] sm:h-[320px]"), [compact]);
+
   return (
-    <div className="fixed inset-0 font-sans bg-gradient-to-b from-sky-300 to-blue-50 overflow-y-auto overflow-x-hidden">
-      {/* Exit Button - Always visible, responsive sizing */}
-      <button
+    <div className="fixed inset-0 bg-[#384071] z-50 p-4 overflow-hidden">
+        {/* Close Button */}
+        <button
         onClick={handleExit}
-        className="fixed top-3 right-3 md:top-5 md:right-5 z-50 bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 px-3 md:py-2 md:px-4 rounded-lg shadow-lg transition-all hover:scale-110 flex items-center gap-1 md:gap-2 text-sm md:text-base"
-        title="Return to Home"
-      >
-        <span className="text-lg md:text-xl">←</span>
-        <span>Exit</span>
-      </button>
+        className="absolute top-8 right-8 text-2xl cursor-pointer z-50"
+        >
+        <span className="text-white text-3xl hover:scale-110 block">×</span>
+        </button>
 
-      <div className="w-full min-h-full p-5 flex items-start justify-center">
-        {!joined ? (
-          <div className="w-full max-w-7xl mx-auto bg-white p-4 md:p-8 rounded-xl shadow-lg">
-            <h2 className="text-center text-2xl md:text-3xl text-gray-800 mb-4 md:mb-5">🏁 Eevee Race 🏁</h2>
+        {/* TITLE (separate from panels like you requested) */}
+        <h1 className="text-center text-white font-bold mt-1 text-2xl mb-4 bg-[#677fb4] rounded-lg h-15 justify-center items-center pt-4">
+            Eevee Button Mash Race
+        </h1>
 
-            {/* Two Column Layout - Responsive: 2 cols on desktop (md+), 1 col on mobile */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* LEFT COLUMN - Instructions & Match History */}
-              <div className="flex flex-col gap-5">
-                {/* Instructions */}
-                <div className="bg-gray-50 p-5 rounded-lg border-l-4 border-green-500">
-                  <h3 className="text-lg text-gray-800 mb-4">How to Win:</h3>
-                  <ol className="list-decimal pl-5 space-y-2.5">
-                    <li className="text-gray-600 leading-relaxed">
-                      Wait for an opponent to join (automatic matchmaking)
-                    </li>
-                    <li className="text-gray-600 leading-relaxed">
-                      Press <strong className="text-green-500 font-bold">SPACEBAR</strong> as fast as you can!
-                    </li>
-                    <li className="text-gray-600 leading-relaxed">
-                      First to reach the finish line wins! 🏆
-                    </li>
-                  </ol>
-                </div>
+        {/* TWO MAIN SECTIONS */}
+        <div className="flex flex-col md:flex-row h-[calc(100%-3rem)] gap-6">
+        
+        {/* ================= LEFT PANEL ================= */}
+        <div className="md:flex-[1_1_35%] w-full shrink-0">
+        <div className="h-19/20 p-6 bg-[#677fb4] rounded-lg flex flex-col">
 
-                {/* Match History */}
-                <div className="bg-gray-50 p-5 rounded-lg border-l-4 border-green-500 flex-1">
-                  <h3 className="text-lg text-gray-800 mb-4">📊 Recent Matches</h3>
-                  {loading ? (
-                    <div className="text-center text-gray-400 text-sm py-5">Loading history...</div>
-                  ) : matchHistory.length === 0 ? (
-                    <div className="text-center text-gray-400 text-sm py-5">No matches yet. Be the first to race!</div>
-                  ) : (
-                    <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
-                      {matchHistory.map((match) => {
-                        const isPlayer1 = match.player1 === myUserName;
-                        const myName = isPlayer1 ? match.player1 : match.player2;
-                        const opponentName = isPlayer1 ? match.player2 : match.player1;
-                        const didIWin = match.winner === myUserName;
-
-                        return (
-                          <div key={match._id} className="bg-white p-4 rounded-lg border-2 border-gray-200 transition-all hover:border-green-500 hover:shadow-md hover:shadow-green-100">
-                            <div className="flex items-center justify-between gap-4 mb-2.5">
-                              <div className="flex items-center gap-2 flex-1">
-                                <span className={`text-[15px] font-semibold ${didIWin ? 'text-green-700' : 'text-gray-500 line-through'}`}>
-                                  {myName} (You)
-                                </span>
-                                {didIWin && <span className="text-lg">🏆</span>}
-                              </div>
-                              <span className="text-xs text-gray-400 font-bold px-2.5">VS</span>
-                              <div className="flex items-center gap-2 flex-1 justify-end">
-                                {!didIWin && <span className="text-lg">🏆</span>}
-                                <span className={`text-[15px] font-semibold ${!didIWin ? 'text-green-700' : 'text-gray-500 line-through'}`}>
-                                  {opponentName}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="text-sm font-bold mb-1 text-center">
-                              {didIWin ? "✅ Win" : "❌ Loss"}
-                            </div>
-                            <div className="text-xs text-gray-400 text-center">{match.date}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* RIGHT COLUMN - Leaderboard & Achievements */}
-              <div className="flex flex-col gap-5">
-                {/* Leaderboard */}
-                <div className="bg-gray-50 p-5 rounded-lg border-l-4 border-red-400">
-                  <h3 className="text-lg text-gray-800 mb-4">👑 Top Racers</h3>
-                  {loading ? (
-                    <div className="text-center text-gray-400 text-sm py-5">Loading leaderboard...</div>
-                  ) : leaderboard.length === 0 ? (
-                    <div className="text-center text-gray-400 text-sm py-5">No racers yet. Be the first to compete!</div>
-                  ) : (
-                    <div className="flex flex-col gap-2.5">
-                      {leaderboard.map((entry) => {
-                        const isCurrentUser = entry.userName === myUserName;
-                        const medalEmoji = entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : "🥉";
-                        
-                        return (
-                          <div 
-                            key={entry.rank} 
-                            className={`bg-white p-4 rounded-lg border-2 flex items-center gap-4 transition-all hover:translate-x-1 hover:shadow-md ${
-                              isCurrentUser 
-                                ? 'border-green-500 bg-gradient-to-r from-green-50 to-white shadow-green-200' 
-                                : 'border-gray-200'
-                            }`}
-                          >
-                            <div className="text-3xl min-w-[50px] text-center">{medalEmoji}</div>
-                            <div className="flex-1">
-                              <div className="text-base font-bold text-gray-800 mb-1">
-                                {entry.userName}
-                                {isCurrentUser && <span className="text-xs text-green-500 font-normal"> (You)</span>}
-                              </div>
-                              <div className="text-sm text-gray-600">
-                                {entry.wins}W - {entry.losses}L
-                              </div>
-                            </div>
-                            <div className="text-2xl font-bold text-red-400 min-w-[50px] text-right">
-                              {entry.wins}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Achievements */}
-                <div className="bg-gray-50 p-5 rounded-lg border-l-4 border-yellow-400 flex-1">
-                  <h3 className="text-lg text-gray-800 mb-4">🏆 Achievements</h3>
-                  {loading ? (
-                    <div className="text-center text-gray-400 text-sm py-5">Loading achievements...</div>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {achievements.map((achievement) => {
-                        const isUnlocked = totalWins >= achievement.requirement;
-                        const progress = Math.min((totalWins / achievement.requirement) * 100, 100);
-                        
-                        return (
-                          <div 
-                            key={achievement.id} 
-                            className={`bg-white p-4 rounded-lg border-2 flex items-center gap-4 transition-all relative hover:-translate-y-0.5 hover:shadow-md ${
-                              isUnlocked 
-                                ? 'border-green-500 bg-gradient-to-r from-green-50 to-white' 
-                                : 'border-gray-200 opacity-60 grayscale-[50%]'
-                            }`}
-                          >
-                            <div className={`text-4xl min-w-[50px] text-center ${isUnlocked ? '' : 'grayscale opacity-50'}`}>
-                              {achievement.icon}
-                            </div>
-                            <div className="flex-1">
-                              <div className={`text-base font-bold mb-1 ${isUnlocked ? 'text-gray-800' : 'text-gray-400'}`}>
-                                {achievement.title}
-                              </div>
-                              <div className={`text-sm mb-2 ${isUnlocked ? 'text-gray-600' : 'text-gray-400'}`}>
-                                {achievement.description}
-                              </div>
-                              <div className="flex items-center gap-2.5">
-                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div 
-                                    className={`h-full rounded-full transition-all duration-500 ${
-                                      isUnlocked ? 'bg-gradient-to-r from-green-500 to-green-400' : 'bg-gray-300'
-                                    }`}
-                                    style={{ width: `${progress}%` }}
-                                  />
-                                </div>
-                                <div className="text-xs font-bold text-gray-600 min-w-[50px] text-right">
-                                  {totalWins} / {achievement.requirement}
-                                </div>
-                              </div>
-                            </div>
-                            {isUnlocked && (
-                              <div className="absolute top-2.5 right-2.5 bg-green-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">
-                                ✓
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
+            {/* SCROLLABLE LEFT CONTENT */}
+            <div className="flex-1 overflow-y-auto space-y-4">
+            
+            {/* HOW TO PLAY */}
+            <div className={`bg-[#a5b6dd] rounded-md ${cardPad} text-center`}>
+                <h3 className={`font-semibold mb-2 text-white text-xl`}>
+                    How To Play
+                </h3>
+                <ul className={`${bodyText} space-y-1`}>
+                <li>1. Wait for an opponent (matchmaking)</li>
+                <li>2. Press SPACEBAR rapidly</li>
+                <li>3. First to finish wins</li>
+                </ul>
             </div>
 
-            {/* Join Button - Full Width at Bottom */}
-            <button 
-              onClick={joinRace}
-              className="w-full mt-6 py-3 bg-green-500 text-white rounded-lg text-lg font-bold cursor-pointer transition-colors hover:bg-green-600"
-            >
-              Join Race
-            </button>
-          </div>
-        ) : (
-          <div className="w-full max-w-7xl mx-auto">
-            {!started && (
-              <div className="text-center text-base md:text-lg text-gray-600 p-4 md:p-5 bg-white rounded-xl my-3 md:my-5">
-                ⏳ Waiting for another player to join...
-              </div>
-            )}
-
-            {winner && (
-              <div className="text-center text-2xl md:text-3xl text-yellow-300 bg-gradient-to-br from-purple-600 to-purple-800 p-4 md:p-5 rounded-xl my-3 md:my-5 animate-pulse">
-                🎉 {winner} wins! 🏆
-              </div>
-            )}
-
-            {started && !winner && (
-              <div className="text-center text-lg md:text-xl text-gray-800 bg-yellow-100 p-3 md:p-4 rounded-xl my-3 md:my-5 border-2 border-yellow-400">
-                Press <strong className="text-red-600 text-xl md:text-2xl">SPACEBAR</strong> to move! 🚀
-              </div>
-            )}
-
-            <div className="bg-white p-4 md:p-8 rounded-2xl shadow-xl mt-3 md:mt-5">
-              {players.map((p) => (
-                <div key={p.id} className="relative h-20 md:h-[100px] mb-3 md:mb-5 bg-green-500 border-2 md:border-3 border-green-800 rounded-lg md:rounded-xl overflow-visible">
-                  <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_48px,rgba(255,255,255,0.3)_48px,rgba(255,255,255,0.3)_50px)] rounded-lg md:rounded-xl" />
-                  
-                  {p.position < 100 && (
-                    <div className="absolute left-[95%] top-1/2 -translate-y-1/2 flex items-center justify-center z-[15]">
-                      <img src="/assets/race/finish-line.png" alt="finish line" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
-                    </div>
-                  )}
-
-                  <div className="absolute left-1 md:left-2.5 top-0.5 md:top-1 font-bold text-xs md:text-base text-gray-800 bg-white/90 px-1 md:px-2 py-0.5 rounded text-center z-[5]">
-                    {p.name}
-                  </div>
-
-                  <div className="absolute right-1 md:right-2.5 top-0.5 md:top-1 font-bold text-xs md:text-sm text-gray-600 bg-white/90 px-1 md:px-2 py-0.5 rounded z-[5]">
-                    {Math.floor(p.position)}%
-                  </div>
-
-                  {/* Sprite positioned with percentage, capped at 90% to prevent overflow */}
-                  <div 
-                    className="absolute top-1/2 -translate-y-1/2 transition-all duration-100 ease-out z-10 drop-shadow-lg"
-                    style={{ left: `${Math.min(p.position * 0.90, 90)}%` }}
-                  >
-                    <img src={p.sprite} alt={`${p.name}'s character`} className="w-16 h-16 md:w-20 md:h-20 object-contain block" />
-                  </div>
-                </div>
-              ))}
+            {/* TOP RACERS */}
+            <div className={`bg-[#a5b6dd] rounded-md flex-1 ${cardPad}`}>
+                <LeaderboardPanel
+                leaderboard={leaderboard}
+                myUserName={myUserName}
+                loading={loading}
+                leaderboardListH={leaderboardListH}
+                compact={compact}
+                cardPad={cardPad}
+                titleText={titleText}
+                />
             </div>
-          </div>
-        )}
-      </div>
+
+            </div> {/* end scrollable wrapper */}
+
+        </div>
+        </div>
+
+
+        {/* ================= RIGHT PANEL ================= */}
+        <div className="md:flex-[1_1_65%] w-full shrink-0">
+            <div className="h-19/20 p-6 bg-[#677fb4] rounded-lg flex flex-col">
+
+                {/* TABS */}
+                <div className="flex justify-center gap-4 mb-6">
+                <button
+                    onClick={() => setActiveTab("history")}
+                    className={`px-4 py-2 rounded-md font-semibold ${
+                    activeTab === "history"
+                        ? "bg-[#ffffff] text-[#384071]"
+                        : "bg-[#a5b6dd] text-[#677fb4]"
+                    }`}
+                >
+                    Match History
+                </button>
+
+                <button
+                    onClick={() => setActiveTab("achievements")}
+                    className={`px-4 py-2 rounded-md font-semibold ${
+                    activeTab === "achievements"
+                        ? "bg-[#ffffff] text-[#384071]"
+                        : "bg-[#a5b6dd] text-[#677fb4]"
+                    }`}
+                >
+                    Achievements
+                </button>
+                </div>
+
+                {/* TAB CONTENT */}
+                <div className="flex-1 overflow-y-auto pr-1">
+
+                {/* MATCH HISTORY TAB */}
+                {activeTab === "history" && (
+                    <>
+                    {loading && <p className="text-center">Loading...</p>}
+                    {!loading && matchHistory.length === 0 && (
+                        <p className="text-center text-[#384071]">
+                        No races yet
+                        </p>
+                    )}
+
+                    {matchHistory.map((m) => {
+                        const didWin = m.winner === myUserName;
+
+                        return (
+                        <div
+                            key={m._id}
+                            className="bg-[#a5b6dd] rounded-md p-4 mb-4"
+                        >
+                            <p className="text-center font-bold">
+                            {m.player1} vs {m.player2}
+                            </p>
+
+                            <p className="text-center text-sm">
+                            {didWin ? "🏆 WIN" : "❌ LOSS"}
+                            </p>
+
+                            <p className="text-center text-sm text-gray-500">
+                            {m.date}
+                            </p>
+                        </div>
+                        );
+                    })}
+                    </>
+                )}
+
+                {/* ACHIEVEMENTS TAB */}
+                {activeTab === "achievements" && (
+                    <AchievementsPanel
+                        achievements={achievements}
+                        totalWins={totalWins}
+                        achievementListH={achievementListH}
+                        cardPad={cardPad}
+                        titleText={titleText}
+                        compact={compact}
+                    />
+                )}
+
+                </div>
+
+                {/* JOIN BUTTON */}
+                {!joined && (
+                <button
+                    onClick={joinRace}
+                    className="mt-6 px-4 py-3 bg-[#57b87c] text-white rounded-md w-full font-semibold hover:scale-102"
+                >
+                    Join Race
+                </button>
+                )}
+                {joined && (
+                    <RaceTrack
+                        players={players}
+                        started={started}
+                        winner={winner}
+                        compact={compact}
+                        onClose={handleExit}
+                    />
+                )}
+            </div>
+           </div>
+        </div>
     </div>
-  );
+    );
+
 };
 
 export default ButtonMashRace;

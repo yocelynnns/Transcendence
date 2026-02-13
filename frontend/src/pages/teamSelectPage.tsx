@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TeamSelectLayout from "../components/teamSelect/teamSelectLayout";
-import type { AvatarData } from "../types/avatarTypes";
+import { AvatarData } from "../types/avatarTypes";
 import { useGameSocket } from "../ws/useGameSocket";
 import { Battle, BattlePokemon } from "../types/battleTypes";
 import { PlayerPokemon } from "../types/pokemonTypes";
@@ -12,22 +12,23 @@ interface TeamSelectPageProps {
   avatarData?: AvatarData | null;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
-  refetchBattle: () => Promise<void>;
+  refetchBattle: (avatarIdParam?: string, battleIdParam?: string) => Promise<Battle | undefined>;
 }
 
 const TEAM_SIZE = 3;
-const PICK_WINDOW_MS = 35_000;
 
-// Normalize player id whether battle.player1 is populated object or raw id
-function getAvatarIdFromPlayer(player: any): string | null {
-  if (!player) return null;
-  if (typeof player === "string") return player;
-  if (typeof player === "object") {
-    // mongoose populated doc
-    if (player._id) return player._id.toString?.() ?? String(player._id);
-  }
-  return null;
-}
+type PlayerRef =
+  | string
+  | {
+      _id: string | { toString(): string };
+    };
+
+// Helper to get player ID from either string or populated object
+const getPlayerId = (player: PlayerRef): string => {
+  if (typeof player === 'string') return player;
+  if (player?._id) return player._id.toString();
+  return '';
+};
 
 export default function TeamSelectPage({
   avatarData,
@@ -47,7 +48,10 @@ export default function TeamSelectPage({
  
   const { subscribeEvent, playerReadyMatch } = useGameSocket(() => {});
 
-  const avatarId = avatarData?._id ?? null;
+  const usedIds = useMemo(
+    () => new Set(slots.filter(Boolean).map((p) => p!._id)),
+    [slots]
+  );
 
   const activeBattleRef = useRef(currentBattle);
   const avatarInventoryRef = useRef(avatarData?.pokemonInventory);
@@ -161,43 +165,36 @@ export default function TeamSelectPage({
     return () => clearInterval(interval);
   }, [handleReady]);
 
-  // --- Pick/remove handlers ---
   const pickPokemon = (p: PlayerPokemon) => {
-    if (saving) return;
+    if (saving || battleEnded) return;
     if (timeLeft === 0) return;
     if (usedIds.has(p._id)) return;
 
     setSlots((prev) => {
       const next = [...prev];
       next[activeSlot] = p;
-
       const nextEmpty = next.findIndex((x) => x === null);
       if (nextEmpty !== -1) setActiveSlot(nextEmpty);
-
       return next;
     });
   };
 
   const removeSlot = (idx: number) => {
-    if (saving) return;
-
+    if (saving || battleEnded) return;
     setSlots((prev) => {
       const next = [...prev];
       next[idx] = null;
       return next;
     });
-
     setActiveSlot(idx);
-    readySentRef.current = false;
-    stopWaiting();
   };
 
   useEffect(() => {
-    if (!battleId) return;
+    if (!battleId || !avatarId) return;
 
     const handleBattleLatestAndNavigate = async () => {
       try {
-        await refetchBattle();
+        await refetchBattle(avatarId, battleId);
         navigate(`/battle/${battleId}`);
       } catch (err) {
         console.error("Failed to update battle and navigate:", err);
@@ -211,7 +208,7 @@ export default function TeamSelectPage({
           handleBattleLatestAndNavigate();
         }
       }
-    });
+    );
 
     const offBattleError = subscribeEvent(
       "TeamUpError",
@@ -228,10 +225,9 @@ export default function TeamSelectPage({
       offBattleReady();
       offBattleError();
     };
-  }, [battleId, subscribeEvent, navigate, setCurrentBattle, refetchBattle]);
+  }, [battleId, subscribeEvent, navigate, setCurrentBattle, refetchBattle, avatarId]);
 
 
-  // Loading states
   if (!avatarData) {
     return (
       <div className="w-screen h-screen flex justify-center items-center bg-[#1e1e2f] text-white font-mono text-[20px]">
@@ -244,7 +240,18 @@ export default function TeamSelectPage({
  return (
     <div className="relative w-screen h-screen">
       {/* Fullscreen Enemy Disconnected Overlay */}
-      {enemyDisconnected && <EnemyDisconnectedOverlay/>}
+        {enemyDisconnected && (
+          <EnemyDisconnectedOverlay
+            onHome={() => {
+              setCurrentBattle(null);
+              navigate("/");
+            }}
+            onMatching={() => {
+              setCurrentBattle(null);
+              navigate("/matching");
+            }}
+          />
+        )}
 
       {/* Team Select Layout */}
       <TeamSelectLayout

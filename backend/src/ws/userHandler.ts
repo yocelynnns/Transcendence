@@ -220,14 +220,14 @@ export const setupUserHandlers = (io: Server, socket: Socket) => {
         console.log(`Failed to check battle status for ${avatarId}:`, err);
       }
 
-      if (!isInBattle) {
+      // if (!isInBattle) {
         // Only mark offline if NOT in an active battle
-        onlineUsers.delete(avatarId);
-        io.emit("userStatusChange", { avatarId, online: false });
-        console.log(`👤 Avatar ${avatarId} marked offline (reason: ${reason})`);
-      } else {
-        console.log(`👤 Avatar ${avatarId} disconnected but IN ACTIVE BATTLE - keeping online status`);
-      }
+      onlineUsers.delete(avatarId);
+      io.emit("userStatusChange", { avatarId, online: false });
+      console.log(`👤 Avatar ${avatarId} marked offline (reason: ${reason})`);
+      // } else {
+      //   console.log(`👤 Avatar ${avatarId} disconnected but IN ACTIVE BATTLE - keeping online status`);
+      // }
       
       socketToAvatar.delete(socket.id);
 

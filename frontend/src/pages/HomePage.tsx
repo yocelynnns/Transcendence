@@ -1,4 +1,4 @@
-import { useState, useEffect, Dispatch } from "react";
+import { useState, useEffect, Dispatch, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import GameMap from "../components/map/GameMap";
 import AvatarProfile from "../components/profile/GameProfile";
@@ -21,7 +21,9 @@ interface HomePageProps {
   setSpectatingBattle: Dispatch<React.SetStateAction<Battle | null>>;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
   handleLogOut: () => void;
-  battleLatest: (avatarId?: string) => Promise<void>;
+  battleLatest: (avatarId?: string, battleIdParam?:string) => Promise<void>;
+  setBattleId: React.Dispatch<React.SetStateAction<string | null>>;
+  currentBattle: Battle | null;
 }
 
 // Hook to detect mobile & portrait orientation
@@ -51,6 +53,8 @@ export default function HomePage({
   setCurrentBattle,
   handleLogOut,
   battleLatest,
+  setBattleId,
+  currentBattle,
 }: HomePageProps) {
   const navigate = useNavigate();
   const { updateAvatar } = useAvatar(avatarData?._id ?? null);
@@ -80,6 +84,17 @@ export default function HomePage({
     window.addEventListener("resize", () => requestAnimationFrame(handleResize));
     return () => window.removeEventListener("resize", () => requestAnimationFrame(handleResize));
   }, []);
+
+  const hasNavigatedRef = useRef(false);
+
+  useEffect(() => {
+    if (!currentBattle) return;
+    if (hasNavigatedRef.current) return; // prevent multiple navigations
+
+    hasNavigatedRef.current = true;
+    navigate("/matching");
+  }, [currentBattle, navigate]);
+
 
   if (!avatarData || bannerScale === 0) return null;
 
@@ -198,6 +213,8 @@ export default function HomePage({
           setCurrentBattle={setCurrentBattle}
           onClosePanel={() => setShowFriendsPanel(false)}
           scale={finalGuildScale}
+          battleLatest={battleLatest}
+          setBattleId={setBattleId}
           // isOpen={showFriendsPanel}
         />
       )}

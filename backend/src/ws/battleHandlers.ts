@@ -315,6 +315,8 @@ export function setupBattleHandlers(
           }
         }
 
+        console.log(battle);
+
         io.to(roomName).emit("directMatchReady", { battle });
         
         // Notify friends

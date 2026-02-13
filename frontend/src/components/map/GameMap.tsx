@@ -40,7 +40,7 @@ interface GameMapProps {
   avatarData: AvatarData | null;
   avatarId: string | null;
   freeze: boolean; /* ADD */
-  battleLatest: (avatarId?: string) => Promise<void>;
+  battleLatest: (avatarId?: string, battleIdParam?:string) => Promise<void>;
 }
 
 //MAIN COMPONENT
@@ -260,7 +260,7 @@ export default function GameMap({ avatarData, avatarId, freeze, battleLatest }: 
         />
       )}
 
-      {showPopupTwo && (
+      {/* {showPopupTwo && ( */}
         <GamePopup
           title="Mini Game"
           onClose={() => setShowPopUpTwo(false)}
@@ -272,7 +272,7 @@ export default function GameMap({ avatarData, avatarId, freeze, battleLatest }: 
           }}
           scale={uiScale}
         />
-      )}
+      {/* )} */}
 
       {/* ENCOUNTER DIALOG */}
       {showDialog && encounterPokemon && (
