@@ -45,8 +45,7 @@ export default function TeamSelectPage({
   const [saving, setSaving] = useState(false);
   const [enemyDisconnected, setEnemyDisconnected] = useState(false);
   const [battleEnded, setBattleEnded] = useState(false);
- 
-  const { subscribeEvent, playerReadyMatch } = useGameSocket(() => {});
+  const { emitEvent, subscribeEvent, playerReadyMatch } = useGameSocket(() => {});
 
   const usedIds = useMemo(
     () => new Set(slots.filter(Boolean).map((p) => p!._id)),
@@ -243,10 +242,12 @@ export default function TeamSelectPage({
         {enemyDisconnected && (
           <EnemyDisconnectedOverlay
             onHome={() => {
+              emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
               setCurrentBattle(null);
               navigate("/");
             }}
             onMatching={() => {
+              emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
               setCurrentBattle(null);
               navigate("/matching");
             }}
