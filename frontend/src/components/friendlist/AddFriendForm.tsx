@@ -6,7 +6,7 @@ interface AddFriendFormProps {
   token: string;
   myAvatarId: string;
   myAvatarData?: { userName: string; avatar: string };
-  onSuccess: (data: FriendRequestResult) => void;
+  onSuccess: (data: FriendRequestResult, email?: string) => void;
   onError: (error: string) => void;
 }
 

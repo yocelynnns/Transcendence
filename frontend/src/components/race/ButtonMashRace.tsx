@@ -118,11 +118,15 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   }, [avatarId]);
 
   // Socket connect
-  useEffect(() => {
-    const newSocket = io("http://localhost:5001/minigame");
-    setSocket(newSocket);
-    return () => newSocket.disconnect();
-  }, []);
+    useEffect(() => {
+      const newSocket = io("http://localhost:5001/minigame");
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect(); // now returns void
+      };
+    }, []);
+
 
   // Socket events + key press
   useEffect(() => {

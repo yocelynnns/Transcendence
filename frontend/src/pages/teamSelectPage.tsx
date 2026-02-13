@@ -242,12 +242,12 @@ export default function TeamSelectPage({
         {enemyDisconnected && (
           <EnemyDisconnectedOverlay
             onHome={() => {
-              emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
+              emitEvent("playerReturnedHome", { avatarId: avatarId }); 
               setCurrentBattle(null);
               navigate("/");
             }}
             onMatching={() => {
-              emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
+              emitEvent("playerReturnedHome", { avatarId: avatarId }); 
               setCurrentBattle(null);
               navigate("/matching");
             }}
