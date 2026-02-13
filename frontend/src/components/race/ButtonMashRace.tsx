@@ -81,26 +81,26 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   // Fetch profile + stats + history + leaderboard
   const fetchData = async () => {
     try {
-      const avatarRes = await fetch(`http://localhost:5001/api/avatar/${avatarId}`);
+      const avatarRes = await fetch(`/api/avatar/${avatarId}`);
       if (avatarRes.ok) {
         const avatarData = await avatarRes.json();
         const username = avatarData.userName || avatarData.avatar?.userName || "";
         setMyUserName(username);
       }
 
-      const statsRes = await fetch(`http://localhost:5001/api/race/stats/${avatarId}`);
+      const statsRes = await fetch(`/api/race/stats/${avatarId}`);
       if (statsRes.ok) {
         const stats = await statsRes.json();
         setTotalWins(stats.wins);
       }
 
-      const historyRes = await fetch(`http://localhost:5001/api/race/history/${avatarId}`);
+      const historyRes = await fetch(`/api/race/history/${avatarId}`);
       if (historyRes.ok) {
         const history = await historyRes.json();
         setMatchHistory(history);
       }
 
-      const leaderboardRes = await fetch(`http://localhost:5001/api/race/leaderboard`);
+      const leaderboardRes = await fetch(`/api/race/leaderboard`);
       if (leaderboardRes.ok) {
         const leaderboardData = await leaderboardRes.json();
         setLeaderboard(leaderboardData);
@@ -118,11 +118,15 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   }, [avatarId]);
 
   // Socket connect
-  useEffect(() => {
-    const newSocket = io("http://localhost:5001/minigame");
-    setSocket(newSocket);
-    return () => newSocket.disconnect();
-  }, []);
+    useEffect(() => {
+      const newSocket = io("/minigame");
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect(); // now returns void
+      };
+    }, []);
+
 
   // Socket events + key press
   useEffect(() => {

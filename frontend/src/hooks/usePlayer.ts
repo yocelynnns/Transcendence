@@ -7,7 +7,7 @@ import { canMove, PLAYER_OFFSET_X, PLAYER_OFFSET_Y } from "../utils/collision";
 import { PlayerState } from "../types/avatarTypes";
 
 //CONSTANTS
-const MOVE_SPEED = 1.5;  
+const MOVE_SPEED = 3;  
 const FRAME_INTERVAL = 180;   
 const TILE_SIZE = 84;
 

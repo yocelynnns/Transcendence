@@ -68,7 +68,7 @@ export default function ProfilePage({
         const results = await Promise.all(
           avatarData.battleHistory.map(async (battleId) => {
             const res = await fetch(
-              `http://localhost:5001/api/battle/${battleId.toString()}`
+              `/api/battle/${battleId.toString()}`
             );
             const data = await res.json();
             return {
@@ -95,7 +95,7 @@ export default function ProfilePage({
     const reader = new FileReader();
     reader.onload = (ev) => {
       const newAvatar = ev.target?.result as string;
-      updateAvatar({ avatar: newAvatar });
+      updateAvatar?.({ avatar: newAvatar });
       emitEvent("avatarUpdated", {
         avatarId: avatarData._id,
         avatarImage: newAvatar,
@@ -107,7 +107,7 @@ export default function ProfilePage({
 
   // Username submit
   const handleNameSubmit = () => {
-    updateAvatar({ userName: tempName });
+    updateAvatar?.({ userName: tempName });
     emitEvent("avatarUpdated", {
       avatarId: avatarData._id,
       avatarImage: avatarData.avatar,
@@ -119,7 +119,7 @@ export default function ProfilePage({
   const handleSignOut = () => {
     signOut();
     sessionStorage.removeItem("token");
-    handleLogOut();
+    handleLogOut?.();
     navigate("/login");
   };
 
@@ -246,7 +246,7 @@ export default function ProfilePage({
                         key={i}
                         onClick={() => {
                           setSelectedIndex(i);
-                          updateAvatar({ characterOption: i });
+                          updateAvatar?.({ characterOption: i });
                           emitEvent("avatarUpdated", {
                             avatarId: avatarData._id,
                             avatarImage: avatarData.avatar,

@@ -1,4 +1,5 @@
 import express, { Express, Request, Response, NextFunction } from "express";
+import cors from "cors";
 import http from "http";
 import mongoSanitize from "express-mongo-sanitize";
 import authRoutes from "./routes/auth";

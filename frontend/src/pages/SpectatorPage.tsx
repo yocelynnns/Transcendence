@@ -83,7 +83,7 @@ export default function SpectatorPage({
     let cancelled = false;
     setLoading(true);
 
-    fetch(`http://localhost:5001/api/battle/${battleIdFromUrl}`)
+    fetch(`/api/battle/${battleIdFromUrl}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
