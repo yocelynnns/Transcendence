@@ -147,10 +147,10 @@ export default function SpectatorPage({
             active2: updatedBattle.active2 ?? prev.active2 ?? 0,
             currentTurn: updatedBattle.currentTurn ?? prev.currentTurn,
             lastPlayer1Turn: updatedBattle.lastPlayer1Turn
-              ? new Date(updatedBattle.lastPlayer1Turn as any)
+              ? new Date(updatedBattle.lastPlayer1Turn)
               : prev.lastPlayer1Turn,
             lastPlayer2Turn: updatedBattle.lastPlayer2Turn
-              ? new Date(updatedBattle.lastPlayer2Turn as any)
+              ? new Date(updatedBattle.lastPlayer2Turn)
               : prev.lastPlayer2Turn,
             endedAt: updatedBattle.endedAt ?? prev.endedAt,
             winner: updatedBattle.winner ?? prev.winner,
