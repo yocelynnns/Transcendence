@@ -1,7 +1,7 @@
 import { Battle } from "../types/battleTypes";
 import { BlockedListResponse, Friend, FriendRequest, BattleInvite } from "../types/friends.types";
 
-const API_URL = "https://localhost/api";
+const API_URL = "/api";
 
 export async function fetchFriends(token: string): Promise<Friend[]> {
   const res = await fetch(`${API_URL}/friends`, {

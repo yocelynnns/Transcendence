@@ -14,7 +14,7 @@ export function connectSocket(token: string): Socket {
   }
     
   if (!socket) {
-    socket = io("https://localhost", {
+    socket = io("", {
       autoConnect: true,
       auth: {
         token,

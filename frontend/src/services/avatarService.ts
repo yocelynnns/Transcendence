@@ -17,7 +17,7 @@ export async function createAvatar(
   token: string,
   payload: CreateAvatarPayload
 ): Promise<CreateAvatarResponse> {
-  const res = await fetch("https://localhost/api/avatar", {
+  const res = await fetch("/api/avatar", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -50,7 +50,7 @@ export const avatarToSocket = new Map<string, string>();
 // Socket Setup
 export function setupSocket(server: any) {
   // const io = new Server(server, {
-  //   cors: { origin: "https://localhost",     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], credentials: false }
+  //   cors: { origin: "",     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], credentials: false }
   // });
 
   const io = new Server(server);

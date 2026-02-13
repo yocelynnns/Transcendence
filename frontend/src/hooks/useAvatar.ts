@@ -8,7 +8,7 @@ export function useAvatar(avatarId: string | null) {
   const query = useQuery<AvatarData, Error>({
     queryKey: ["avatar", avatarId],
     queryFn: async (): Promise<AvatarData> => {
-      const res = await fetch(`https://localhost/api/avatar/${avatarId}`, {
+      const res = await fetch(`/api/avatar/${avatarId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -21,7 +21,7 @@ export function useAvatar(avatarId: string | null) {
 
   const mutation = useMutation<AvatarData, Error, Partial<AvatarData>>({
     mutationFn: async (updatedFields) => {
-      const res = await fetch(`https://localhost/api/avatar/${avatarId}`, {
+      const res = await fetch(`/api/avatar/${avatarId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

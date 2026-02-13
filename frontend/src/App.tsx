@@ -65,7 +65,7 @@ function App() {
       if (!_avatarId || !_battleId) return;
 
       try {
-        const res = await fetch(`https://localhost/api/battle/${_battleId}`);
+        const res = await fetch(`/api/battle/${_battleId}`);
         if (!res.ok) throw new Error("Failed to fetch battle");
 
         const battleData: Battle = await res.json();

@@ -68,7 +68,7 @@ export default function ProfilePage({
         const results = await Promise.all(
           avatarData.battleHistory.map(async (battleId) => {
             const res = await fetch(
-              `https://localhost/api/battle/${battleId.toString()}`
+              `/api/battle/${battleId.toString()}`
             );
             const data = await res.json();
             return {

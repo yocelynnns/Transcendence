@@ -87,7 +87,7 @@ export default function ChatWindow({
     
   //   try {
   //     const res = await fetch(
-  //       `https://localhost/api/chat/${friendId}?page=${pageNum}&limit=50`,
+  //       `/api/chat/${friendId}?page=${pageNum}&limit=50`,
   //       { headers: { Authorization: `Bearer ${token}` } }
   //     );
       
@@ -123,7 +123,7 @@ export default function ChatWindow({
 
       try {
         const res = await fetch(
-          `https://localhost/api/chat/${friendId}?page=${pageNum}&limit=50`,
+          `/api/chat/${friendId}?page=${pageNum}&limit=50`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -159,7 +159,7 @@ export default function ChatWindow({
 
     const fetchAvatar = async () => {
       try {
-        const res = await fetch(`https://localhost/api/avatar/${friend.avatarId}`, {
+        const res = await fetch(`/api/avatar/${friend.avatarId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data: AvatarData = await res.json(); // make sure backend returns AvatarData

@@ -111,7 +111,7 @@ export default function GameMap({ avatarData, avatarId, freeze, battleLatest }: 
   //FETCH INITIAL POKEMON
   useEffect(() => {
     axios
-      .get<MapPokemon[]>("https://localhost/api/pokemon")
+      .get<MapPokemon[]>("/api/pokemon")
       .then((res) => setPokemonList(res.data))
       .catch((err) => console.error("Failed to fetch initial Pokemon:", err));
   }, [setPokemonList]);
