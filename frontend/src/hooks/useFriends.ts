@@ -49,6 +49,7 @@ export function useFriends({
   myAvatarId,
   setSpectatingBattle,
   setCurrentBattle,
+  setBattleId,
 }: FriendsListProps) {
   const navigate = useNavigate();
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
@@ -325,11 +326,18 @@ export function useFriends({
     );
 
     cleanups.push(
-      subscribeEvent<{ battle: Battle }>("directMatchReady", ({ battle }) => {
-        setCurrentBattle(battle);
-        navigate(`/teamSelect/${battle._id}`, { state: { battle } });
-        setShowPanel(false);
-      })
+      subscribeEvent<{ battle: Battle }>(
+        "directMatchReady",
+        async ({ battle }) => {
+          if (battle && battle._id)
+          {
+            setCurrentBattle(battle);
+            setBattleId(battle._id);
+          } 
+          navigate(`/teamSelect/${battle._id}`);
+          setShowPanel(false);
+        }
+      )
     );
 
     // Friend management

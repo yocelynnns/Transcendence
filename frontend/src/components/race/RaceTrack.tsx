@@ -22,13 +22,13 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ players, started, winner, compact
         {/* Close button */}
         <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-[20] text-black bg-[#e9e6d7] border-2 border-black font-black px-2 py-1 hover:bg-[#d6d0b7] transition-colors"
+        className="absolute top-4 right-4 z-20 text-black bg-[#e9e6d7] border-2 border-black font-black px-2 py-1 hover:bg-[#d6d0b7] transition-colors"
         >
         ✕
         </button>
 
         {/* Messages (closer to top, no border) */}
-        <div className="w-full max-w-[1400px] mb-2 text-center">
+        <div className="w-full max-w-350 mb-2 text-center">
         {!started && !winner && (
             <div className="bg-[#e9e6d7] p-2 text-lg text-black mx-auto rounded">
             ⏳ WAITING FOR ANOTHER PLAYER...
@@ -54,7 +54,7 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ players, started, winner, compact
             <div
             key={p.id}
             className={`relative overflow-hidden border-4 border-black bg-[#7fa3c7] mb-3 ${
-                compact ? "h-[66px]" : "h-[96px]"
+                compact ? "h-16.5" : "h-24"
             }`}
             >
             {/* Track pattern */}
@@ -68,7 +68,7 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ players, started, winner, compact
 
             {/* Finish line */}
             {p.position < 100 && (
-                <div className="absolute left-[95%] top-1/2 -translate-y-1/2 z-[15]">
+                <div className="absolute left-[95%] top-1/2 -translate-y-1/2 z-15">
                 <img
                     src="/assets/race/finish-line.png"
                     alt="finish"
@@ -81,7 +81,7 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ players, started, winner, compact
 
             {/* Player name & % */}
             <div
-                className={`absolute left-2 top-2 z-[5] border-2 border-black bg-[#e9e6d7] px-2 py-0.5 text-black font-black ${
+                className={`absolute left-2 top-2 z-5 border-2 border-black bg-[#e9e6d7] px-2 py-0.5 text-black font-black ${
                 compact ? "text-[11px]" : "text-[12px] sm:text-[14px]"
                 }`}
             >
@@ -89,7 +89,7 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ players, started, winner, compact
             </div>
 
             <div
-                className={`absolute right-2 top-2 z-[5] border-2 border-black bg-[#e9e6d7] px-2 py-0.5 text-black font-black ${
+                className={`absolute right-2 top-2 z-5 border-2 border-black bg-[#e9e6d7] px-2 py-0.5 text-black font-black ${
                 compact ? "text-[11px]" : "text-[12px] sm:text-[14px]"
                 }`}
             >
@@ -97,8 +97,8 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ players, started, winner, compact
             </div>
 
             {/* Progress bar */}
-            <div className="absolute left-2 right-2 bottom-2 z-[6]">
-                <div className="h-[10px] border-2 border-black bg-white overflow-hidden">
+            <div className="absolute left-2 right-2 bottom-2 z-6">
+                <div className="h-2.5 border-2 border-black bg-white overflow-hidden">
                 <div
                     className="h-full bg-[#2ecc71]"
                     style={{ width: `${Math.max(0, Math.min(100, p.position))}%` }}
