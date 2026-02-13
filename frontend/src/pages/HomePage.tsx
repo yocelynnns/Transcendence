@@ -85,15 +85,15 @@ export default function HomePage({
     return () => window.removeEventListener("resize", () => requestAnimationFrame(handleResize));
   }, []);
 
-  // const hasNavigatedRef = useRef(false);
+  const hasNavigatedRef = useRef(false);
 
-  // useEffect(() => {
-  //   if (!currentBattle) return;
-  //   if (hasNavigatedRef.current) return; // prevent multiple navigations
+  useEffect(() => {
+    if (!currentBattle) return;
+    if (hasNavigatedRef.current) return; // prevent multiple navigations
 
-  //   hasNavigatedRef.current = true;
-  //   navigate("/matching");
-  // }, [currentBattle, navigate]);
+    hasNavigatedRef.current = true;
+    navigate("/matching");
+  }, [currentBattle, navigate]);
 
 
   if (!avatarData || bannerScale === 0) return null;
