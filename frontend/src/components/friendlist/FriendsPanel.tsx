@@ -83,7 +83,7 @@ export function FriendsPanel({
           {/* Header Content Layer */}
           <div className="absolute inset-0 flex items-center justify-between px-4">
             <img
-              src={ASSETS.CHATICONS.FRIENDLIST}
+              src={ASSETS.FRIENDICON.FRIENDLIST}
               alt="Friendlist"
               className="w-11 h-11 object-contain image-rendering-pixelated mb-1"
             />
@@ -96,7 +96,7 @@ export function FriendsPanel({
                 onClick={onClose}
               >
                 <img
-                  src={ASSETS.CHATICONS.X}
+                  src={ASSETS.FRIENDICON.X}
                   alt="X"
                   className="w-10 h-10 object-contain image-rendering-pixelated hover:scale-110"
                 />
@@ -279,7 +279,7 @@ export function FriendsPanel({
                               title={inBattle ? "Spectate" : "Viewing Results"}
                             >
                               <img
-                                src={ASSETS.CHATICONS.SPECTATE}
+                                src={ASSETS.FRIENDICON.SPECTATE}
                                 alt="Spectate"
                                 className="w-10 h-10 object-contain image-rendering-pixelated"
                               />

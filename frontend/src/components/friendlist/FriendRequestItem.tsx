@@ -44,7 +44,7 @@ export function FriendRequestItem({ request, onAccept, onReject }: FriendRequest
             className="w-9 h-9 flex items-center justify-center cursor-pointer"
           >
             <img
-              src={ASSETS.CHATICONS.X}
+              src={ASSETS.FRIENDICON.X}
               alt="no"
               className="w-10 h-10 object-contain image-rendering-pixelated"
             />
@@ -54,7 +54,7 @@ export function FriendRequestItem({ request, onAccept, onReject }: FriendRequest
             className="w-9 h-9 flex items-center justify-center cursor-pointer"
           >
             <img
-              src={ASSETS.CHATICONS.TICK}
+              src={ASSETS.FRIENDICON.TICK}
               alt="yes"
               className="w-10 h-10 object-contain image-rendering-pixelated"
             />
