@@ -168,6 +168,21 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
             <Link to="/signup" className="font-bold text-[#ffcc00]">
               Sign up
             </Link>
+            <div className="flex gap-4 justify-center mt-2">
+                <button
+                  onClick={() => setShowTOS(true)}
+                  className="text-[0.8rem] text-blue-200 underline hover:text-blue-700"
+                >
+                  Terms of Service
+                </button>
+
+                <button
+                  onClick={() => setShowPrivacyPolicy(true)}
+                  className="text-[0.8rem] text-blue-200 underline hover:text-blue-700"
+                >
+                  Privacy Policy
+                </button>
+              </div>
           </div>
         </form>
         </div>
