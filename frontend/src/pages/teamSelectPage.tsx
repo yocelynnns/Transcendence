@@ -47,10 +47,7 @@ export default function TeamSelectPage({
  
   const { subscribeEvent, playerReadyMatch } = useGameSocket(() => {});
 
-  const usedIds = useMemo(
-    () => new Set(slots.filter(Boolean).map((p) => p!._id)),
-    [slots]
-  );
+  const avatarId = avatarData?._id ?? null;
 
   const activeBattleRef = useRef(currentBattle);
   const avatarInventoryRef = useRef(avatarData?.pokemonInventory);
@@ -166,7 +163,7 @@ export default function TeamSelectPage({
 
   // --- Pick/remove handlers ---
   const pickPokemon = (p: PlayerPokemon) => {
-    if (saving || battleEnded) return;
+    if (saving) return;
     if (timeLeft === 0) return;
     if (usedIds.has(p._id)) return;
 
@@ -182,7 +179,8 @@ export default function TeamSelectPage({
   };
 
   const removeSlot = (idx: number) => {
-    if (saving || battleEnded) return;
+    if (saving) return;
+
     setSlots((prev) => {
       const next = [...prev];
       next[idx] = null;

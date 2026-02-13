@@ -55,104 +55,6 @@ interface MessageRejectedEvent {
   timestamp: string;
 }
 
-const styles = {
-  overlay: {
-    position: "fixed" as const,
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: "rgba(0,0,0,0.5)",
-    display: "flex", justifyContent: "center", alignItems: "center",
-    zIndex: 200,
-  },
-  chatContainer: {
-    width: 400, height: 600, background: "white",
-    borderRadius: 12, boxShadow: "0 0 20px rgba(0,0,0,0.4)",
-    display: "flex", flexDirection: "column" as const,
-    fontFamily: "monospace", border: "4px solid #333",
-    overflow: "hidden",
-  },
-  header: {
-    display: "flex", alignItems: "center", gap: 12,
-    padding: 16, background: "#ffcc00", borderBottom: "2px solid #333",
-  },
-  avatar: {
-    width: 48, height: 48, borderRadius: "50%",
-    border: "2px solid #333", position: "relative" as const,
-    backgroundSize: "cover", backgroundPosition: "center",
-    cursor: "pointer",
-  },
-  onlineIndicator: (online: boolean) => ({
-    position: "absolute" as const, bottom: -2, right: -2,
-    width: 14, height: 14, borderRadius: "50%",
-    background: online ? "#4CAF50" : "#999",
-    border: "2px solid white",
-  }),
-  headerInfo: { flex: 1 },
-  friendName: { 
-    fontSize: 16, 
-    fontWeight: "bold" as const, 
-    color: "#333", 
-    margin: 0,
-    cursor: "pointer",
-  },
-  status: { fontSize: 12, color: "#666" },
-  typing: { fontSize: 12, color: "#4CAF50", fontStyle: "italic" as const },
-  closeBtn: {
-    background: "transparent", border: "none", fontSize: 20,
-    cursor: "pointer", color: "#333", width: 32, height: 32,
-    display: "flex", alignItems: "center", justifyContent: "center",
-  },
-  messagesContainer: {
-    flex: 1, overflowY: "auto" as const, padding: 16,
-    background: "#f5f5f5", display: "flex", flexDirection: "column" as const, gap: 12,
-  },
-  messageRow: (isMe: boolean, isRejected?: boolean) => ({
-    display: "flex", justifyContent: isMe ? "flex-end" : "flex-start",
-    alignItems: "flex-end", gap: 8,
-    opacity: isRejected ? 0.7 : 1,
-  }),
-  messageBubble: (isMe: boolean, isRejected?: boolean) => ({
-    maxWidth: "70%", padding: "10px 14px",
-    borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-    background: isRejected ? "#ff5555" : isMe ? "#4CAF50" : "white", 
-    color: isRejected ? "white" : isMe ? "white" : "#333",
-    border: `2px solid ${isRejected ? "#cc0000" : "#333"}`, 
-    fontSize: 14, lineHeight: 1.4, wordBreak: "break-word" as const,
-  }),
-  rejectedText: {
-    fontSize: 11, 
-    marginTop: 4, 
-    fontStyle: "italic" as const,
-    opacity: 0.9,
-  },
-  messageAvatar: {
-    width: 32, height: 32, borderRadius: "50%",
-    border: "2px solid #333", backgroundSize: "cover", backgroundPosition: "center", flexShrink: 0,
-  },
-  timestamp: { fontSize: 10, color: "#999", marginTop: 4, textAlign: "right" as const },
-  inputContainer: { display: "flex", gap: 8, padding: 12, background: "white", borderTop: "2px solid #333" },
-  input: {
-    flex: 1, padding: "10px 14px", fontSize: 14, fontFamily: "monospace",
-    border: "2px solid #333", borderRadius: 20, outline: "none", background: "#f9f9f9",
-  },
-  sendBtn: {
-    width: 44, height: 44, borderRadius: "50%", background: "#ffcc00",
-    border: "2px solid #333", cursor: "pointer", fontSize: 18,
-    display: "flex", alignItems: "center", justifyContent: "center",
-  },
-  emptyState: { textAlign: "center" as const, color: "#999", padding: 40, fontSize: 14 },
-  dateDivider: { textAlign: "center" as const, fontSize: 11, color: "#999", margin: "8px 0" },
-  loadingIndicator: { textAlign: "center" as const, padding: 10, color: "#666", fontSize: 12 },
-  loadMoreBtn: { textAlign: "center", padding: 10, cursor: "pointer", color: "#666", fontSize: 12 },
-  errorBanner: {
-    background: "#ff5555",
-    color: "white",
-    padding: "8px 12px",
-    fontSize: 12,
-    textAlign: "center" as const,
-    borderBottom: "2px solid #cc0000",
-  },
-};
-
 const getRoomId = (id1: string, id2: string) => [id1, id2].sort().join("_");
 
 export default function ChatWindow({
@@ -177,20 +79,73 @@ export default function ChatWindow({
   const roomId = getRoomId(myAvatarId, friend.avatarId);
   const friendId = friend.avatarId;
 
-  const fetchMessages = async (pageNum: number = 1) => {
-    if (loading) return;
-    setLoading(true);
+  // const fetchMessages = async (pageNum: number = 1) => {
+  //   if (loading) return;
+  //   setLoading(true);
     
-    try {
-      const res = await fetch(
-        `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  //   try {
+  //     const res = await fetch(
+  //       `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
       
-      if (!res.ok) {
-        console.log("Failed to fetch messages:", res.status);
+  //     if (!res.ok) {
+  //       console.log("Failed to fetch messages:", res.status);
+  //       setLoading(false);
+  //       return;
+  //     }
+      
+  //     const data = await res.json();
+  //     console.log("📚 Fetched", data.messages.length, "messages");
+      
+  //     if (pageNum === 1) {
+  //       setMessages(data.messages);
+  //     } else {
+  //       setMessages(prev => [...data.messages, ...prev]);
+  //     }
+      
+  //     setHasMore(data.pagination.hasMore);
+  //     setPage(pageNum);
+  //   } catch (err) {
+  //     console.log("Failed to fetch messages:", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+  const fetchMessages = useCallback(
+    async (pageNum: number = 1) => {
+      if (loading) return;
+      setLoading(true);
+
+      try {
+        const res = await fetch(
+          `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (!res.ok) {
+          console.log("Failed to fetch messages:", res.status);
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        console.log("📚 Fetched", data.messages.length, "messages");
+
+        if (pageNum === 1) {
+          setMessages(data.messages);
+        } else {
+          setMessages(prev => [...data.messages, ...prev]);
+        }
+
+        setHasMore(data.pagination.hasMore);
+        setPage(pageNum);
+      } catch (err) {
+        console.log("Failed to fetch messages:", err);
+      } finally {
         setLoading(false);
-        return;
       }
     },
     [friendId, token] // dependencies used inside the function
@@ -274,7 +229,7 @@ export default function ChatWindow({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [friendId, emitEvent, subscribeEvent ]);
+  }, [friendId, emitEvent, fetchMessages, myAvatarId,roomId, subscribeEvent ]);
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
@@ -583,9 +538,10 @@ export default function ChatWindow({
           myAvatarId={myAvatarId}
           targetAvatarId={friend.avatarId}
           onClose={() => setShowProfile(false)}
-          onChallenge={onChallenge} 
+          onChallenge={onChallenge}
         />
       )}
     </>
   );
+
 }
