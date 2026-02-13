@@ -1,0 +1,56 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    container_name: backend
+    # environment:
+    #   - PORT=5001
+    #   - MONGO_URI=mongodb://mongo:27017/pokemon-game
+    #   - JWT_SECRET=your_secret_here
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+    # ports:                   # << ADD THIS
+    #   - "5001:5001"
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    restart: always
+    networks:
+      - app-network
+
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: always
+    networks:
+      - app-network
+
+volumes:
+  mongo-data:
+
+networks:
+  app-network:
+    driver: bridge
