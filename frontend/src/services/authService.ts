@@ -12,7 +12,7 @@ export async function signup(email: string, password: string, timeout = 10000): 
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch("https://localhost/api/auth/signup", {
+    const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -37,7 +37,7 @@ export async function login(email: string, password: string, timeout = 10000): P
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch("https://localhost/api/auth/login", {
+    const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -59,7 +59,7 @@ export async function getUserInfo(token: string, timeout = 10000): Promise<UserD
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch("https://localhost/api/auth/me", {
+    const res = await fetch("/api/auth/me", {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,

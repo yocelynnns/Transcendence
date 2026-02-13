@@ -49,7 +49,7 @@ export default function GuildCreate({
     setError(null);
 
     try {
-      const res = await fetch("https://localhost/api/guild", {
+      const res = await fetch("/api/guild", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

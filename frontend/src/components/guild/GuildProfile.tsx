@@ -74,7 +74,7 @@ export default function GuildProfile({
     try {
       setLeaving(true);
       const res = await fetch(
-        `https://localhost/api/guild/${guild._id}/leave`,
+        `/api/guild/${guild._id}/leave`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -101,7 +101,7 @@ export default function GuildProfile({
 
     try {
       setDisbanding(true);
-      const res = await fetch(`https://localhost/api/guild/${guild._id}`, {
+      const res = await fetch(`/api/guild/${guild._id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -125,7 +125,7 @@ export default function GuildProfile({
 
     try {
       setUpdating(true);
-      const res = await fetch(`https://localhost/api/guild/${guild._id}`, {
+      const res = await fetch(`/api/guild/${guild._id}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -154,7 +154,7 @@ export default function GuildProfile({
 
     try {
       const res = await fetch(
-        `https://localhost/api/guild/${guild._id}/kick/${targetAvatarId}`,
+        `/api/guild/${guild._id}/kick/${targetAvatarId}`,
         { method: "POST", headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error((await res.json()).message || "Failed to kick member");
@@ -169,7 +169,7 @@ export default function GuildProfile({
     if (!guild || !token) return;
     try {
       const res = await fetch(
-        `https://localhost/api/guild/${guild._id}/promote/${targetAvatarId}`,
+        `/api/guild/${guild._id}/promote/${targetAvatarId}`,
         { method: "POST", headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error((await res.json()).message || "Failed to promote member");
@@ -184,7 +184,7 @@ export default function GuildProfile({
     if (!guild || !token) return;
     try {
       const res = await fetch(
-        `https://localhost/api/guild/${guild._id}/demote/${targetAvatarId}`,
+        `/api/guild/${guild._id}/demote/${targetAvatarId}`,
         { method: "POST", headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error((await res.json()).message || "Failed to demote co-leader");

@@ -4,7 +4,7 @@ export async function fetchGuildMessages(
   guildId: string | undefined,
   token: string | null
 ): Promise<GuildMessage[]> {
-  const res = await fetch(`https://localhost/api/guildMessage/${guildId}/messages`, {
+  const res = await fetch(`/api/guildMessage/${guildId}/messages`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
