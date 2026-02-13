@@ -201,12 +201,12 @@ export function FriendsPanel({
           {/* BATTLES TAB */}
           {activeTab === "battles" && (
             <div>
+              <div className="flex-1 min-w-0 px-2 mb-3 text-white">
+                ⚔️ Challenges Received
+              </div>
               {/* Battle Invites */}
               {battleInvites.length > 0 && (
-                <div className="mb-4 p-3 bg-yellow-100 border-2 border-orange-500 rounded-lg">
-                  <div className="flex items-center gap-1 mb-2 text-orange-800 font-bold text-sm">
-                    ⚔️ Challenges Received
-                  </div>
+                <div>
                   {battleInvites.map((invite) => (
                     <BattleInviteItem
                       key={invite.inviteId}
@@ -220,81 +220,77 @@ export function FriendsPanel({
 
               {/* Friends In Battle */}
               <div>
-                <div className="flex items-center gap-1 mb-2 text-gray-800 font-bold text-sm">
+                <div className="flex-1 min-w-0 px-2 mb-3 pt-3 text-white">
                   👁️ Spectate Friends
                 </div>
-                {friends.filter((f) => f.battleStatus === "in_battle").length === 0 ? (
+                {friends.filter((f) => f.battleStatus === "in_battle" || f.battleStatus === "viewing_results").length === 0 ? (
                   <div className="text-center text-white text-[1rem] p-5">
                     No friends in battle
                   </div>
                 ) : (
                   friends
-                    .filter((f) => f.battleStatus === "in_battle")
-                    .map((friend) => (
-                      <div
-                        key={friend.avatarId}
-                        className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg mb-2 border-2 border-purple-600"
-                      >
+                  .filter((f) => f.battleStatus === "in_battle" || f.battleStatus === "viewing_results")
+                  .map((friend) => {
+                    const inBattle = friend.battleStatus === "in_battle";
+                    const viewing = friend.battleStatus === "viewing_results";
+
+                    return (
+                      <div className="relative mb-6 h-16 w-full" key={friend.avatarId}>
+                        {/* PIXEL BACKGROUND */}
+                        <PixelButton
+                          colorA="#a5b6dd"
+                          colorB="#384071"
+                          colorText="#384071"
+                          textSize="0"
+                          height={80}
+                          width="100%"
+                          cursorPointer={false}
+                        />
                         <div
-                          className="w-10 h-10 rounded-full border-2 border-gray-800 relative bg-cover bg-center"
-                          style={{ backgroundImage: `url(${friend.avatarImage})` }}
+                          key={friend.avatarId}
+                          className="absolute top-1 left-0 w-full h-full flex items-center justify-between px-4"
                         >
-                          <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center text-[8px]">
-                            ⚔️
+                          <div
+                            className="relative w-10 h-10 shrink-0 rounded-full border-2 border-gray-800 bg-center bg-cover"
+                            style={{ backgroundImage: `url(${friend.avatarImage})` }}
+                          >
+                            <div
+                              className={`absolute -bottom-1 ml-3 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white flex items-center justify-center text-[8px] ${
+                                inBattle ? "bg-orange-500" : "bg-blue-500"
+                              }`}
+                            >
+                              {inBattle ? "⚔️" : "📊"}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0 px-2">
+                            <div className="flex items-center text-[13px] font-bold text-[#384071] mb-0.5 overflow-hidden whitespace-nowrap">
+                              {friend.userName}
+                            </div>
+                            <div className="text-[11px] text-[#384071]">
+                              {inBattle ? "🔴 In Battle" : "📊 Viewing Results"}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={inBattle ? () => onSpectate(friend) : undefined}
+                              className={`w-9 h-9 rounded-full bg-[#677fb4] border-2 border-[#384071] flex items-center justify-center ${
+                                viewing ? "opacity-20 cursor-default" : "cursor-pointer"
+                              }`}
+                              title={inBattle ? "Spectate" : "Viewing Results"}
+                            >
+                              <img
+                                src={ASSETS.CHATICONS.SPECTATE}
+                                alt="Spectate"
+                                className="w-10 h-10 object-contain image-rendering-pixelated"
+                              />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-bold">{friend.userName}</div>
-                          <div className="text-xs text-gray-500">🔴 In Battle</div>
-                        </div>
-                        <button
-                          onClick={() => onSpectate(friend)}
-                          className="w-7 h-7 rounded-full bg-purple-600 text-white border-2 border-gray-800 flex items-center justify-center text-xs"
-                          title="Spectate"
-                        >
-                          👁️
-                        </button>
                       </div>
-                    ))
+                    )
+                  })
                 )}
               </div>
-
-              {/* Friends Viewing Results */}
-              {friends.filter((f) => f.battleStatus === "viewing_results").length > 0 && (
-                <div className="mt-4">
-                  <div className="flex items-center gap-1 mb-2 text-blue-600 font-bold text-sm">
-                    📊 Viewing Results
-                  </div>
-                  {friends
-                    .filter((f) => f.battleStatus === "viewing_results")
-                    .map((friend) => (
-                      <div
-                        key={friend.avatarId}
-                        className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg mb-2 border-2 border-blue-500"
-                      >
-                        <div
-                          className="w-10 h-10 rounded-full border-2 border-gray-800 relative bg-cover bg-center"
-                          style={{ backgroundImage: `url(${friend.avatarImage})` }}
-                        >
-                          <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-[8px]">
-                            📊
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-bold">{friend.userName}</div>
-                          <div className="text-xs text-gray-500">📊 Viewing Results</div>
-                        </div>
-                        <button
-                          onClick={() => onViewResults(friend)}
-                          className="w-7 h-7 rounded-full bg-blue-500 text-white border-2 border-gray-800 flex items-center justify-center text-xs"
-                          title="View Results"
-                        >
-                          📊
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              )}
             </div>
           )}
         </div>

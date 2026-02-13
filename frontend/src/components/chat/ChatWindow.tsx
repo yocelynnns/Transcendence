@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { ASSETS } from "../../assets";
 import PublicProfilePopup from "../profile/PublicProfilePopup";
+import PixelButton from "../elements/PixelButton";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 
@@ -191,62 +192,9 @@ export default function ChatWindow({
         setLoading(false);
         return;
       }
-      
-      const data = await res.json();
-      console.log("📚 Fetched", data.messages.length, "messages");
-      
-      if (pageNum === 1) {
-        setMessages(data.messages);
-      } else {
-        setMessages(prev => [...data.messages, ...prev]);
-      }
-      
-      setHasMore(data.pagination.hasMore);
-      setPage(pageNum);
-    } catch (err) {
-      console.log("Failed to fetch messages:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  // const fetchMessages = useCallback(
-  //   async (pageNum: number = 1) => {
-  //     if (loading) return;
-  //     setLoading(true);
-
-  //     try {
-  //       const res = await fetch(
-  //         `http://localhost:5001/api/chat/${friendId}?page=${pageNum}&limit=50`,
-  //         { headers: { Authorization: `Bearer ${token}` } }
-  //       );
-
-  //       if (!res.ok) {
-  //         console.log("Failed to fetch messages:", res.status);
-  //         setLoading(false);
-  //         return;
-  //       }
-
-  //       const data = await res.json();
-  //       console.log("📚 Fetched", data.messages.length, "messages");
-
-  //       if (pageNum === 1) {
-  //         setMessages(data.messages);
-  //       } else {
-  //         setMessages(prev => [...data.messages, ...prev]);
-  //       }
-
-  //       setHasMore(data.pagination.hasMore);
-  //       setPage(pageNum);
-  //     } catch (err) {
-  //       console.log("Failed to fetch messages:", err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   },
-  //   [friendId, token, loading] // dependencies used inside the function
-  // );
+    },
+    [friendId, token] // dependencies used inside the function
+  );
         
 
   useEffect(() => {
@@ -397,110 +345,238 @@ export default function ChatWindow({
 
   return (
     <>
-      <div style={styles.overlay} onClick={onClose}>
-        <div style={styles.chatContainer} onClick={e => e.stopPropagation()}>
-          {errorMessage && (
-            <div style={styles.errorBanner}>
-              ❌ {errorMessage}
-            </div>
-          )}
-          
-          <div style={styles.header}>
-            <div 
-              style={{...styles.avatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}}
-              onClick={() => setShowProfile(true)}
-            >
-              <div style={styles.onlineIndicator(!!friend.online)} />
-            </div>
-            <div style={styles.headerInfo}>
-              <h3 
-                style={styles.friendName}
-                onClick={() => setShowProfile(true)}
-              >
-                {friend.userName}
-              </h3>
-              {isTyping ? <span style={styles.typing}>typing...</span> : 
-               <span style={styles.status}>{friend.online ? "🟢 Online" : "⚫ Offline"}</span>}
-            </div>
-            <button onClick={onClose} style={styles.closeBtn}>✕</button>
-          </div>
-
-          <div ref={messagesContainerRef} style={styles.messagesContainer}>
-            {hasMore && !loading && (
-              <div
-                style={styles.loadMoreBtn as React.CSSProperties}
-                onClick={() => fetchMessages(page + 1)}
-              >
-                Load older messages ↑
-              </div>
-            )}
-            {loading && <div style={styles.loadingIndicator}>Loading...</div>}
-            
-            {messages.length === 0 && !loading ? (
-              <div style={styles.emptyState}>No messages yet.<br/>Say hello to {friend.userName}! 👋</div>
-            ) : (
-              Object.entries(grouped).map(([date, msgs]) => (
-                <div key={date}>
-                  <div style={styles.dateDivider}>{date}</div>
-                  {msgs.map((msg, idx) => {
-                    const isMe = msg.senderId === myAvatarId;
-                    const showAvatar = !isMe && (idx === msgs.length - 1 || msgs[idx + 1]?.senderId !== msg.senderId);
-                    
-                    return (
-                      <div key={msg._id} style={styles.messageRow(isMe, msg.rejected)}>
-                        {!isMe && showAvatar && (
-                          <div style={{...styles.messageAvatar, backgroundImage: `url(${friend.avatarImage || defaultAvatar})`}} />
-                        )}
-                        {!isMe && !showAvatar && <div style={{width: 32}} />}
-                        
-                        <div>
-                          <div style={styles.messageBubble(isMe, msg.rejected)}>
-                            {msg.content}
-                            {msg.rejected && (
-                              <div style={styles.rejectedText}>
-                                Blocked: {msg.rejectedReason || "Message could not be delivered"}
-                              </div>
-                            )}
-                          </div>
-                          <div style={styles.timestamp}>
-                            {formatTime(msg.createdAt)}
-                            {isMe && (
-                              <span style={{marginLeft: 4}}>
-                                {msg.rejected ? "❌" : msg.read ? "✓✓" : msg.isOptimistic ? "⏳" : "✓"}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+        {/* Chat Container */}
+        <div className="flex flex-col h-full">
+          <div className="relative top-6 w-7/8 left-1/16">
+            <div className="relative mb-5 w-full">
+              <PixelButton
+                colorA="#677fb4"
+                colorB="#384071"
+                colorText="#ffffff"
+                textSize="1rem"
+                height={80}
+                width="100%"
+                cursorPointer={false}
+              />
+              {/* Error Banner */}
+              {/* {errorMessage && (
+                <div className="bg-red-500 text-white text-center text-xs px-3 py-2 border-b-2 border-red-700">
+                  ❌ {errorMessage}
                 </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
+              )} */}
+
+              {/* Header */}
+              <div className="absolute inset-0 flex items-center justify-between px-6">
+                {/* Avatar */}
+                <div
+                  className="relative w-12 h-12 shrink-0 rounded-full border-2 border-gray-800 bg-center bg-cover"
+                  style={{
+                    backgroundImage: `url(${friend.avatarImage || defaultAvatar})`,
+                  }}
+                  onClick={() => setShowProfile(true)}
+                >
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                      friend.online ? "bg-green-500" : "bg-gray-400"
+                    }`}
+                  />
+                </div>
+
+                {/* Name + Status */}
+                <div className="flex-1 min-w-0 px-2 ml-2">
+                  <div
+                    className="flex items-center text-[1rem] font-bold text-[#ffffff] mb-0.5 overflow-hidden whitespace-nowrap"
+                    onClick={() => setShowProfile(true)}
+                  >
+                    {friend.userName}
+                  </div>
+
+                  {isTyping ? (
+                  <div className="text-[0.8rem] text-[#384071]">
+                    typing...
+                  </div>
+                  ) : (
+                    <div className="text-[0.8rem] text-[#384071]">
+                      {friend.online ? "🟢 Online" : "⚫ Offline"}
+                    </div>
+                  )}
+                </div>
+
+                {/* Close */}
+                <div className="text-right">
+                  <button
+                    onClick={onClose}
+                  >
+                    <img
+                      src={ASSETS.CHATICONS.X}
+                      alt="X"
+                      className="w-10 h-10 object-contain image-rendering-pixelated hover:scale-110"
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style={styles.inputContainer}>
-            <input
-              type="text"
-              value={inputValue}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              style={styles.input}
-              maxLength={1000}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!inputValue.trim()}
-              style={{...styles.sendBtn, opacity: inputValue.trim() ? 1 : 0.5, cursor: inputValue.trim() ? "pointer" : "not-allowed"}}
-            >
-              📨
-            </button>
+          <div className="flex-1 overflow-visible">
+            <div className="relative h-[92%] w-7/8 left-1/16 top-6">
+              <PixelButton
+                colorA="#677fb4"   
+                colorB="#384071"  
+                colorText="#ab7b81"  
+                textSize="16px"
+                height="100%"
+                width="100%"
+                cursorPointer={false}
+              />
+              <div className="absolute inset-0 p-4 overflow-y-auto overscroll-contain font-mono">
+                {/* Messages */}
+                <div
+                  ref={messagesContainerRef}
+                  className="h-140 overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#ffffff]"
+                >
+                  {hasMore && !loading && (
+                    <div
+                      onClick={() => fetchMessages(page + 1)}
+                      className="text-center text-xs text-gray-600 cursor-pointer hover:underline"
+                    >
+                      Load older messages ↑
+                    </div>
+                  )}
+
+                  {loading && (
+                    <div className="text-center text-xs text-gray-500">
+                      Loading...
+                    </div>
+                  )}
+
+                  {messages.length === 0 && !loading ? (
+                    <div className="text-center text-gray-400 text-sm py-10">
+                      No messages yet.
+                      <br />
+                      Say hello to {friend.userName}! 👋
+                    </div>
+                  ) : (
+                    Object.entries(grouped).map(([date, msgs]) => (
+                      <div key={date}>
+                        <div className="text-center text-xs text-gray-400 my-2">
+                          {date}
+                        </div>
+
+                        {msgs.map((msg, idx) => {
+                          const isMe = msg.senderId === myAvatarId;
+                          const showAvatar =
+                            !isMe &&
+                            (idx === msgs.length - 1 ||
+                              msgs[idx + 1]?.senderId !== msg.senderId);
+
+                          return (
+                            <div
+                              key={msg._id}
+                              className={`flex items-end gap-2 ${
+                                isMe ? "justify-end" : "justify-start"
+                              } ${msg.rejected ? "opacity-70" : ""}`}
+                            >
+                              {/* Avatar */}
+                              {!isMe && showAvatar && (
+                                <div
+                                  className="w-8 h-8 rounded-full border-2 border-[#333] bg-cover bg-center"
+                                  style={{
+                                    backgroundImage: `url(${friend.avatarImage || defaultAvatar})`,
+                                  }}
+                                />
+                              )}
+                              {!isMe && !showAvatar && <div className="w-8" />}
+
+                              <div className="max-w-[70%]">
+                                <div
+                                  className={`px-4 py-2 text-sm leading-snug wrap-break-word border-2 ${
+                                    msg.rejected
+                                      ? "bg-red-500 text-white border-red-700"
+                                      : isMe
+                                      ? "bg-green-500 text-white border-[#333] rounded-t-2xl rounded-bl-2xl"
+                                      : "bg-white text-[#333] border-[#333] rounded-t-2xl rounded-br-2xl"
+                                  }`}
+                                >
+                                  {msg.content}
+
+                                  {msg.rejected && (
+                                    <div className="text-[11px] mt-1 italic opacity-90">
+                                      Blocked:{" "}
+                                      {msg.rejectedReason ||
+                                        "Message could not be delivered"}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="text-[10px] text-gray-400 mt-1 text-right">
+                                  {formatTime(msg.createdAt)}
+                                  {isMe && (
+                                    <span className="ml-1">
+                                      {msg.rejected
+                                        ? "❌"
+                                        : msg.read
+                                        ? "✓✓"
+                                        : msg.isOptimistic
+                                        ? "⏳"
+                                        : "✓"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="flex gap-2 items-center mt-3">
+                  <div className="relative flex-1">
+                     <PixelButton
+                      colorA="#a5b6dd"   
+                      colorB="#384071"  
+                      colorText="#ab7b81"  
+                      textSize="16px"
+                      height="100%"
+                      width="100%"
+                    />
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Type a message..."
+                      maxLength={1000}
+                      className={`absolute inset-0 px-3 py-4 outline-none bg-transparent font-mono text-sm
+                        ${inputValue ? "text-[#384071]" : "text-[#ffffff]"}`}
+                    />
+                  </div>
+                  <div className="relative w-12 h-12 shrink-0">
+                    <button
+                      onClick={handleSend}
+                      disabled={!inputValue.trim()}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <img
+                        src={ASSETS.ICONS.SEND}
+                        alt="Send"
+                        className={`w-12 h-12 object-contain image-rendering-pixelated ${
+                          inputValue.trim()
+                            ? "hover:scale-110"
+                            : "opacity-20 cursor-not-allowed"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
       {showProfile && (
         <PublicProfilePopup
           token={token}
