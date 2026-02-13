@@ -3,7 +3,7 @@ import React from "react";
 export default function PrivacyPolicyPage() {
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-white text-[#384071] font-sans">
+    <div className="flex flex-col min-h-screen w-full bg-white text-[#384071] font-sans">
       {/* Header */}
       <header className="flex flex-col items-center p-8 text-center text-[#677fb4] bg-[#f0f3ff] shrink-0">
         <h1 className="text-5xl font-bold">
