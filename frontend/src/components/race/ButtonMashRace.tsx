@@ -2,11 +2,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import RaceTrack from "./RaceTrack";
-import HowToPlayCard from "./HowToPlayCard";
-import RecentMatches from "./RecentMatches";
+// import HowToPlayCard from "./HowToPlayCard";
+// import RecentMatches from "./RecentMatches";
 import LeaderboardPanel from "./LeaderboardPanel";
 import AchievementsPanel from "./AchievementsPanel";
-import PixelButton from "../elements/PixelButton";
+// import PixelButton from "../elements/PixelButton";
 
 interface Player {
   id: string;
@@ -190,7 +190,7 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
   const bodyText = compact ? "text-[10px]" : "text-xs sm:text-sm";
 
   // ✅ Heights for each scrollable list (keeps Join button always visible)
-  const recentListH = useMemo(() => (compact ? "h-[150px]" : "h-[260px] sm:h-[320px]"), [compact]);
+//   const recentListH = useMemo(() => (compact ? "h-[150px]" : "h-[260px] sm:h-[320px]"), [compact]);
   const leaderboardListH = useMemo(() => (compact ? "h-[120px]" : "h-[200px] sm:h-[240px]"), [compact]);
   const achievementListH = useMemo(() => (compact ? "h-[160px]" : "h-[260px] sm:h-[320px]"), [compact]);
 
