@@ -39,7 +39,7 @@ export default function GuildChat({ guildId, messages, onBack }: GuildChatProps)
   return (
     <div className="flex flex-col gap-3">
       {/* Messages container */}
-      <div className="h-[560px] overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#fff1ef]">
+      <div className="h-140 overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#fff1ef]">
         {messages.length === 0 && (
           <div className="opacity-60 text-center">No messages yet</div>
         )}

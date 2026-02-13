@@ -1,7 +1,7 @@
 import Friend from "../db/friend";
 import User from "../db/user";
 import Avatar from "../db/avatar";
-import Battle from "../db/battle"; // ✅ Added import
+import Battle from "../db/battle";
 import { Types } from "mongoose";
 
 // Add socket io instance
@@ -10,7 +10,6 @@ let ioInstance: any = null;
 export function setSocketIo(io: any) {
   ioInstance = io;
 }
-///
 
 // Send friend request
 interface SendFriendRequestInput {
@@ -50,16 +49,25 @@ export const sendFriendRequest = async ({ userId, friendEmail }: SendFriendReque
           const currentUser = await User.findById(userId).populate("avatar");
           const accepterAvatar = await Avatar.findById(friendUser.avatar);
           
-          // Get requester (A) info to find their socket
           const requesterUser = await User.findById(friendUser._id).populate("avatar");
           const requesterAvatar = await Avatar.findById(requesterUser?.avatar);
 
-          // NEW: Emit to requester (A) that their request was auto-accepted
+          // Emit to requester (A) that their request was auto-accepted
           if (ioInstance && requesterAvatar?.currentSocket) {
             ioInstance.to(requesterAvatar.currentSocket).emit("friendRequestAutoAccepted", {
               avatarId: friendUser.avatar?.toString(),
               userName: accepterAvatar?.userName || "Unknown",
               avatarImage: accepterAvatar?.avatar || "",
+            });
+          }
+
+          // Emit to accepter (B) to refresh their friend list
+          if (ioInstance && accepterAvatar?.currentSocket) {
+            ioInstance.to(accepterAvatar.currentSocket).emit("friendRequestAcceptedByOther", {
+              avatarId: currentUser?.avatar?._id?.toString(),
+              userName: requesterAvatar?.userName || "Unknown",
+              avatarImage: requesterAvatar?.avatar || "",
+              message: "accepted your friend request",
             });
           }
 
@@ -90,19 +98,20 @@ export const sendFriendRequest = async ({ userId, friendEmail }: SendFriendReque
   const requesterUser = await User.findById(userId).populate("avatar");
   const requesterAvatar = await Avatar.findById(requesterUser?.avatar);
 
-  // NEW: Emit to target user if they're online
-  if (ioInstance && friendUser.avatar) {
-    const targetAvatar = await Avatar.findById(friendUser.avatar);
-    if (targetAvatar?.currentSocket) {
-      ioInstance.to(targetAvatar.currentSocket).emit("friendRequestReceived", {
-        requestId: friendRequest._id,
-        avatarId: requesterUser?.avatar?._id?.toString(),
-        email: requesterUser?.email,
-        userName: requesterAvatar?.userName || "Unknown",
-        avatarImage: requesterAvatar?.avatar || "",
-        createdAt: friendRequest.createdAt,
-      });
-    }
+  // NEW: Emit socket event directly to recipient!
+  const recipientAvatar = await Avatar.findById(friendUser.avatar);
+  if (ioInstance && recipientAvatar?.currentSocket) {
+    ioInstance.to(recipientAvatar.currentSocket).emit("friendRequestReceived", {
+      requestId: friendRequest._id.toString(),
+      avatarId: requesterUser?.avatar?._id?.toString(),
+      email: requesterUser?.email,
+      userName: requesterAvatar?.userName || "Unknown",
+      avatarImage: requesterAvatar?.avatar || "",
+      createdAt: friendRequest.createdAt,
+    });
+    console.log(`📨 Friend request emitted to ${recipientAvatar.currentSocket}`);
+  } else {
+    console.log(`⚠️ Recipient not online or no socket: ${friendUser.avatar}`);
   }
 
   return {
@@ -120,7 +129,6 @@ export const sendFriendRequest = async ({ userId, friendEmail }: SendFriendReque
     },
   };
 };
-
 
 // Accept friend request
 interface AcceptFriendRequestInput {
@@ -156,23 +164,13 @@ export const acceptFriendRequest = async ({ userId, requestId }: AcceptFriendReq
   const requesterUser = await User.findById(friendRequest.userId).populate("avatar");
   const requesterAvatar = await Avatar.findById(requesterUser?.avatar);
 
-  // NEW: Notify the original requester that their request was accepted
+  // Emit to the original requester that their request was accepted
   if (ioInstance && requesterAvatar?.currentSocket) {
     ioInstance.to(requesterAvatar.currentSocket).emit("friendRequestAcceptedByOther", {
       avatarId: accepterUser?.avatar?._id?.toString(),
       userName: accepterAvatar?.userName || "Unknown",
       avatarImage: accepterAvatar?.avatar || "",
       message: "accepted your friend request",
-    });
-  }
-
-  // NEW: Also notify the accepter's other online sessions/tabs
-  if (ioInstance && accepterAvatar?.currentSocket) {
-    ioInstance.to(accepterAvatar.currentSocket).emit("friendRequestAccepted", {
-      requestId: friendRequest._id.toString(),
-      friendId: requesterUser?.avatar?._id?.toString(),
-      userName: requesterAvatar?.userName || "Unknown",
-      avatarImage: requesterAvatar?.avatar || "",
     });
   }
 
@@ -217,7 +215,7 @@ export const rejectFriendRequest = async ({ userId, requestId }: RejectFriendReq
   return;
 };
 
-// Remove friend(Now accepts avatarId)
+// Remove friend
 interface RemoveFriendInput {
   userId: string;
   friendAvatarId: string;
@@ -236,24 +234,23 @@ export const removeFriend = async ({ userId, friendAvatarId }: RemoveFriendInput
     ],
   });
 
-  // NEW: Notify the removed friend in real-time
-  if (ioInstance) {
-    const removedFriendAvatar = await Avatar.findById(friendAvatarId);
-    if (removedFriendAvatar?.currentSocket) {
-      const removerUser = await User.findById(userId).populate("avatar");
-      const removerAvatar = await Avatar.findById(removerUser?.avatar);
-      
-      ioInstance.to(removedFriendAvatar.currentSocket).emit("removedByFriend", {
-        removerAvatarId: removerUser?.avatar?._id?.toString(),
-        removerName: removerAvatar?.userName || "Unknown",
-      });
-    }
+  // Emit to the removed friend so they can update their list
+  const removerUser = await User.findById(userId).populate("avatar");
+  const removerAvatar = await Avatar.findById(removerUser?.avatar);
+  const removedFriendAvatar = await Avatar.findById(friendAvatarId);
+
+  if (ioInstance && removedFriendAvatar?.currentSocket) {
+    ioInstance.to(removedFriendAvatar.currentSocket).emit("removedByFriend", {
+      removerAvatarId: removerUser?.avatar?._id?.toString(),
+      removerName: removerAvatar?.userName || "Unknown",
+      removerAvatarImage: removerAvatar?.avatar || "",
+    });
   }
 
   return;
 };
 
-// Get all user friends - ✅ FIXED to include battleStatus
+// Get all user friends
 export const getAllFriendsWithAvatars = async (userId: string) => {
   const friendships = await Friend.find({
     userId,
@@ -274,7 +271,6 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
         );
       }
 
-      // ✅ NEW: Determine battleStatus based on currentBattle and battle state
       let battleStatus: "online" | "in_battle" | "viewing_results" = "online";
       let currentBattle = avatar?.currentBattle?.toString() || null;
       
@@ -284,10 +280,8 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
           if (battle) {
             battleStatus = battle.endedAt ? "viewing_results" : "in_battle";
           } else {
-            // Battle doesn't exist anymore, clear the stale reference
             currentBattle = null;
             battleStatus = "online";
-            // Optionally: update avatar to clear currentBattle
             await Avatar.findByIdAndUpdate(friendUser.avatar, { currentBattle: null });
           }
         } catch (err) {
@@ -302,8 +296,8 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
         userName: avatar?.userName || "Unknown",
         avatarImage: avatar?.avatar || "",
         characterOption: avatar?.characterOption || 0,
-        currentBattle, // ✅ Now properly set (null if battle doesn't exist)
-        battleStatus, // ✅ NEW: Now included!
+        currentBattle,
+        battleStatus,
       };
     })
   );
@@ -311,7 +305,7 @@ export const getAllFriendsWithAvatars = async (userId: string) => {
   return friendsWithAvatars;
 };
 
-// Get pending friend request (Received)
+// Get pending friend request
 export const getPendingRequests = async (userId: string) => {
   const requests = await Friend.find({
     friendId: userId,
