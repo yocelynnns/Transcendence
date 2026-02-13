@@ -260,7 +260,7 @@ export default function GameMap({ avatarData, avatarId, freeze, battleLatest }: 
         />
       )}
 
-      {/* {showPopupTwo && ( */}
+      {showPopupTwo && (
         <GamePopup
           title="Mini Game"
           onClose={() => setShowPopUpTwo(false)}
@@ -272,7 +272,7 @@ export default function GameMap({ avatarData, avatarId, freeze, battleLatest }: 
           }}
           scale={uiScale}
         />
-      {/* )} */}
+      )}
 
       {/* ENCOUNTER DIALOG */}
       {showDialog && encounterPokemon && (

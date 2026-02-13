@@ -177,7 +177,7 @@ export default function AiPages() {
                         className="group relative rounded-2xl border-4 border-[#2b2b2b] bg-white px-4 py-4 flex flex-col items-center gap-2 hover:brightness-95 active:scale-[0.99] transition"
                       >
                         <img
-                          src={getPokemonIcon(p.name, p.type as any, false)}
+                          src={getPokemonIcon(p.name, p.type, false)}
                           className="w-16 h-16 [image-rendering:pixelated]"
                           draggable={false}
                         />

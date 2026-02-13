@@ -43,7 +43,7 @@ export function BattleInviteItem({ invite, onAccept, onDecline }: BattleInviteIt
             className="w-9 h-9 flex items-center justify-center text-sm cursor-pointer"
           >
             <img
-              src={ASSETS.CHATICONS.X}
+              src={ASSETS.FRIENDICON.X}
               alt="no"
               className="w-10 h-10 object-contain image-rendering-pixelated"
             />
@@ -52,7 +52,7 @@ export function BattleInviteItem({ invite, onAccept, onDecline }: BattleInviteIt
             className="w-9 h-9 flex items-center justify-center text-sm cursor-pointer"
           >
             <img
-              src={ASSETS.CHATICONS.TICK}
+              src={ASSETS.FRIENDICON.TICK}
               alt="yes"
               className="w-10 h-10 object-contain image-rendering-pixelated"
             />

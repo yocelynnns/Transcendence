@@ -111,6 +111,7 @@ import eventicon from "./elements/icons/event.png"
 import xicon from "./elements/icons/x.png"
 import backicon from "./elements/icons/back.png"
 import sendicon from "./elements/icons/send.png"
+import sendblueicon from "./elements/icons/sendblue.png"
 import bluexicon from "./elements/icons/bluex.png"
 
 import spectateicon from "./elements/icons/spectate.png"
@@ -191,7 +192,7 @@ export const ASSETS = {
     BATTLE: battleicon,
   },
 
-  CHATICONS: {
+  FRIENDICON: {
     X: bluexicon,
     SPECTATE: spectateicon,
     CHAT: chaticon,
@@ -200,5 +201,6 @@ export const ASSETS = {
     BATTLE: battleicon,
     FRIENDLIST: friendlistblue,
     TICK: tickicon,
+    SEND: sendblueicon,
   }
 };

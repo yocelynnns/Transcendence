@@ -51,7 +51,7 @@ function emitBattleEnded(battle: any, silentLoser: boolean = false) {
     });
     
     // Also emit friend status update
-    ioInstance.emit("friendReturnedHome", { avatarId: player1Id });
+    // ioInstance.emit("friendReturnedHome", { avatarId: player1Id });
   }
   
   // Emit to player 2
@@ -67,7 +67,7 @@ function emitBattleEnded(battle: any, silentLoser: boolean = false) {
     });
     
     // Also emit friend status update
-    ioInstance.emit("friendReturnedHome", { avatarId: player2Id });
+    // ioInstance.emit("friendReturnedHome", { avatarId: player2Id });
   }
 }
 

@@ -443,10 +443,12 @@ export default function BattlePage({
               <EnemyDontMoveOverlay
                 result={isMyTurn ? "lose" : "win"}
                 onHome={() => {
+                  emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
                   setCurrentBattle(null);
                   navigate("/");
                 }}
                 onMatching={() => {
+                  emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
                   setCurrentBattle(null);
                   navigate("/matching");
                 }}
@@ -488,6 +490,7 @@ export default function BattlePage({
                       height={56}
                       width={"100%"}
                       onClick={() => {
+                        emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
                         setCurrentBattle(null);
                         navigate("/");
                       }}
@@ -507,6 +510,7 @@ export default function BattlePage({
                         height={56}
                         width={"100%"}
                         onClick={() => {
+                          emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
                           setCurrentBattle(null);
 
                           emitEvent("requestRematch", {
