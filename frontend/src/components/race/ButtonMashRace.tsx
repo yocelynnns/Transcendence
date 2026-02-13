@@ -2,11 +2,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import RaceTrack from "./RaceTrack";
-// import HowToPlayCard from "./HowToPlayCard";
-// import RecentMatches from "./RecentMatches";
+import HowToPlayCard from "./HowToPlayCard";
+import RecentMatches from "./RecentMatches";
 import LeaderboardPanel from "./LeaderboardPanel";
 import AchievementsPanel from "./AchievementsPanel";
-// import PixelButton from "../elements/PixelButton";
+import PixelButton from "../elements/PixelButton";
 
 interface Player {
   id: string;
