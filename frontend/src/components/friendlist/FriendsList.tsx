@@ -69,8 +69,19 @@ export default function FriendsList(props: FriendsListProps) {
     }
   };
 
-  const handleAddFriendError = (err: any) => {
-    const errorMessage = err?.message || err?.error || String(err) || "Failed to send request";
+  const handleAddFriendError = (err: unknown) => {
+    let errorMessage: string;
+
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    } else if (typeof err === "object" && err !== null) {
+      errorMessage = (err as { message?: string; error?: string }).message
+        || (err as { message?: string; error?: string }).error
+        || "Failed to send request";
+    } else {
+      errorMessage = String(err) || "Failed to send request";
+    }
+
     const friendlyMessage = getFriendlyErrorMessage(errorMessage);
     showMessage(`❌ ${friendlyMessage}`);
   };
@@ -81,9 +92,20 @@ export default function FriendsList(props: FriendsListProps) {
       setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
       loadFriends();
       showMessage("✅ Friend request accepted!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("Failed to accept request:", err);
-      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+
+      let errorMessage: string;
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        errorMessage = (err as { message?: string }).message || "Failed to accept request";
+      } else {
+        errorMessage = String(err) || "Failed to accept request";
+      }
+
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage);
       showMessage(`❌ ${friendlyMessage}`);
     }
   };
@@ -92,16 +114,28 @@ export default function FriendsList(props: FriendsListProps) {
     try {
       await rejectFriendRequest(token, requestId);
       setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
-      showMessage("Request rejected");
-    } catch (err: any) {
+      showMessage("✅ Request rejected");
+    } catch (err: unknown) {
       console.log("Failed to reject request:", err);
-      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+
+      let errorMessage: string;
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        errorMessage = (err as { message?: string }).message || "Failed to reject request";
+      } else {
+        errorMessage = String(err) || "Failed to reject request";
+      }
+
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage);
       showMessage(`❌ ${friendlyMessage}`);
     }
   };
 
   const handleRemove = async (friendAvatarId: string) => {
     if (!confirm("Remove this friend?")) return;
+
     try {
       await removeFriend(token, friendAvatarId);
       loadFriends();
@@ -110,10 +144,21 @@ export default function FriendsList(props: FriendsListProps) {
         next.delete(friendAvatarId);
         return next;
       });
-      showMessage("Friend removed");
-    } catch (err: any) {
+      showMessage("✅ Friend removed");
+    } catch (err: unknown) {
       console.log("Failed to remove friend:", err);
-      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+
+      let errorMessage: string;
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        errorMessage = (err as { message?: string }).message || "Failed to remove friend";
+      } else {
+        errorMessage = String(err) || "Failed to remove friend";
+      }
+
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage);
       showMessage(`❌ ${friendlyMessage}`);
     }
   };
@@ -136,9 +181,20 @@ export default function FriendsList(props: FriendsListProps) {
           setSelectedFriend(null);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("Failed to toggle block:", err);
-      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+
+      let errorMessage: string;
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        errorMessage = (err as { message?: string }).message || "Failed to toggle block";
+      } else {
+        errorMessage = String(err) || "Failed to toggle block";
+      }
+
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage);
       showMessage(`❌ ${friendlyMessage}`);
     }
   };

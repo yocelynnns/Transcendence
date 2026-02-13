@@ -60,7 +60,7 @@ const AchievementsPanel: React.FC<Props> = ({
               <div
                 className={`${
                   compact ? "text-2xl" : "text-3xl"
-                } min-w-[36px] text-center`}
+                } min-w-9 text-center`}
               >
                 {a.icon}
               </div>
@@ -94,7 +94,7 @@ const AchievementsPanel: React.FC<Props> = ({
                     />
                   </div>
 
-                  <div className="text-[10px] font-bold text-[#384071] min-w-[42px] text-right">
+                  <div className="text-[10px] font-bold text-[#384071] min-w-10.5 text-right">
                     {totalWins}/{a.requirement}
                   </div>
                 </div>

@@ -72,20 +72,6 @@ const ButtonMashRace: React.FC<ButtonMashRaceProps> = ({ avatarId, onExit }) => 
     return () => window.removeEventListener("resize", updateCompact);
   }, []);
 
-  // ✅ Compact mode for "mobile landscape" / short height screens
-  const [compact, setCompact] = useState(false);
-
-  useEffect(() => {
-    const updateCompact = () => {
-      const h = window.innerHeight;
-      const w = window.innerWidth;
-      setCompact(h <= 520 && w >= h); // short-height + landscape-ish => compact
-    };
-    updateCompact();
-    window.addEventListener("resize", updateCompact);
-    return () => window.removeEventListener("resize", updateCompact);
-  }, []);
-
   const achievements: Achievement[] = [
     { id: "first_win", title: "Level 1: First Victory", description: "Win your first race", requirement: 1, icon: "🏅" },
     { id: "five_wins", title: "Level 2: Speed Demon", description: "Win 5 races", requirement: 5, icon: "🔥" },
