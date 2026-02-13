@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameSocket } from "../ws/useGameSocket";
 import { 
   fetchFriends, 
   fetchBlockedList, 
   fetchPendingRequests,
-  fetchBattle 
+  fetchBattle,
+  fetchBattleInvites
 } from "../services/friendsApi";
 import { 
   Friend, 
@@ -14,6 +15,34 @@ import {
   FriendsListProps 
 } from "../types/friends.types";
 import { Battle } from "../types/battleTypes";
+
+// User-friendly error message mapping
+const ERROR_MESSAGES: Record<string, string> = {
+  "ALREADY_FRIENDS": "You are already friends with this user",
+  "REQUEST_ALREADY_SENT": "Friend request already sent to this user",
+  "USER_NOT_FOUND": "No user found with this email",
+  "CANNOT_ADD_SELF": "You cannot add yourself as a friend",
+  "USER_BLOCKED": "Unable to send request - user blocked",
+  "FRIEND_REQUEST_NOT_FOUND": "Friend request not found or already processed",
+  "INVALID_REQUEST_ID": "Invalid request ID",
+  "FRIEND_NOT_FOUND": "Friend not found",
+};
+
+export function getFriendlyErrorMessage(error: string | Error): string {
+  const errorStr = typeof error === "string" ? error : error.message;
+  // Check for exact match first
+  if (ERROR_MESSAGES[errorStr]) {
+    return ERROR_MESSAGES[errorStr];
+  }
+  // Check if error contains any of the keys
+  for (const [key, message] of Object.entries(ERROR_MESSAGES)) {
+    if (errorStr.includes(key)) {
+      return message;
+    }
+  }
+  // Return original if no mapping found
+  return errorStr;
+}
 
 export function useFriends({
   token,
@@ -28,53 +57,56 @@ export function useFriends({
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [battleInvites, setBattleInvites] = useState<BattleInvite[]>([]);
-  const [showPanel, setShowPanel] = useState(false);
+  const [showPanel, setShowPanel] = useState(true);
   const [activeTab, setActiveTab] = useState<"friends" | "requests" | "battles">("friends");
   const [blockedFriends, setBlockedFriends] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState("");
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
-  // Data fetching
+  // Notification tracking
+  const [hasNewRequests, setHasNewRequests] = useState(false);
+  const [hasNewBattles, setHasNewBattles] = useState(false);
+  const [seenRequestsCount, setSeenRequestsCount] = useState(0);
+  const [seenBattlesCount, setSeenBattlesCount] = useState(0);
+
+  // Actions - DEFINED FIRST (before loadFriends)
+  const showMessage = useCallback((msg: string, duration = 3000) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(""), duration);
+  }, []);
+
+  // Data fetching - NOW CAN safely use showMessage
   const loadFriends = useCallback(async () => {
     try {
-      // 1️⃣ Fetch friends
-      const friendsData = await fetchFriends(token);
+      const [friendsData, requestsData, invitesData] = await Promise.all([
+        fetchFriends(token),
+        fetchPendingRequests(token),
+        fetchBattleInvites(token)
+      ]);
+      
       setFriends(friendsData);
+      setRequests(requestsData);
+      setBattleInvites(invitesData);
+      
+      console.log("✅ Friends:", friendsData.length, "Requests:", requestsData.length, "Invites:", invitesData.length);
+      
       if (friendsData.length > 0) {
         emitEvent("requestFriendsStatus", friendsData.map((f) => f.avatarId));
       }
-
-      // 2️⃣ Fetch friend requests
-      const requestsData = await fetchPendingRequests(token); // <-- new API call
-      setRequests(requestsData);
     } catch (err) {
-      console.log("Failed to fetch friends or requests:", err);
+      console.error("❌ Failed to fetch friends data:", err);
+      showMessage("❌ Failed to load friends data");
     }
-  }, [token, emitEvent]);
+  }, [token, emitEvent, showMessage]);
 
   const loadBlockedList = useCallback(async () => {
     try {
       const blockedIds = await fetchBlockedList(token);
       setBlockedFriends(new Set(blockedIds));
     } catch (err) {
-      console.log("Failed to fetch blocked list:", err);
+      console.error("Failed to fetch blocked list:", err);
     }
   }, [token]);
-
-  const loadRequests = useCallback(async () => {
-    try {
-      const data = await fetchPendingRequests(token);
-      setRequests(data);
-    } catch (err) {
-      console.log("Failed to fetch requests:", err);
-    }
-  }, [token]);
-
-  // Actions
-  const showMessage = useCallback((msg: string, duration = 3000) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(""), duration);
-  }, []);
 
   const handleSpectate = useCallback(async (friend: Friend) => {
     if (!friend.currentBattle) {
@@ -88,7 +120,7 @@ export function useFriends({
       navigate(`/spectating/${friend.currentBattle}`);
       setShowPanel(false);
     } catch (err) {
-      console.log("Failed to spectate:", err);
+      console.error("Failed to spectate:", err);
       alert("Failed to join spectator mode");
     }
   }, [emitEvent, navigate, setSpectatingBattle]);
@@ -101,7 +133,7 @@ export function useFriends({
       navigate(`/spectating/${friend.currentBattle}`);
       setShowPanel(false);
     } catch (err) {
-      console.log("Failed to view results:", err);
+      console.error("Failed to view results:", err);
     }
   }, [navigate, setSpectatingBattle]);
 
@@ -128,6 +160,15 @@ export function useFriends({
     setBattleInvites((prev) => prev.filter((inv) => inv.inviteId !== inviteId));
   }, [emitEvent]);
 
+  // Refs for socket listeners to avoid stale closures
+  const loadFriendsRef = useRef(loadFriends);
+  const showMessageRef = useRef(showMessage);
+  
+  useEffect(() => {
+    loadFriendsRef.current = loadFriends;
+    showMessageRef.current = showMessage;
+  }, [loadFriends, showMessage]);
+
   // Socket listeners
   useEffect(() => {
     emitEvent("userOnline", myAvatarId);
@@ -139,23 +180,10 @@ export function useFriends({
       subscribeEvent<{ avatarId: string; online: boolean; battleStatus?: string; currentBattle?: string | null }[]>(
         "friendsStatusUpdate",
         (statuses) => {
-          // setFriends((prev) =>
-          //   prev.map((friend) => {
-          //     const status = statuses.find((s) => s.avatarId === friend.avatarId);
-          //     return status ? {
-          //       ...friend,
-          //       online: status.online,
-          //       battleStatus: status.battleStatus || friend.battleStatus,
-          //       currentBattle: status.currentBattle !== undefined ? status.currentBattle : friend.currentBattle,
-          //     } : friend;
-          //   })
-          // );
           setFriends((prev) =>
             prev.map((friend) => {
               const status = statuses.find((s) => s.avatarId === friend.avatarId);
-
               if (!status) return friend;
-
               return {
                 ...friend,
                 online: status.online,
@@ -168,75 +196,35 @@ export function useFriends({
       )
     );
 
-    // cleanups.push(
-    //   subscribeEvent<{ avatarId: string; online: boolean; battleStatus?: string; currentBattle?: string | null }>(
-    //     "userStatusChange",
-    //     ({ avatarId, online, battleStatus, currentBattle }) => {
-    //       setFriends((prev) =>
-    //         prev.map((friend) =>
-    //           friend.avatarId === avatarId
-    //             ? {
-    //                 ...friend,
-    //                 online,
-    //                 ...(battleStatus && { battleStatus }),
-    //                 ...(currentBattle !== undefined && { currentBattle }),
-    //               }
-    //             : friend
-    //         )
-    //       );
-    //     }
-    //   )
-    // );
-
-  cleanups.push(
-    subscribeEvent<{
-      avatarId: string;
-      online: boolean;
-      battleStatus?: string;
-      currentBattle?: string | null;
-    }>(
-      "userStatusChange",
-      ({ avatarId, online, battleStatus, currentBattle }) => {
-        setFriends((prev) =>
-          prev.map((friend) => {
-            if (friend.avatarId !== avatarId) return friend;
-
-            return {
-              ...friend,
-              online,
-              battleStatus:
-                battleStatus === "online" ||
-                battleStatus === "in_battle" ||
-                battleStatus === "viewing_results"
-                  ? battleStatus
-                  : friend.battleStatus,
-              currentBattle:
-                currentBattle !== undefined ? currentBattle : friend.currentBattle,
-            };
-          })
-        );
-      }
-    )
-  );
-
-
-    // cleanups.push(
-    //   subscribeEvent<{ avatarId: string; currentBattle: string | null; battleStatus?: string }[]>(
-    //     "friendsBattleStatusUpdate",
-    //     (statuses) => {
-    //       setFriends((prev) =>
-    //         prev.map((friend) => {
-    //           const status = statuses.find((s) => s.avatarId === friend.avatarId);
-    //           return status ? {
-    //             ...friend,
-    //             currentBattle: status.currentBattle,
-    //             battleStatus: status.battleStatus || (status.currentBattle ? "in_battle" : "online"),
-    //           } : friend;
-    //         })
-    //       );
-    //     }
-    //   )
-    // );
+    cleanups.push(
+      subscribeEvent<{
+        avatarId: string;
+        online: boolean;
+        battleStatus?: string;
+        currentBattle?: string | null;
+      }>(
+        "userStatusChange",
+        ({ avatarId, online, battleStatus, currentBattle }) => {
+          setFriends((prev) =>
+            prev.map((friend) => {
+              if (friend.avatarId !== avatarId) return friend;
+              return {
+                ...friend,
+                online,
+                battleStatus:
+                  battleStatus === "online" ||
+                  battleStatus === "in_battle" ||
+                  battleStatus === "viewing_results"
+                    ? battleStatus
+                    : friend.battleStatus,
+                currentBattle:
+                  currentBattle !== undefined ? currentBattle : friend.currentBattle,
+              };
+            })
+          );
+        }
+      )
+    );
 
     cleanups.push(
       subscribeEvent<
@@ -247,7 +235,6 @@ export function useFriends({
             const status = statuses.find((s) => s.avatarId === friend.avatarId);
             if (!status) return friend;
 
-            // Normalize battleStatus to allowed union
             let normalizedBattleStatus: "online" | "in_battle" | "viewing_results" | undefined;
 
             if (
@@ -272,8 +259,6 @@ export function useFriends({
       })
     );
 
-
-    // Battle events
     cleanups.push(
       subscribeEvent<{ avatarId: string; battleId: string }>(
         "friendBattleStarted",
@@ -324,15 +309,18 @@ export function useFriends({
       subscribeEvent<{ inviteId: string; senderId: string; senderName: string; senderAvatar: string }>(
         "matchInviteReceived",
         (data) => {
-          setBattleInvites((prev) => [...prev, { ...data, createdAt: new Date() }]);
-          showMessage(`⚔️ Battle challenge from ${data.senderName}!`, 5000);
+          setBattleInvites((prev) => {
+            if (prev.some(inv => inv.inviteId === data.inviteId)) return prev;
+            return [...prev, { ...data, createdAt: new Date() }];
+          });
+          showMessageRef.current(`⚔️ Battle challenge from ${data.senderName}!`, 5000);
         }
       )
     );
 
     cleanups.push(
       subscribeEvent<{ by: string }>("matchInviteDeclined", () => {
-        showMessage("❌ Challenge declined");
+        showMessageRef.current("❌ Challenge declined");
       })
     );
 
@@ -367,79 +355,105 @@ export function useFriends({
       )
     );
 
+    // FIXED: When someone accepts MY request, refresh my friend list
     cleanups.push(
-      subscribeEvent<{ avatarId: string; userName: string; avatarImage: string }>(
-        "friendRequestAutoAccepted",
+      subscribeEvent<{ avatarId: string; userName: string; avatarImage: string; message: string }>(
+        "friendRequestAcceptedByOther",
         (data) => {
-          loadFriends();
-          setRequests((prev) => prev.filter((req) => req.avatarId !== data.avatarId));
-          showMessage(`✅ ${data.userName} accepted your request!`);
+          // Refresh friends list to show the new friend
+          loadFriendsRef.current();
+          showMessageRef.current(`✅ ${data.userName} ${data.message}`);
         }
       )
     );
 
     cleanups.push(
-      subscribeEvent<{ removerAvatarId: string }>("removedByFriend", (data) => {
-        setFriends((prev) => prev.filter((f) => f.avatarId !== data.removerAvatarId));
-        setBlockedFriends((prev) => {
-          const next = new Set(prev);
-          next.delete(data.removerAvatarId);
-          return next;
-        });
-        showMessage("A friend removed you");
-      })
+      subscribeEvent<{ avatarId: string; userName: string; avatarImage: string }>(
+        "friendRequestAutoAccepted",
+        (data) => {
+          loadFriendsRef.current();
+          setRequests((prev) => prev.filter((req) => req.avatarId !== data.avatarId));
+          showMessageRef.current(`✅ ${data.userName} accepted your request!`);
+        }
+      )
+    );
+
+    // FIXED: When removed by friend, immediately remove from list
+    cleanups.push(
+      subscribeEvent<{ removerAvatarId: string; removerName?: string; removerAvatarImage?: string }>(
+        "removedByFriend", 
+        (data) => {
+          setFriends((prev) => prev.filter((f) => f.avatarId !== data.removerAvatarId));
+          setBlockedFriends((prev) => {
+            const next = new Set(prev);
+            next.delete(data.removerAvatarId);
+            return next;
+          });
+          showMessageRef.current(`${data.removerName || "A friend"} removed you`);
+        }
+      )
     );
 
     cleanups.push(
       subscribeEvent<FriendRequest>("friendRequestReceived", (data) => {
         setRequests((prev) => [...prev, data]);
-        showMessage("📨 New friend request!");
+        showMessageRef.current("📨 New friend request!");
       })
-    );
-
-    cleanups.push(
-      subscribeEvent<{ avatarId: string; userName: string; avatarImage: string; message: string }>(
-        "friendRequestAcceptedByOther",
-        (data) => {
-          loadFriends();
-          showMessage(`✅ ${data.userName} ${data.message}`);
-        }
-      )
     );
 
     cleanups.push(
       subscribeEvent<{ error: string }>("matchInviteError", (data) => {
-        showMessage(`❌ ${data.error}`, 5000);
+        showMessageRef.current(`❌ ${data.error}`, 5000);
       })
     );
 
     return () => cleanups.forEach((cleanup) => cleanup());
-  }, [emitEvent, subscribeEvent, myAvatarId, loadFriends, navigate, setCurrentBattle, showMessage]);
+  }, [emitEvent, subscribeEvent, myAvatarId, navigate, setCurrentBattle]);
 
-  // // Initial data fetch
-  // useEffect(() => {
-  //   if (showPanel) {
-  //     loadFriends();
-  //     loadRequests();
-  //     loadBlockedList();
-  //   }
-  // }, [showPanel, loadFriends, loadRequests, loadBlockedList]);
+  // Initial data load
+  useEffect(() => {
+    if (!token) return;
+    
+    loadFriends();
+    loadBlockedList();
+    
+    const initCounts = setTimeout(() => {
+      setSeenRequestsCount(requests.length);
+      setSeenBattlesCount(battleInvites.length);
+    }, 1000);
+    
+    return () => clearTimeout(initCounts);
+  }, [token, loadFriends, loadBlockedList]);
+
+  // Detect NEW notifications
+  useEffect(() => {
+    if (requests.length > seenRequestsCount && seenRequestsCount > 0) {
+      setHasNewRequests(true);
+    }
+  }, [requests.length, seenRequestsCount]);
 
   useEffect(() => {
-    if (!showPanel) return;
+    if (battleInvites.length > seenBattlesCount && seenBattlesCount > 0) {
+      setHasNewBattles(true);
+    }
+  }, [battleInvites.length, seenBattlesCount]);
 
-    const fetchData = async () => {
-      await loadFriends();
-      await loadRequests();
-      await loadBlockedList();
-    };
+  // Clear highlights when viewing tabs
+  useEffect(() => {
+    if (activeTab === "requests") {
+      setHasNewRequests(false);
+      setSeenRequestsCount(requests.length);
+    }
+  }, [activeTab, requests.length]);
 
-    fetchData();
-  }, [showPanel, loadFriends, loadRequests, loadBlockedList]);
-
+  useEffect(() => {
+    if (activeTab === "battles") {
+      setHasNewBattles(false);
+      setSeenBattlesCount(battleInvites.length);
+    }
+  }, [activeTab, battleInvites.length]);
 
   return {
-    // State
     friends,
     requests,
     battleInvites,
@@ -452,8 +466,6 @@ export function useFriends({
     message,
     selectedFriend,
     setSelectedFriend,
-    
-    // Actions
     loadFriends,
     showMessage,
     handleSpectate,
@@ -461,10 +473,10 @@ export function useFriends({
     handleChallengeFriend,
     handleAcceptBattleInvite,
     handleDeclineBattleInvite,
-    
-    // Derived
     totalNotifications: requests.length + battleInvites.length,
     isSuccessMessage: message.startsWith("✅") || message.startsWith("⚔️") || message.startsWith("🔔"),
     setRequests,
+    hasNewRequests,
+    hasNewBattles,
   };
 }
