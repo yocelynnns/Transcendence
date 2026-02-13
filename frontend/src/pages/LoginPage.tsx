@@ -186,22 +186,7 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
           </div>
         </form>
         </div>
-                <div className="flex gap-4 justify-center mt-4">
-        <button
-        onClick={() => setShowTOS(true)}
-        className="text-[1rem] text-blue-500 underline hover:text-blue-700"
-        >
-        Terms of Service
-        </button>
-
-        <button
-        onClick={() => setShowPrivacyPolicy(true)}
-        className="text-[1rem] text-blue-500 underline hover:text-blue-700"
-        >
-        Privacy Policy
-        </button>
-        </div>
-
+            
         {showTOS && (
             <div className="fixed inset-0 z-60 bg-white overflow-auto">
             <TermsOfServicePage />

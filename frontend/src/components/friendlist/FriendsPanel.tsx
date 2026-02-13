@@ -25,7 +25,7 @@ interface FriendsPanelProps {
   
   // Actions
   onClose: () => void;
-  onAddFriendSuccess: (data: FriendRequestResult, email: string) => void;
+  onAddFriendSuccess: (data: FriendRequestResult, email?: string) => void;
   onAddFriendError: (msg: string) => void;
   onAcceptRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string) => void;
