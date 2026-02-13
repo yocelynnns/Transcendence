@@ -1,14 +1,11 @@
 import React from "react";
 import { useEffect } from "react";
-import { useFriends } from "../../hooks/useFriends";
-// import { FriendsButton } from "./FriendsButton";
+import { useFriends, getFriendlyErrorMessage } from "../../hooks/useFriends";
 import { FriendsPanel } from "./FriendsPanel";
-import ChatWindow from "../chat/ChatWindow"; // Existing component
+import ChatWindow from "../chat/ChatWindow";
 import { Battle } from "../../types/battleTypes";
 import { acceptFriendRequest, rejectFriendRequest, removeFriend, blockMessages, unblockMessages } from "../../services/friendsApi";
 import { Friend, FriendRequestResult } from "../../types/friends.types";
-
-// export { FriendsListProps } from "./types/friends.types";
 
 export interface FriendsListProps {
   token: string;
@@ -39,12 +36,9 @@ export default function FriendsList(props: FriendsListProps) {
   const BASE_HEIGHT = 860;
 
   const {
-    // State
     friends,
     requests,
     battleInvites,
-    // showPanel,
-    // setShowPanel,
     activeTab,
     setActiveTab,
     blockedFriends,
@@ -52,8 +46,6 @@ export default function FriendsList(props: FriendsListProps) {
     message,
     selectedFriend,
     setSelectedFriend,
-    
-    // Actions
     loadFriends,
     showMessage,
     handleSpectate,
@@ -61,11 +53,8 @@ export default function FriendsList(props: FriendsListProps) {
     handleChallengeFriend,
     handleAcceptBattleInvite,
     handleDeclineBattleInvite,
-    
-    // Derived
-    // totalNotifications,
     isSuccessMessage,
-    setRequests,  // ADDED
+    setRequests,
   } = useFriends(props);
 
   // Handlers that need API + state updates
@@ -78,8 +67,10 @@ export default function FriendsList(props: FriendsListProps) {
     }
   };
 
-  const handleAddFriendError = (msg: string) => {
-    showMessage(`❌ ${msg}`);
+  const handleAddFriendError = (err: any) => {
+    const errorMessage = err?.message || err?.error || String(err) || "Failed to send request";
+    const friendlyMessage = getFriendlyErrorMessage(errorMessage);
+    showMessage(`❌ ${friendlyMessage}`);
   };
 
   const handleAcceptRequest = async (requestId: string) => {
@@ -88,8 +79,10 @@ export default function FriendsList(props: FriendsListProps) {
       setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
       loadFriends();
       showMessage("✅ Friend request accepted!");
-    } catch (err) {
+    } catch (err: any) {
       console.log("Failed to accept request:", err);
+      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+      showMessage(`❌ ${friendlyMessage}`);
     }
   };
 
@@ -98,8 +91,10 @@ export default function FriendsList(props: FriendsListProps) {
       await rejectFriendRequest(token, requestId);
       setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
       showMessage("Request rejected");
-    } catch (err) {
+    } catch (err: any) {
       console.log("Failed to reject request:", err);
+      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+      showMessage(`❌ ${friendlyMessage}`);
     }
   };
 
@@ -114,8 +109,10 @@ export default function FriendsList(props: FriendsListProps) {
         return next;
       });
       showMessage("Friend removed");
-    } catch (err) {
+    } catch (err: any) {
       console.log("Failed to remove friend:", err);
+      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+      showMessage(`❌ ${friendlyMessage}`);
     }
   };
 
@@ -137,8 +134,10 @@ export default function FriendsList(props: FriendsListProps) {
           setSelectedFriend(null);
         }
       }
-    } catch {
-      showMessage("❌ Failed to update block status");
+    } catch (err: any) {
+      console.log("Failed to toggle block:", err);
+      const friendlyMessage = getFriendlyErrorMessage(err?.message || err);
+      showMessage(`❌ ${friendlyMessage}`);
     }
   };
 
@@ -151,15 +150,14 @@ export default function FriendsList(props: FriendsListProps) {
       <div 
         className="fixed top-0 right-0 z-50 h-screen"
         style={{
-          width: BASE_WIDTH,              // original width
+          width: BASE_WIDTH,
           height: BASE_HEIGHT,
-          transform: `scale(${scale})`,   // scales width proportionally
+          transform: `scale(${scale})`,
           transformOrigin: 'top right',
         }}
       >
         <div className="flex flex-col h-full">
           <div className="border-12 h-full" style={{ borderColor: "#384071" }}>
-            {/* Inner border with background */}
             <div className="border-12 flex flex-col h-full" style={{ borderColor: "#677fb4", backgroundColor: "#a5b6dd" }}>
               {(selectedFriend && myAvatarData && !selectedFriend.currentBattle) ? (
                 <ChatWindow
@@ -202,7 +200,6 @@ export default function FriendsList(props: FriendsListProps) {
                   onRemove={handleRemove}
                 />
               )}
-
             </div>
           </div>
         </div>

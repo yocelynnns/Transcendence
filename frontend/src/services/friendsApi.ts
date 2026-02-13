@@ -1,5 +1,5 @@
 import { Battle } from "../types/battleTypes";
-import { BlockedListResponse, Friend, FriendRequest } from "../types/friends.types";
+import { BlockedListResponse, Friend, FriendRequest, BattleInvite } from "../types/friends.types";
 
 const API_URL = "http://localhost:5001/api";
 
@@ -17,7 +17,6 @@ export async function fetchBlockedList(token: string): Promise<string[]> {
   });
   if (!res.ok) throw new Error("Failed to fetch blocked list");
   const data: BlockedListResponse = await res.json();
-
   return data.blockedFriends.map(f => f.avatarId);
 }
 
@@ -26,6 +25,14 @@ export async function fetchPendingRequests(token: string): Promise<FriendRequest
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to fetch requests");
+  return res.json();
+}
+
+export async function fetchBattleInvites(token: string): Promise<BattleInvite[]> {
+  const res = await fetch(`${API_URL}/battle/invites/pending`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to fetch battle invites");
   return res.json();
 }
 
@@ -39,14 +46,13 @@ export async function sendFriendRequest(token: string, friendEmail: string) {
     body: JSON.stringify({ friendEmail: friendEmail.trim() }),
   });
   
-  // Check if response is not OK
+  const data = await res.json();
+  
   if (!res.ok) {
-    // Parse the error JSON and throw the message
-    const errorData = await res.json();
-    throw new Error(errorData.message || "Failed to send request");
+    throw new Error(data.message || data.error || "Failed to send request");
   }
   
-  return res.json();
+  return data;
 }
 
 export async function acceptFriendRequest(token: string, requestId: string) {
@@ -54,7 +60,12 @@ export async function acceptFriendRequest(token: string, requestId: string) {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to accept request");
+  
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Failed to accept request");
+  }
+  
   return res.json();
 }
 
@@ -63,7 +74,11 @@ export async function rejectFriendRequest(token: string, requestId: string) {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to reject request");
+  
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Failed to reject request");
+  }
 }
 
 export async function removeFriend(token: string, friendAvatarId: string) {
@@ -71,7 +86,11 @@ export async function removeFriend(token: string, friendAvatarId: string) {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to remove friend");
+  
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Failed to remove friend");
+  }
 }
 
 export async function blockMessages(token: string, friendAvatarId: string) {
@@ -79,7 +98,11 @@ export async function blockMessages(token: string, friendAvatarId: string) {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to block messages");
+  
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Failed to block messages");
+  }
 }
 
 export async function unblockMessages(token: string, friendAvatarId: string) {
@@ -87,7 +110,11 @@ export async function unblockMessages(token: string, friendAvatarId: string) {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to unblock messages");
+  
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Failed to unblock messages");
+  }
 }
 
 export async function fetchBattle(battleId: string): Promise<Battle> {
