@@ -91,7 +91,7 @@ export function FriendItem({
               disabled={isBlocked}
             >
               <img
-                src={ASSETS.CHATICONS.CHAT}
+                src={ASSETS.FRIENDICON.CHAT}
                 alt="X"
                 className="w-6 h-6 object-contain image-rendering-pixelated"
               />
@@ -104,7 +104,7 @@ export function FriendItem({
               title="Spectate"
             >
               <img
-                src={ASSETS.CHATICONS.SPECTATE}
+                src={ASSETS.FRIENDICON.SPECTATE}
                 alt="X"
                 className="w-10 h-10 object-contain image-rendering-pixelated"
               />
@@ -117,7 +117,7 @@ export function FriendItem({
               title="View Results"
             >
               <img
-                src={ASSETS.CHATICONS.SPECTATE}
+                src={ASSETS.FRIENDICON.SPECTATE}
                 alt="X"
                 className="w-10 h-10 object-contain image-rendering-pixelated"
               />
@@ -133,7 +133,7 @@ export function FriendItem({
               disabled={isBlocked}
             >
               <img
-                src={ASSETS.CHATICONS.BATTLE}
+                src={ASSETS.FRIENDICON.BATTLE}
                 alt="X"
                 className="w-9 h-9 object-contain image-rendering-pixelated"
               />
@@ -146,7 +146,7 @@ export function FriendItem({
               title="Unblock Messages"
             >
               <img
-                src={ASSETS.CHATICONS.UNBLOCK}
+                src={ASSETS.FRIENDICON.UNBLOCK}
                 alt="X"
                 className="w-9 h-9 object-contain image-rendering-pixelated"
               />
@@ -158,7 +158,7 @@ export function FriendItem({
               title="Block Messages"
             >
               <img
-                src={ASSETS.CHATICONS.BLOCK}
+                src={ASSETS.FRIENDICON.BLOCK}
                 alt="X"
                 className="w-9 h-9 object-contain image-rendering-pixelated"
               />
@@ -170,7 +170,7 @@ export function FriendItem({
             title="Remove Friend"
           >
             <img
-              src={ASSETS.CHATICONS.X}
+              src={ASSETS.FRIENDICON.X}
               alt="X"
               className="w-10 h-10 object-contain image-rendering-pixelated"
             />

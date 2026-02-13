@@ -41,6 +41,8 @@ export interface FriendsListProps {
   myAvatarData?: AvatarDataFriend;
   setSpectatingBattle?: React.Dispatch<React.SetStateAction<Battle | null>>;
   setCurrentBattle: React.Dispatch<React.SetStateAction<Battle | null>>;
+  battleLatest: (avatarId?: string, battleIdParam?:string) => Promise<void>;
+  setBattleId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export interface FriendRequestResult {

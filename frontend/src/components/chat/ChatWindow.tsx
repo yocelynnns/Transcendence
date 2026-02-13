@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameSocket } from "../../ws/useGameSocket";
 import { ASSETS } from "../../assets";
-import PublicProfilePopup from "../profile/PublicProfilePopup";
+import { AvatarData } from "../../types/avatarTypes";
 import PixelButton from "../elements/PixelButton";
+import AvatarProfile from "../profile/GameProfile";
 
 const defaultAvatar = ASSETS.AVATAR.CLEFFA;
 
@@ -72,7 +73,8 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  const [avatarData, setAvatarData] = useState<AvatarData | null>(null);
+  const [loadingAvatar, setLoadingAvatar] = useState(false);
   
   const { emitEvent, subscribeEvent } = useGameSocket(() => {});
   
@@ -150,7 +152,28 @@ export default function ChatWindow({
     },
     [friendId, token] // dependencies used inside the function
   );
-        
+
+  useEffect(() => {
+    if (!showProfile) return; // only fetch when profile opens
+    setLoadingAvatar(true);
+
+    const fetchAvatar = async () => {
+      try {
+        const res = await fetch(`http://localhost:5001/api/avatar/${friend.avatarId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data: AvatarData = await res.json(); // make sure backend returns AvatarData
+        setAvatarData(data);
+      } catch (err) {
+        console.log("Failed to fetch avatar:", err);
+      } finally {
+        setLoadingAvatar(false);
+      }
+    };
+
+    fetchAvatar();
+  }, [friend.avatarId, showProfile, token]);
+
 
   useEffect(() => {
     console.log("🔵 ChatWindow mounted for:", friendId);
@@ -313,12 +336,6 @@ export default function ChatWindow({
                 width="100%"
                 cursorPointer={false}
               />
-              {/* Error Banner */}
-              {/* {errorMessage && (
-                <div className="bg-red-500 text-white text-center text-xs px-3 py-2 border-b-2 border-red-700">
-                  ❌ {errorMessage}
-                </div>
-              )} */}
 
               {/* Header */}
               <div className="absolute inset-0 flex items-center justify-between px-6">
@@ -363,7 +380,7 @@ export default function ChatWindow({
                     onClick={onClose}
                   >
                     <img
-                      src={ASSETS.CHATICONS.X}
+                      src={ASSETS.FRIENDICON.X}
                       alt="X"
                       className="w-10 h-10 object-contain image-rendering-pixelated hover:scale-110"
                     />
@@ -517,9 +534,9 @@ export default function ChatWindow({
                       className="absolute inset-0 flex items-center justify-center"
                     >
                       <img
-                        src={ASSETS.ICONS.SEND}
+                        src={ASSETS.FRIENDICON.SEND}
                         alt="Send"
-                        className={`w-12 h-12 object-contain image-rendering-pixelated ${
+                        className={`w-10 h-10 object-contain image-rendering-pixelated ${
                           inputValue.trim()
                             ? "hover:scale-110"
                             : "opacity-20 cursor-not-allowed"
@@ -532,15 +549,15 @@ export default function ChatWindow({
             </div>
           </div>
         </div>
-      {showProfile && (
-        <PublicProfilePopup
-          token={token}
-          myAvatarId={myAvatarId}
-          targetAvatarId={friend.avatarId}
-          onClose={() => setShowProfile(false)}
-          onChallenge={onChallenge}
-        />
-      )}
+        {showProfile && avatarData && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center overflow-auto p-4">
+            <AvatarProfile
+              avatarData={avatarData}
+              onClose={() => setShowProfile(false)}
+              me={false}
+            />
+          </div>
+        )}
     </>
   );
 

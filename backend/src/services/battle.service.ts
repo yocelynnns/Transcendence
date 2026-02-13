@@ -51,7 +51,7 @@ function emitBattleEnded(battle: any, silentLoser: boolean = false) {
     });
     
     // Also emit friend status update
-    ioInstance.emit("friendReturnedHome", { avatarId: player1Id });
+    // ioInstance.emit("friendReturnedHome", { avatarId: player1Id });
   }
   
   // Emit to player 2
@@ -67,7 +67,7 @@ function emitBattleEnded(battle: any, silentLoser: boolean = false) {
     });
     
     // Also emit friend status update
-    ioInstance.emit("friendReturnedHome", { avatarId: player2Id });
+    // ioInstance.emit("friendReturnedHome", { avatarId: player2Id });
   }
 }
 
@@ -173,10 +173,10 @@ export async function resolveBattleTimeout(battleId: string) {
     battle.winnerReason = "both did not select in time";
   } else if (p1Ready && !p2Ready) {
     battle.winner = "player1";
-    battle.winnerReason = "enemy disconnected";
+    battle.winnerReason = "Battle ended due to inactivity/disconnection";
   } else if (!p1Ready && p2Ready) {
     battle.winner = "player2";
-    battle.winnerReason = "enemy disconnected";
+    battle.winnerReason = "Battle ended due to inactivity/disconnection";
   } else {
     return null;
   }

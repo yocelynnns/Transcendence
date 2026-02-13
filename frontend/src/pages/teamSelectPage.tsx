@@ -12,7 +12,7 @@ interface TeamSelectPageProps {
   avatarData?: AvatarData | null;
   currentBattle: Battle | null;
   setCurrentBattle: Dispatch<React.SetStateAction<Battle | null>>;
-  refetchBattle: () => Promise<void>;
+  refetchBattle: (avatarIdParam?: string, battleIdParam?: string) => Promise<Battle | undefined>;
 }
 
 const TEAM_SIZE = 3;
@@ -45,8 +45,7 @@ export default function TeamSelectPage({
   const [saving, setSaving] = useState(false);
   const [enemyDisconnected, setEnemyDisconnected] = useState(false);
   const [battleEnded, setBattleEnded] = useState(false);
- 
-  const { subscribeEvent, playerReadyMatch } = useGameSocket(() => {});
+  const { emitEvent, subscribeEvent, playerReadyMatch } = useGameSocket(() => {});
 
   const usedIds = useMemo(
     () => new Set(slots.filter(Boolean).map((p) => p!._id)),
@@ -190,11 +189,11 @@ export default function TeamSelectPage({
   };
 
   useEffect(() => {
-    if (!battleId) return;
+    if (!battleId || !avatarId) return;
 
     const handleBattleLatestAndNavigate = async () => {
       try {
-        await refetchBattle();
+        await refetchBattle(avatarId, battleId);
         navigate(`/battle/${battleId}`);
       } catch (err) {
         console.error("Failed to update battle and navigate:", err);
@@ -225,7 +224,7 @@ export default function TeamSelectPage({
       offBattleReady();
       offBattleError();
     };
-  }, [battleId, subscribeEvent, navigate, setCurrentBattle, refetchBattle]);
+  }, [battleId, subscribeEvent, navigate, setCurrentBattle, refetchBattle, avatarId]);
 
 
   if (!avatarData) {
@@ -240,7 +239,20 @@ export default function TeamSelectPage({
  return (
     <div className="relative w-screen h-screen">
       {/* Fullscreen Enemy Disconnected Overlay */}
-      {enemyDisconnected && <EnemyDisconnectedOverlay/>}
+        {enemyDisconnected && (
+          <EnemyDisconnectedOverlay
+            onHome={() => {
+              emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
+              setCurrentBattle(null);
+              navigate("/");
+            }}
+            onMatching={() => {
+              emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
+              setCurrentBattle(null);
+              navigate("/matching");
+            }}
+          />
+        )}
 
       {/* Team Select Layout */}
       <TeamSelectLayout

@@ -29,10 +29,10 @@ interface BattleHistory {
 
 interface ProfilePageProps {
   avatarData: AvatarData;
-  updateAvatar: (fields: Partial<AvatarData>) => void;
-  onClose: () => void;
+  updateAvatar?: (fields: Partial<AvatarData>) => void;
+  onClose?: () => void;
   me?: boolean;
-  handleLogOut: () => void;
+  handleLogOut?: () => void;
 }
 
 export default function ProfilePage({
@@ -182,9 +182,9 @@ export default function ProfilePage({
         />
       </button>
 
-      <div className="flex flex-col md:flex-row h-full gap-6 overflow-y-auto">
+      <div className={`flex flex-col ${me ? "md:flex-row" : "md:flex-col"} h-full gap-6 overflow-y-auto`}>
         {/* LEFT PANEL */}
-        <div className="md:flex-[1_1_33%] w-full shrink-0">
+        <div className={`${me ? "md:flex-[1_1_33%]" : "w-full"} shrink-0`}>
           <div className="h-full p-6 bg-[#ecc2be] rounded-lg flex flex-col overflow-y-auto">
 
             {/* Avatar */}
@@ -355,7 +355,7 @@ export default function ProfilePage({
         </div>
 
         {/* RIGHT PANEL */}
-        <div className="md:flex-[1_1_67%] w-full shrink-0">
+        <div className={`${me ? "md:flex-[1_1_67%]" : "w-full"} shrink-0`}>
           <div className="h-full p-6 bg-[#ecc2be] rounded-lg flex flex-col overflow-y-auto font-mono">
             <h2 className="text-center font-bold mb-6 text-lg">Match History</h2>
 

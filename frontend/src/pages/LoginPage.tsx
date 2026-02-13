@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login as loginApi, getUserInfo } from "../services/authService";
 import PixelButton from "../components/elements/PixelButton";
+import TermsOfServicePage from "./TermsOfServicePage";
+import PrivacyPolicyPage from "./PrivacyPolicypage";
 
 interface LoginPageProps {
   setToken: (token: string | null) => void;
@@ -23,6 +25,8 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [scale, setScale] = useState(1);
+  const [showTOS, setShowTOS] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   // SCALE OUTER WRAPPER
   useEffect(() => {
@@ -164,9 +168,48 @@ export default function LoginPage({ setToken, setAvatarId }: LoginPageProps) {
             <Link to="/signup" className="font-bold text-[#ffcc00]">
               Sign up
             </Link>
+            <div className="flex gap-4 justify-center mt-2">
+                <button
+                  onClick={() => setShowTOS(true)}
+                  className="text-[0.8rem] text-blue-200 underline hover:text-blue-700"
+                >
+                  Terms of Service
+                </button>
+
+                <button
+                  onClick={() => setShowPrivacyPolicy(true)}
+                  className="text-[0.8rem] text-blue-200 underline hover:text-blue-700"
+                >
+                  Privacy Policy
+                </button>
+              </div>
           </div>
         </form>
+        </div>
+            
+        {showTOS && (
+            <div className="fixed inset-0 z-60 bg-white overflow-auto">
+            <TermsOfServicePage />
+            <button
+            onClick={() => setShowTOS(false)}
+            className="absolute top-6 right-6 text-2xl font-bold p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+            >
+            ×
+            </button>
+            </div>
+        )}
+
+        {showPrivacyPolicy && (
+            <div className="fixed inset-0 z-60 bg-white overflow-auto">
+            <PrivacyPolicyPage />
+            <button
+            onClick={() => setShowPrivacyPolicy(false)}
+            className="absolute top-6 right-6 text-2xl font-bold p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+            >
+            ×
+            </button>
+            </div>
+        )}
       </div>
-    </div>
   );
 }

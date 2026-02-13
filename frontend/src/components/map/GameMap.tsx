@@ -40,7 +40,7 @@ interface GameMapProps {
   avatarData: AvatarData | null;
   avatarId: string | null;
   freeze: boolean; /* ADD */
-  battleLatest: (avatarId?: string) => Promise<void>;
+  battleLatest: (avatarId?: string, battleIdParam?:string) => Promise<void>;
 }
 
 //MAIN COMPONENT

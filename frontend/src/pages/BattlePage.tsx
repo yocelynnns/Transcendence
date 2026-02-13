@@ -439,12 +439,19 @@ export default function BattlePage({
               </div>
             )}
 
-
             {enemyDontMove && (
               <EnemyDontMoveOverlay
                 result={isMyTurn ? "lose" : "win"}
-                onHome={() => navigate("/")}
-                onMatching={() => navigate("/matching")}
+                onHome={() => {
+                  emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
+                  setCurrentBattle(null);
+                  navigate("/");
+                }}
+                onMatching={() => {
+                  emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
+                  setCurrentBattle(null);
+                  navigate("/matching");
+                }}
               />
             )}
 
@@ -478,27 +485,32 @@ export default function BattlePage({
                   <div className="my-5 h-0.5 w-full bg-black/10" />
 
                   <div className="flex items-center justify-center gap-4 sm:gap-6">
-                    <div className="w-37.5">
-                      <PixelButton
-                        height={56}
-                        width={"100%"}
-                        onClick={() => navigate("/")}
-                        cursorPointer
-                        hoverScale={1.03}
-                        colorA="#6B6B6B"
-                        colorB="#4F4F4F"
-                        colorText="#FFFFFF"
-                        textSize="18px"
-                      >
-                        HOME
-                      </PixelButton>
-                    </div>
+                  <div className="w-37.5">
+                    <PixelButton
+                      height={56}
+                      width={"100%"}
+                      onClick={() => {
+                        emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
+                        setCurrentBattle(null);
+                        navigate("/");
+                      }}
+                      cursorPointer
+                      hoverScale={1.03}
+                      colorA="#6B6B6B"
+                      colorB="#4F4F4F"
+                      colorText="#FFFFFF"
+                      textSize="18px"
+                    >
+                      HOME
+                    </PixelButton>
+                  </div>
 
                     <div className="w-42.5">
                       <PixelButton
                         height={56}
                         width={"100%"}
                         onClick={() => {
+                          emitEvent("playerReturnedHome", { avatarId: myAvatarId }); 
                           setCurrentBattle(null);
 
                           emitEvent("requestRematch", {
