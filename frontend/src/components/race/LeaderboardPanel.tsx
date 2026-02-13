@@ -25,6 +25,7 @@ const LeaderboardPanel: React.FC<Props> = ({
   leaderboardListH,
   compact,
   cardPad,
+  titleText,
 }) => {
   return (
     <div className={`bg-[#a5b6dd] rounded-md ${cardPad} flex flex-col overflow-hidden`}>
@@ -54,10 +55,10 @@ const LeaderboardPanel: React.FC<Props> = ({
                 key={entry.rank}
                 className={`bg-white rounded-lg border-2 flex items-center justify-between ${
                   compact ? "p-2" : "p-3"
-                } ${isCurrentUser ? "border-green-500 bg-linear-to-r from-green-50 to-white" : "border-gray-200"}`}
+                } ${isCurrentUser ? "border-green-500 bg-gradient-to-r from-green-50 to-white" : "border-gray-200"}`}
               >
                 {/* Rank & Medal */}
-                <div className="flex items-center gap-2 min-w-15">
+                <div className="flex items-center gap-2 min-w-[60px]">
                   <span className="font-bold">{entry.rank}.</span>
                   <span className="text-xl">{medalEmoji}</span>
                 </div>
@@ -71,7 +72,7 @@ const LeaderboardPanel: React.FC<Props> = ({
                 </div>
 
                 {/* Wins / Losses */}
-                <div className="flex items-center gap-3 min-w-20 justify-end">
+                <div className="flex items-center gap-3 min-w-[80px] justify-end">
                   <div className={`${compact ? "text-[10px]" : "text-xs"} font-semibold text-green-600`}>
                     {entry.wins}W
                   </div>
