@@ -60,8 +60,8 @@ function App() {
   // --- stable refetchBattle ---
   const refetchBattle = useCallback(
     async (avatarIdParam?: string, battleIdParam?: string) => {
-      const _avatarId = avatarIdParam ?? avatarId;
-      const _battleId = battleIdParam ?? battleId;
+      const _avatarId = avatarId ?? avatarIdParam;
+      const _battleId = battleId ?? battleIdParam;
       if (!_avatarId || !_battleId) return;
 
       try {
@@ -90,7 +90,7 @@ function App() {
   const queryClient = useQueryClient();
       
   const battleLatest = useCallback(
-    async (avatarIdParam?: string) => {
+    async (avatarIdParam?: string, battleIdParam?: string) => {
       const _avatarId = avatarIdParam ?? avatarId;
       if (!_avatarId) return;
 
@@ -99,7 +99,7 @@ function App() {
         exact: true,
       });
 
-      await refetchBattle();
+      await refetchBattle(avatarIdParam, battleIdParam);
     },
     [avatarId, queryClient, refetchBattle]
   );
@@ -118,7 +118,7 @@ function App() {
   }, [battleId, currentBattle]);
 
   useEffect(() => {
-    refetchBattle();
+    refetchBattle(avatarId ?? undefined,battleId ?? undefined);
   }, [battleId, avatarId, refetchBattle]);
 
   const { avatarData } = useAvatar(avatarId);
@@ -229,7 +229,7 @@ function App() {
           element={
             token
               ? avatarId
-                ? <HomePage avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle} setCurrentBattle={setCurrentBattle} handleLogOut={handleLogOut} battleLatest={battleLatest}/>
+                ? <HomePage avatarData={avatarData ?? null} token={token} setSpectatingBattle={setSpectatingBattle} setCurrentBattle={setCurrentBattle} handleLogOut={handleLogOut} battleLatest={battleLatest} setBattleId={setBattleId}  currentBattle={currentBattle}/>
                 : <Navigate to="/profile" />
               : <Navigate to="/login" />
           }
