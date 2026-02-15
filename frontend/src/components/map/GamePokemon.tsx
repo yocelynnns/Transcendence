@@ -13,7 +13,7 @@ type PokemonProps = {
 //POKEMON COMPONENT
 export default function Pokemon({ x, y, name, tileSize, zIndex = 1 }: PokemonProps) {
   //CONSTANTS
-  const POKEMON_SIZE = 60;
+  const POKEMON_SIZE = 80;
   const sprite = getPokemonFrontSprite(name);
 
   //RENDER

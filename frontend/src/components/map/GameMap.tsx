@@ -25,7 +25,7 @@ const mapForeground = ASSETS.MAP.FOREGROUND;
 //MAP CONSTANTS
 const MAP_WIDTH = 20;
 const MAP_HEIGHT = 34;
-const TILE_SIZE = 84;
+const TILE_SIZE = 120;
 // const VIEW_WIDTH = 10;
 // const VIEW_HEIGHT = 10;
 

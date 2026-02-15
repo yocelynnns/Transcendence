@@ -52,6 +52,7 @@ export async function joinCatchEvent({ eventId, avatarId, playerName }: JoinCatc
         playerName: p.playerName,
         catchCount: p.catchCount,
       })),
+      lastCheckedAt: event.lastCheckedAt,
     };
   }
 

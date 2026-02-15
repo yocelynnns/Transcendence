@@ -28,8 +28,8 @@ export default function GuildMain({ avatarData, token, onClosePanel, scale }: Gu
   const [messages, setMessages] = useState<GuildMessage[]>([]);
 
   // Base dimensions (design at scale 1)
-  const BASE_WIDTH = 520;
-  const BASE_HEIGHT = 860;
+  const BASE_WIDTH = 1920 / 3;
+  const BASE_HEIGHT = 963;
 
   // Update selected guild if it changes in guild list
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function GuildMain({ avatarData, token, onClosePanel, scale }: Gu
                 colorText="#ab7b81"  
                 textSize="16px"
                 height={80}
-                width={413}
+                width="100%"
                 cursorPointer={false}
               />
 

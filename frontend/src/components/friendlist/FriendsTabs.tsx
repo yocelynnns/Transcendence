@@ -18,7 +18,7 @@ export function FriendsTabs({
 }: FriendsTabsProps) {
 
   const buttonHeight = 45;
-  const buttonWidth = 130;
+  const buttonWidth = 1920 / 12;
 
   const getColors = (tab: "friends" | "requests" | "battles") =>
     activeTab === tab

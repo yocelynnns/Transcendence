@@ -33,20 +33,12 @@
 
 ### Environment Configuration
 
-**`backend/.env`**
+**`.env`**
 
 ```env
 PORT=5001
 MONGO\_URI=mongodb://mongo:27017/transcendence
 JWT\_SECRET=change\_me
-FRONTEND\_ORIGIN=http://localhost:5173
-```
-
-**`frontend/.env`**
-
-```env
-VITE\_API\_URL=http://localhost:5001
-VITE\_WS\_URL=http://localhost:5001
 ```
 
 ### Makefile Commands
@@ -78,7 +70,7 @@ make rebuild
 make reset \&\& make up
 ```
 
-Access at: http://localhost:22288
+Access at: https://localhost
 
 ---
 
@@ -195,8 +187,8 @@ Guild (1) ──► GuildMessage (many)
 
 |Module|Points|Implementation|Lead Contributors|
 |-|-|-|-|
-|ORM|1|Mongoose with schema validation|ysetiawa (game schemas), tiatan (race schema), dfasius (event schema), tsechen (messaging schema)|
-|Browser Support|1|Chrome, Firefox, Safari, Edge|aputri-a (cross-browser testing), ysetiawa (compatibility fixes)|
+|ORM|1|Mongoose with schema validation|aputri-a & ysetiawa (game schemas), tiatan (race schema), dfasius (event schema), tsechen (messaging schema)|
+|Browser Support|1|Chrome, Firefox, Safari, Edge|aputri-a (cross-browser testing), aputri-a & ysetiawa (compatibility fixes)|
 
 ### User Management (7 points)
 
@@ -204,7 +196,7 @@ Guild (1) ──► GuildMessage (many)
 |-|-|-|-|
 |Standard User Management|2|Registration, login, profiles, avatars, online status|tsechen (auth flows, avatar system), aputri-a (profile UI)|
 |Advanced Permissions|2|Role system (admin/moderator/user), CRUD, view restrictions|dfasius (role middleware, permission guards)|
-|Organization System|2|Guild creation, member management, guild actions|dfasius (guild backend), ysetiawa (member UI), aputri-a (guild design)|
+|Organization System|2|Guild creation, member management, guild actions|dfasius (guild backend), aputri-a (guild design)|
 |Game Statistics|1|Match history, win/loss tracking, usage stats|tiatan (statistics tracking), ysetiawa (data aggregation), aputri-a (stats dashboard UI)|
 
 ### Gaming \& User Experience (13 points)
@@ -213,12 +205,12 @@ Guild (1) ──► GuildMessage (many)
 |-|-|-|-|
 |Web-based Game|2|Pokemon battle system|aputri-a (battle mechanics, UI), dfasius (state synchronization)|
 |Remote Players|2|Cross-machine multiplayer with latency handling|dfasius (network optimization), tsechen (connection resilience)|
-|Multiplayer 3+|2|Event Capture game (3+ players)|dfasius (game design, multiplayer architecture), ysetiawa (event coordination)|
-|Second Game|2|Race mini-game with matchmaking|tiatan (race mechanics, matchmaking), dfasius (position synchronization)|
-|AI Opponent|2|Type-aware AI decision making|dfasius (AI engine, strategic logic), aputri-a (integration with battle system)|
-|Advanced Chat|1|Blocking, invites, history, typing indicators|tsechen (blocking system, chat history), dfasius (real-time delivery)|
+|Multiplayer 3+|2|Event Capture game (3+ players)|dfasius (game design, multiplayer architecture), dfasius (event coordination)|
+|Second Game|2|Race mini-game with matchmaking|tiatan (race mechanics, matchmaking), tiatan (position synchronization)|
+|AI Opponent|2|Type-aware AI decision making|dfasius (AI engine, strategic logic), dfasius (integration with battle system), ysetiawa (UI)|
+|Advanced Chat|1|Blocking, invites, history, typing indicators|tsechen (blocking system, chat history), dfasius (real-time delivery), aputri-a (UI)|
 |Gamification|1|Achievements, leaderboards, XP|tiatan (progression system), aputri-a (achievement UI)|
-|Spectator Mode|1|Live battle viewing with real-time updates|tsechen (spectator infrastructure), dfasius (state broadcasting)|
+|Spectator Mode|1|Live battle viewing with real-time updates|tsechen (spectator infrastructure), dfasius (state broadcasting), ysetiawa (UI)|
 
 ---
 
@@ -227,10 +219,10 @@ Guild (1) ──► GuildMessage (many)
 |Member|Key Contributions|
 |-|-|
 |**tsechen**|Product Owner responsibilities, real-time WebSocket implementation, friends/messaging system, spectator mode infrastructure, authentication flows, quality assurance|
-|**ysetiawa**|Project management coordination, web game schema design, guild member UI, browser compatibility testing, matching system, game statistics aggregation, milestone tracking|
+|**ysetiawa**|Project management coordination, web game schema design, browser compatibility testing, matching UI, game statistics aggregation, milestone tracking|
 |**dfasius**|Technical architecture leadership, battle state synchronization, AI opponent engine, guild backend system, role-based permissions, network optimization, code review|
 |**tiatan**|Git workflow management and CI/CD setup, race game mechanics, statistics tracking system, racing game database schema design, version control, avatar system|
-|**aputri-a**|UI/UX design system, web game battle mechanics and interface, cross-browser testing, achievement system implementation, responsive interface design, pixel-art styling|
+|**aputri-a**|UI/UX design system, web game battle mechanics and interface, cross-browser testing, matching system, achievement system implementation, responsive interface design, pixel-art styling|
 
 ---
 

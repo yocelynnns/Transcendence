@@ -37,9 +37,9 @@ export default function GuildChat({ guildId, messages, onBack }: GuildChatProps)
   const beigeBtn = { colorA: "#fff1ef", colorB: "#ab7b81", colorText: "#ab7b81" };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 h-full">
       {/* Messages container */}
-      <div className="h-140 overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#fff1ef]">
+      <div className="h-[91%] overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#fff1ef]">
         {messages.length === 0 && (
           <div className="opacity-60 text-center">No messages yet</div>
         )}

@@ -34,8 +34,8 @@ export default function FriendsList(props: FriendsListProps) {
     scale,
   } = props;
 
-  const BASE_WIDTH = 520;
-  const BASE_HEIGHT = 860;
+  const BASE_WIDTH = 1920 / 3;
+  const BASE_HEIGHT = 963;
 
   const {
     friends,

@@ -405,7 +405,7 @@ export default function ChatWindow({
                 {/* Messages */}
                 <div
                   ref={messagesContainerRef}
-                  className="h-140 overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#ffffff]"
+                  className="h-[91%] overflow-y-auto border-2 border-gray-300 rounded-lg p-2.5 bg-[#ffffff]"
                 >
                   {hasMore && !loading && (
                     <div

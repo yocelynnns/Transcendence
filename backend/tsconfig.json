@@ -1,24 +1,24 @@
 {
   "compilerOptions": {
     // Node environment
-    "target": "ES2020",                  // modern JS features
-    "module": "CommonJS",                // Node default
-    "rootDir": "./src",                  // TS source folder
-    "outDir": "./dist",                  // compiled JS output
-    "esModuleInterop": true,             // allow default imports from CJS modules
+    "target": "ES2020",
+    "module": "CommonJS",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,                // skip type checking for node_modules
+    "skipLibCheck": true,
 
     // Type checking
-    "strict": true,                      // strict TS checks
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
 
     // Useful for Node
-    "types": ["node", "express"],                   // include Node typings
-    "moduleResolution": "node",          // Node-style module resolution
+    "types": ["node", "express"],
+    "moduleResolution": "node",
 
     // Source maps & declaration
     "sourceMap": true,

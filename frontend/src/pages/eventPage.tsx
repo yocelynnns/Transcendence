@@ -18,7 +18,7 @@ const mapForeground = ASSETS.MAP.FOREGROUND;
 // MAP CONSTANTS
 const MAP_WIDTH = 20;
 const MAP_HEIGHT = 34;
-const TILE_SIZE = 84;
+const TILE_SIZE = 120;
 
 // TYPES
 export interface EventPlayer {

@@ -9,7 +9,7 @@ dotenv.config();
 
 // Config
 const MONGO_URI = process.env.MONGO_URI || "";
-const TILE_SIZE = 84;
+const TILE_SIZE = 120;
 
 // Load map
 const mapPath = path.join(__dirname, "../assets/map/map.json");

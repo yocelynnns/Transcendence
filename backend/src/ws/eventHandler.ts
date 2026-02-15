@@ -22,6 +22,7 @@ export function setupEventHandlers(io: Server, socket: Socket) {
         socket.emit("eventFinished", {
           winnerId: result.winnerId,
           scores: result.scores,
+          lastCheckedAt : result.lastCheckedAt,
         });
         return;
       }

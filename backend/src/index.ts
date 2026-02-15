@@ -16,18 +16,6 @@ import { connectDB } from "./db/connection";
 
 const app: Express = express();
 
-// CORS - Allow both localhost and Docker network
-// app.use(
-//   cors({
-//     origin: [
-//       ""
-//     ],
-//     credentials: true,
-//     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "Authorization"]
-//   })
-// );
-
 // Body parsers
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
@@ -70,6 +58,6 @@ connectDB().catch((err) => console.log("FAILED TO CONNECT DB:", err));
 
 // Start server
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ HTTP + Socket.io server running on http://0.0.0.0:${PORT}`);
-  console.log(`✅ Access at http://localhost:${PORT}`);
+  console.log(`HTTP + Socket.io server running on http://0.0.0.0:${PORT}`);
+  console.log(`Access at http://localhost:${PORT}`);
 });

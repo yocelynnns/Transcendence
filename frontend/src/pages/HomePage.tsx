@@ -10,8 +10,8 @@ import { AvatarData } from "../types/avatarTypes";
 import { Battle } from "../types/battleTypes";
 import FriendsList from "../components/friendlist/FriendsList";
 
-const designWidth = 1512;
-const designHeight = 851; // added explicit design height
+const designWidth = 1920;
+const designHeight = 963; // added explicit design height
 const maxScale = 1;
 const minScale = 0.5;
 
@@ -130,8 +130,6 @@ export default function HomePage({
         <div
           className="relative pointer-events-auto"
           style={{
-            // width: `${designWidth}px`,
-            // height: `${designHeight}px`,
             transform: `scale(${finalBannerScale})`,
             transformOrigin: "top left",
           }}

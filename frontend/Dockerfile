@@ -1,6 +1,4 @@
-# ----------------------------
-# Stage 1: Build React frontend
-# ----------------------------
+# Build React frontend
 FROM node:24 AS build
 WORKDIR /usr/src/app
 COPY package*.json ./
@@ -8,9 +6,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# ----------------------------
-# Stage 2: Frontend Nginx
-# ----------------------------
+# Frontend Nginx
 FROM nginx:alpine
 
 # Remove default Nginx site
