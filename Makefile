@@ -1,13 +1,39 @@
 FRONTEND_DIR=frontend
 BACKEND_DIR=backend
 COMPOSE_FILE=docker-compose.yml
+ENV_FILE=.env
+ENV_EXAMPLE=.env.example
+SSL_DIR=ssl
+
+# Check if .env exists, if not copy from .env.example
+check-env:
+	@if [ ! -f $(ENV_FILE) ]; then \
+		if [ -f $(ENV_EXAMPLE) ]; then \
+			echo "⚠️  .env not found, copying from .env.example..."; \
+			cp $(ENV_EXAMPLE) $(ENV_FILE); \
+			echo "✅ .env created from .env.example"; \
+		else \
+			echo "❌ ERROR: Neither .env nor .env.example found!"; \
+			exit 1; \
+		fi \
+	fi
+
+# Generate SSL certificates if they don't exist
+check-ssl:
+	@if [ ! -f $(SSL_DIR)/localhost.key ] || [ ! -f $(SSL_DIR)/localhost.crt ]; then \
+		echo "🔐 Generating SSL certificates..."; \
+		./generate-ssl.sh; \
+		echo "✅ SSL certificates generated"; \
+	else \
+		echo "✅ SSL certificates already exist"; \
+	fi
 
 # build and start containers
-up: build
+up: check-env check-ssl build
 	docker compose -f $(COMPOSE_FILE) up -d
 
 # Build frontend and backend images
-build:
+build: check-env
 	docker compose -f $(COMPOSE_FILE) build
 
 # Stop containers
