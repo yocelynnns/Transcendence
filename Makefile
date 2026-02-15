@@ -5,6 +5,8 @@ ENV_FILE=.env
 ENV_EXAMPLE=.env.example
 SSL_DIR=ssl
 
+make: up
+
 # Check if .env exists, if not copy from .env.example
 check-env:
 	@if [ ! -f $(ENV_FILE) ]; then \
