@@ -107,14 +107,19 @@ export default function ProfilePage({
 
   // Username submit
   const handleNameSubmit = () => {
+    if (!tempName || tempName.trim() === "") {
+      console.warn("Cannot update avatar: name is empty");
+      return;
+    }
+
     updateAvatar?.({ userName: tempName });
+    
     emitEvent("avatarUpdated", {
       avatarId: avatarData._id,
       avatarImage: avatarData.avatar,
       userName: tempName,
     });
   };
-
 
   const handleSignOut = () => {
     signOut();

@@ -84,7 +84,11 @@ export interface UpdateAvatarInput {
 }
 
 export async function updateAvatar({ avatarId, data }: UpdateAvatarInput) {
-  if (!mongoose.Types.ObjectId.isValid(avatarId)) throw new Error("Invalid avatar ID");
+  if (!mongoose.Types.ObjectId.isValid(avatarId)) 
+    throw new Error("Invalid avatar ID");
+
+  if (!data || Object.keys(data).length === 0) 
+    throw new Error("No data provided for update");
 
   const updated = await Avatar.findByIdAndUpdate(
     avatarId,
@@ -92,7 +96,8 @@ export async function updateAvatar({ avatarId, data }: UpdateAvatarInput) {
     { new: true }
   ).populate("pokemonInventory");
 
-  if (!updated) throw new Error("Avatar not found");
+  if (!updated) 
+    throw new Error("Avatar not found");
 
   return updated;
 }
